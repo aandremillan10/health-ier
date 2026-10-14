@@ -1,13 +1,192 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Get a free hosted Postgres database in seconds: `npx create-db`
-
 generator client {
-  provider = "prisma-client"
-  output   = "../src/generated/prisma"
+  provider     = "prisma-client"
+  output       = "../src/generated/prisma"
+  moduleFormat = "cjs"
 }
 
 datasource db {
   provider = "postgresql"
+}
+
+model Staff {
+  id           String       @id @default(uuid()) @db.Uuid
+  username     String       @unique
+  passwordHash String
+  displayName  String
+  role         String
+  isHead       Boolean      @default(false)
+  licenseText  String?
+  ptrText      String?
+  revision     Int          @default(1)
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+  sessions     Session[]
+  vitals       Vitals[]
+  entries      Entry[]
+  corrections  Correction[]
+  documents    Document[]
+}
+
+model Session {
+  tokenHash String   @id
+  staffId   String   @db.Uuid
+  expiresAt DateTime
+  staff     Staff    @relation(fields: [staffId], references: [id])
+
+  @@index([expiresAt])
+}
+
+model Patient {
+  id                 String     @id @default(uuid()) @db.Uuid
+  revision           Int        @default(1)
+  fullName           String
+  sex                String?
+  address            String?
+  patientCategory    String?
+  employeeIdentifier String?
+  dateOfBirth        String?
+  createdAt          DateTime   @default(now())
+  updatedAt          DateTime   @updatedAt
+  vitals             Vitals[]
+  entries            Entry[]
+  documents          Document[]
+}
+
+model Vitals {
+  id               String   @id @default(uuid()) @db.Uuid
+  patientId        String   @db.Uuid
+  authorId         String   @db.Uuid
+  revision         Int      @default(1)
+  status           String   @default("draft")
+  recordedAt       DateTime @default(now())
+  systolic         Float?
+  diastolic        Float?
+  temperature      Float?
+  pulse            Float?
+  respiratoryRate  Float?
+  oxygenSaturation Float?
+  weight           Float?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+  patient          Patient  @relation(fields: [patientId], references: [id])
+  author           Staff    @relation(fields: [authorId], references: [id])
+  entries          Entry[]
+
+  @@index([patientId])
+}
+
+model Entry {
+  id                 String     @id @default(uuid()) @db.Uuid
+  patientId          String     @db.Uuid
+  authorId           String     @db.Uuid
+  discipline         String
+  revision           Int        @default(1)
+  status             String     @default("draft")
+  consultationDate   String?
+  ageAtConsultation  Int?
+  cs                 String?
+  vitalsId           String?    @db.Uuid
+  reason             String?
+  findings           String?
+  clinicalImpression String?
+  plan               String?
+  text               String?
+  createdAt          DateTime   @default(now())
+  updatedAt          DateTime   @updatedAt
+  patient            Patient    @relation(fields: [patientId], references: [id])
+  author             Staff      @relation(fields: [authorId], references: [id])
+  vitals             Vitals?    @relation(fields: [vitalsId], references: [id])
+  documents          Document[]
+
+  @@index([patientId, discipline])
+}
+
+model Correction {
+  id               String   @id @default(uuid()) @db.Uuid
+  originalType     String
+  originalEntryId  String   @db.Uuid
+  authorId         String   @db.Uuid
+  reason           String
+  correctedContent Json
+  sourceRevision   Int
+  revision         Int      @default(1)
+  createdAt        DateTime @default(now())
+  author           Staff    @relation(fields: [authorId], references: [id])
+
+  @@index([originalType, originalEntryId])
+}
+
+model Document {
+  id             String   @id @default(uuid()) @db.Uuid
+  kind           String
+  patientId      String   @db.Uuid
+  consultationId String   @db.Uuid
+  issuerId       String   @db.Uuid
+  issueDate      String
+  snapshot       Json
+  revision       Int      @default(1)
+  createdAt      DateTime @default(now())
+  patient        Patient  @relation(fields: [patientId], references: [id])
+  consultation   Entry    @relation(fields: [consultationId], references: [id])
+  issuer         Staff    @relation(fields: [issuerId], references: [id])
+}
+
+model Outbox {
+  eventId        String    @id @default(uuid()) @db.Uuid
+  clinicId       String
+  schemaVersion  Int       @default(1)
+  entityType     String
+  entityId       String    @db.Uuid
+  revision       Int
+  operation      String    @default("upsert")
+  payload        Json
+  createdAt      DateTime  @default(now())
+  acknowledgedAt DateTime?
+  attempts       Int       @default(0)
+  lastError      String?
+
+  @@unique([clinicId, entityType, entityId, revision])
+  @@index([acknowledgedAt, createdAt])
+}
+
+model MirrorEntity {
+  clinicId   String
+  entityType String
+  entityId   String   @db.Uuid
+  revision   Int
+  payload    Json
+  hash       String
+  updatedAt  DateTime @default(now())
+
+  @@id([clinicId, entityType, entityId])
+}
+
+model MirrorVersion {
+  clinicId   String
+  entityType String
+  entityId   String @db.Uuid
+  revision   Int
+  payload    Json
+  hash       String
+
+  @@id([clinicId, entityType, entityId, revision])
+}
+
+model MirrorReceipt {
+  clinicId   String
+  eventId    String   @db.Uuid
+  entityType String
+  entityId   String   @db.Uuid
+  revision   Int
+  hash       String
+  receivedAt DateTime @default(now())
+
+  @@id([clinicId, eventId])
+}
+
+model MirrorState {
+  clinicId             String    @id
+  bootstrapCompletedAt DateTime?
+  lastAcknowledgedAt   DateTime?
+  lastError            String?
 }
