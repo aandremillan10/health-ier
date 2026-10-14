@@ -13,6 +13,52 @@ import type {
 
 // The renderer view model also serves the explicit demo; only named preload calls cross this seam.
 export function createDesktopClient(wire: Wire.ClinicApi): ClinicApi {
+  let loginSequence = 0;
+  let authenticatedGeneration: number | null = null;
+  let latestResetGeneration = 0;
+  let pendingLogin: { sequence: number; resets: Wire.SessionReset[] } | null =
+    null;
+  const resetListeners = new Set<(reason: string) => void>();
+  let stopResetListener: (() => void) | null = null;
+  function notifyReset(event: Wire.SessionReset): void {
+    for (const listener of resetListeners) listener(event.reason);
+  }
+  function receiveReset(event: Wire.SessionReset): void {
+    if (event.generation < latestResetGeneration) return;
+    latestResetGeneration = event.generation;
+    // Correlate pending resets against the authoritative completed login, never a guessed next event.
+    if (pendingLogin) {
+      pendingLogin.resets.push(event);
+      return;
+    }
+    if (
+      authenticatedGeneration !== null &&
+      event.generation === authenticatedGeneration &&
+      event.reason === 'account-switch'
+    )
+      return;
+    authenticatedGeneration = null;
+    notifyReset(event);
+  }
+  function observeResets(): void {
+    stopResetListener ??= wire.onSessionReset(receiveReset);
+  }
+  function releaseResets(): void {
+    if (!resetListeners.size && !pendingLogin && stopResetListener) {
+      stopResetListener();
+      stopResetListener = null;
+    }
+  }
+  function changedSession(): Result<never> {
+    return {
+      ok: false,
+      error: {
+        code: 'UNAUTHENTICATED',
+        message: 'The staff session changed. Sign in again.',
+      },
+    };
+  }
+
   async function result<A, B>(
     operation: Promise<Wire.Result<A>>,
     convert: (data: A) => B,
@@ -174,11 +220,56 @@ export function createDesktopClient(wire: Wire.ClinicApi): ClinicApi {
   }
   const client: ClinicApi = {
     async login(input) {
-      return result(wire.login(input), (data) => {
-        return data;
-      });
+      const context = {
+        sequence: ++loginSequence,
+        resets: [] as Wire.SessionReset[],
+      };
+      authenticatedGeneration = null;
+      pendingLogin = context;
+      observeResets();
+      try {
+        const response = await wire.login(input);
+        if (context.sequence !== loginSequence) return changedSession();
+        if (!response.ok)
+          return result<Wire.Responses['login'], Wire.Staff>(
+            Promise.resolve(response),
+            (data) => data.staff,
+          );
+        const { staff, generation } = response.data;
+        if (!Number.isSafeInteger(generation) || generation < 1)
+          return {
+            ok: false,
+            error: {
+              code: 'UNAVAILABLE',
+              message: 'The clinic server returned an unexpected response.',
+            },
+          };
+        if (
+          generation < latestResetGeneration ||
+          context.resets.some(
+            (event) =>
+              event.generation === generation &&
+              event.reason !== 'account-switch',
+          )
+        )
+          return changedSession();
+        authenticatedGeneration = generation;
+        latestResetGeneration = generation;
+        pendingLogin = null;
+        return { ok: true, data: staff };
+      } finally {
+        if (pendingLogin === context) {
+          pendingLogin = null;
+          for (const event of context.resets) notifyReset(event);
+        }
+        releaseResets();
+      }
     },
     async logout() {
+      loginSequence++;
+      pendingLogin = null;
+      authenticatedGeneration = null;
+      releaseResets();
       const response = await wire.logout();
       if (response.ok && !response.data.serverRevoked)
         return {
@@ -296,10 +387,14 @@ export function createDesktopClient(wire: Wire.ClinicApi): ClinicApi {
         }),
         (data) => ({ submitted: data.submitted }),
       ),
-    onSessionReset: (listener) =>
-      wire.onSessionReset((event) => {
-        listener(event.reason);
-      }),
+    onSessionReset: (listener) => {
+      resetListeners.add(listener);
+      observeResets();
+      return (): void => {
+        resetListeners.delete(listener);
+        releaseResets();
+      };
+    },
   };
   return client;
 }

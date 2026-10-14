@@ -19,12 +19,16 @@ declare global {
       documentReads: number;
       hideEntries: boolean;
       conflictNext: boolean;
+      holdLogin: boolean;
+      releaseLogin: () => void;
+      reset: (reason: string) => void;
     };
   }
 }
 
 // Test-only named bridge. It exercises renderer responses, not authentication or IPC.
 function installBridge(fixture: ReturnType<typeof createDemoClinic>): void {
+  let resetListener: ((reason: string) => void) | undefined;
   const control = (window.frontendTest = {
     delayMs: 0,
     loginFails: false,
@@ -39,6 +43,9 @@ function installBridge(fixture: ReturnType<typeof createDemoClinic>): void {
     documentReads: 0,
     hideEntries: false,
     conflictNext: false,
+    holdLogin: false,
+    releaseLogin: (): void => undefined,
+    reset: (reason: string): void => resetListener?.(reason),
   });
   function fail<T>(
     code: ClinicError['code'],
@@ -57,6 +64,10 @@ function installBridge(fixture: ReturnType<typeof createDemoClinic>): void {
     async login({
       username,
     }): Promise<Awaited<ReturnType<typeof fixture.api.login>>> {
+      if (control.holdLogin)
+        await new Promise<void>((resolve) => {
+          control.releaseLogin = resolve;
+        });
       await wait();
       if (control.loginFails)
         return fail(
@@ -76,6 +87,12 @@ function installBridge(fixture: ReturnType<typeof createDemoClinic>): void {
       if (control.logoutFails)
         return fail('UNAVAILABLE', 'Test fixture: logout unavailable.');
       return fixture.api.logout();
+    },
+    onSessionReset: (listener) => {
+      resetListener = listener;
+      return (): void => {
+        resetListener = undefined;
+      };
     },
     async me(): Promise<Awaited<ReturnType<typeof fixture.api.me>>> {
       if (control.expired)
@@ -175,6 +192,44 @@ async function openPatient(page: Page): Promise<void> {
   await page
     .getByRole('button', { name: 'Open Lina Marquez DEMO-0001' })
     .click();
+}
+
+for (const resetReason of [
+  'expired',
+  'logout',
+  'window-closed',
+  'account-switch',
+]) {
+  test(`a ${resetReason} reset during pending sign-in rejects its stale response`, async ({
+    page,
+  }): Promise<void> => {
+    await bridge(page);
+    await page.evaluate(() => {
+      window.frontendTest.holdLogin = true;
+    });
+    await page.getByLabel('Username', { exact: true }).fill('doctor');
+    await page
+      .getByLabel('Password', { exact: true })
+      .fill('SYNTHETIC-TEST-VALUE');
+    await page.getByRole('button', { name: 'Sign in', exact: true }).click();
+    await expect(
+      page.getByRole('button', { name: 'Signing in…' }),
+    ).toBeDisabled();
+    await page.evaluate((reason) => {
+      window.frontendTest.reset(reason);
+      window.frontendTest.releaseLogin();
+    }, resetReason);
+    await expect(
+      page.getByRole('button', { name: 'Sign in', exact: true }),
+    ).toBeEnabled();
+    await expect(
+      page.getByRole('heading', { name: 'Staff sign-in' }),
+    ).toBeVisible();
+    await expect(
+      page.getByRole('heading', { name: 'Patient records', exact: true }),
+    ).toHaveCount(0);
+    await expect(page.getByLabel('Password', { exact: true })).toHaveValue('');
+  });
 }
 
 test('age is calculated from birth date and visit date without manual entry', async ({

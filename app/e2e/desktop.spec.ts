@@ -15,7 +15,8 @@ declare global {
       denied: boolean;
       wrongPatient: boolean;
       printed: Wire.PrintInput | null;
-      reset: () => void;
+      reset: (reason?: Wire.SessionReset['reason']) => void;
+      loginReset: () => void;
     };
   }
 }
@@ -27,13 +28,18 @@ function installDesktop(data: {
   staff: Wire.Staff;
   document: Wire.IssuedDocument;
   instant: string;
+  deferLoginReset?: boolean;
+  loginFails?: boolean;
 }): void {
   let listener: ((event: Wire.SessionReset) => void) | undefined;
   const control = (window.desktopFixture = {
     denied: false,
     wrongPatient: false,
     printed: null as Wire.PrintInput | null,
-    reset: (): void => listener?.({ generation: 2, reason: 'expired' }),
+    reset: (reason: Wire.SessionReset['reason'] = 'expired'): void =>
+      listener?.({ generation: 2, reason }),
+    loginReset: (): void =>
+      listener?.({ generation: 1, reason: 'account-switch' }),
   });
   const entry: Wire.Entry = {
     id: data.document.consultationId,
@@ -66,8 +72,16 @@ function installDesktop(data: {
   }
   const clinic: Wire.ClinicApi = {
     login: async () => {
-      listener?.({ generation: 1, reason: 'account-switch' });
-      return ok(data.staff);
+      if (!data.deferLoginReset) control.loginReset();
+      if (data.loginFails)
+        return {
+          ok: false,
+          error: {
+            code: 'UNAUTHENTICATED',
+            message: 'Check your username and password.',
+          },
+        };
+      return ok({ staff: data.staff, generation: 1 });
     },
     currentStaff: () => ok(data.staff),
     logout: () => ok({ loggedOut: true, serverRevoked: true }),
@@ -157,16 +171,25 @@ function installDesktop(data: {
   });
 }
 
-async function open(page: Page): Promise<void> {
+async function boot(
+  page: Page,
+  options: { deferLoginReset?: boolean; loginFails?: boolean } = {},
+): Promise<void> {
   await page.route('**/main.tsx*', async (route) => {
     const response = await route.fetch();
     await route.fulfill({
       response,
-      body: `(${installDesktop.toString()})(${JSON.stringify({ patient, staff: principal, document, instant })});\n${await response.text()}`,
+      body: `(${installDesktop.toString()})(${JSON.stringify({ patient, staff: principal, document, instant, ...options })});\n${await response.text()}`,
     });
   });
   await page.goto('/');
   await expect(page).toHaveTitle('AMLIG');
+}
+async function open(
+  page: Page,
+  options: { deferLoginReset?: boolean } = {},
+): Promise<void> {
+  await boot(page, options);
   await page.getByLabel('Username', { exact: true }).fill('synthetic');
   await page.getByLabel('Password', { exact: true }).fill('SYNTHETIC-TEST');
   await page.getByRole('button', { name: 'Sign in', exact: true }).click();
@@ -178,6 +201,66 @@ async function open(page: Page): Promise<void> {
   await page
     .getByRole('button', { name: 'Medical chart', exact: true })
     .click();
+}
+
+test('failed desktop sign-in keeps its actionable error after the replacement reset', async ({
+  page,
+}): Promise<void> => {
+  await boot(page, { loginFails: true });
+  await page.getByLabel('Username', { exact: true }).fill('synthetic');
+  await page.getByLabel('Password', { exact: true }).fill('SYNTHETIC-TEST');
+  await page.getByRole('button', { name: 'Sign in', exact: true }).click();
+  await expect(page.getByRole('alert')).toContainText(
+    'Check your username and password.',
+  );
+  await expect(page.getByLabel('Password', { exact: true })).toHaveValue('');
+  await expect(
+    page.getByRole('heading', { name: 'Staff sign-in' }),
+  ).toBeVisible();
+});
+
+test('a delayed failed-login reset preserves the actionable sign-in error', async ({
+  page,
+}): Promise<void> => {
+  await boot(page, { loginFails: true, deferLoginReset: true });
+  await page.getByLabel('Username', { exact: true }).fill('synthetic');
+  await page.getByLabel('Password', { exact: true }).fill('SYNTHETIC-TEST');
+  await page.getByRole('button', { name: 'Sign in', exact: true }).click();
+  await expect(page.getByRole('alert')).toContainText(
+    'Check your username and password.',
+  );
+  await page.evaluate(() => window.desktopFixture.loginReset());
+  await expect(page.getByRole('alert')).toContainText(
+    'Check your username and password.',
+  );
+  await expect(page.getByLabel('Password', { exact: true })).toHaveValue('');
+});
+
+for (const reason of [
+  'expired',
+  'logout',
+  'window-closed',
+  'account-switch',
+] as const) {
+  test(`delayed own login reset preserves chart, then newer ${reason} clears it`, async ({
+    page,
+  }): Promise<void> => {
+    await open(page, { deferLoginReset: true });
+    await page.evaluate(() => window.desktopFixture.loginReset());
+    await expect(
+      page.getByText('Corrected synthetic findings', { exact: true }),
+    ).toBeVisible();
+    await page.evaluate(
+      (resetReason) => window.desktopFixture.reset(resetReason),
+      reason,
+    );
+    await expect(
+      page.getByRole('heading', { name: 'Staff sign-in' }),
+    ).toBeVisible();
+    await expect(
+      page.getByText('Corrected synthetic findings', { exact: true }),
+    ).toHaveCount(0);
+  });
 }
 
 test('desktop bridge maps chart history and issued documents, prints the same ID and clears on reset', async ({

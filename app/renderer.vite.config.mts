@@ -5,6 +5,7 @@ import { resolve } from 'node:path';
 
 // Browser review of the renderer only; live operations still require Backend's preload.
 export default defineConfig({
+  define: { __CLINIC_BROWSER_QA__: true },
   root: resolve(import.meta.dirname, 'src/renderer'),
   resolve: { alias: { '@': resolve(import.meta.dirname, 'src/renderer') } },
   plugins: [

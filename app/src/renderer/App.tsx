@@ -42,11 +42,15 @@ type Screen =
     };
 
 export function App(): ReactElement {
-  const [fixture] = useState(createDemoClinic);
+  const [fixture] = useState(() =>
+    __CLINIC_BROWSER_QA__ ? createDemoClinic() : null,
+  );
   const [bridge] = useState(() =>
     window.desktop?.clinic
       ? createDesktopClient(window.desktop.clinic)
-      : (window.clinicApi ?? null),
+      : __CLINIC_BROWSER_QA__
+        ? (window.clinicApi ?? null)
+        : null,
   );
   const [api, setApi] = useState<ClinicApi | null>(() => bridge);
   const [staff, setStaff] = useState<Principal | null>(null);
@@ -60,15 +64,17 @@ export function App(): ReactElement {
   const [showPassword, setShowPassword] = useState(false);
   const [capsLock, setCapsLock] = useState(false);
   const panelRef = useRef<HTMLElement>(null);
+  const loginAttempt = useRef(0);
+  const loginPending = useRef(false);
   const { busy, error, run, clearError } = useOperation();
   const expire = useCallback((): void => {
+    loginAttempt.current++;
     setStaff(null);
     setPassword('');
     setUsername('');
-    clearError();
     setSession((s) => s + 1);
     setSessionNotice('Your session changed or expired. Sign in again.');
-  }, [clearError]);
+  }, []);
   function wobble(): void {
     const element = panelRef.current;
     if (!element) return;
@@ -85,16 +91,24 @@ export function App(): ReactElement {
   }, [bridge, demo, expire]);
   async function login(event: FormEvent): Promise<void> {
     event.preventDefault();
-    if (signingOut) return;
+    if (signingOut || loginPending.current) return;
     if (!bridge) {
       setSessionNotice(
-        'Backend sign-in is not connected. Use the labeled frontend demo to review screens.',
+        fixture
+          ? 'Live sign-in requires the desktop app. Use the labeled frontend demo for browser QA.'
+          : 'The desktop connection is unavailable. Restart the clinic app and try again.',
       );
       setPassword('');
       return;
     }
+    loginPending.current = true;
+    const attempt = ++loginAttempt.current;
+    setStaff(null);
+    setSession((s) => s + 1);
     const result = await run(() => bridge.login({ username, password }));
+    loginPending.current = false;
     setPassword('');
+    if (attempt !== loginAttempt.current) return;
     if (result) {
       setApi(bridge);
       setDemo(false);
@@ -107,6 +121,8 @@ export function App(): ReactElement {
     }
   }
   function openDemo(): void {
+    if (!fixture) return;
+    loginAttempt.current++;
     clearError();
     setApi(fixture.api);
     setDemo(true);
@@ -117,6 +133,7 @@ export function App(): ReactElement {
   }
   const logout = useCallback(async (): Promise<void> => {
     // Clear the renderer even if invalidation fails. Backend owns token cleanup.
+    loginAttempt.current++;
     setStaff(null);
     setPassword('');
     setUsername('');
@@ -258,37 +275,43 @@ export function App(): ReactElement {
                 {busy ? 'Signing in…' : 'Sign in'}
               </Button>
             </form>
-            {!bridge && (
-              <p className="hint">Backend sign-in is not connected.</p>
-            )}
-            <section className="fixture-launch">
-              <h2>Frontend demo</h2>
+            {!bridge && !sessionNotice && (
               <p className="hint">
-                Fictional records. Changes reset on reload.
+                {fixture
+                  ? 'Browser QA uses fictional records. Live sign-in requires the desktop app.'
+                  : 'The desktop connection is unavailable. Restart the clinic app and try again.'}
               </p>
-              <Field label="Demo staff" name="demo-staff">
-                <select
-                  className="clinic-select"
-                  id="demo-staff"
-                  value={selectedStaff}
-                  onChange={(e) => setSelectedStaff(e.target.value)}
+            )}
+            {fixture && (
+              <section className="fixture-launch">
+                <h2>Frontend demo</h2>
+                <p className="hint">
+                  Fictional records. Changes reset on reload.
+                </p>
+                <Field label="Demo staff" name="demo-staff">
+                  <select
+                    className="clinic-select"
+                    id="demo-staff"
+                    value={selectedStaff}
+                    onChange={(e) => setSelectedStaff(e.target.value)}
+                  >
+                    {demoStaff.map((s) => (
+                      <option key={s.id} value={s.id}>
+                        {s.displayName} · {roleNames[s.role]}
+                        {s.isHead ? ' · Clinic head' : ''}
+                      </option>
+                    ))}
+                  </select>
+                </Field>
+                <Button
+                  variant="outline"
+                  onClick={openDemo}
+                  disabled={busy || signingOut}
                 >
-                  {demoStaff.map((s) => (
-                    <option key={s.id} value={s.id}>
-                      {s.displayName} · {roleNames[s.role]}
-                      {s.isHead ? ' · Clinic head' : ''}
-                    </option>
-                  ))}
-                </select>
-              </Field>
-              <Button
-                variant="outline"
-                onClick={openDemo}
-                disabled={busy || signingOut}
-              >
-                Open frontend demo
-              </Button>
-            </section>
+                  Open frontend demo
+                </Button>
+              </section>
+            )}
           </section>
         </main>
       )}
@@ -307,7 +330,7 @@ function Workspace({
   api: ClinicApi;
   staff: Principal;
   demo: boolean;
-  fixture: ReturnType<typeof createDemoClinic>;
+  fixture: ReturnType<typeof createDemoClinic> | null;
   onLogout: () => Promise<void>;
   onExpired: () => void;
 }): ReactElement {
@@ -810,7 +833,7 @@ function Workspace({
               />
             )}
           </main>
-          {demo && (
+          {demo && fixture && (
             <details className="demo-controls">
               <summary>Demo controls</summary>
               <p className="hint">

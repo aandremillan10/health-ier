@@ -428,7 +428,7 @@ export class ClinicBroker {
             throw new BoundaryError('INVALID_RESPONSE', 'Invalid principal');
           this.token = login.token;
           this.principal = login.staff;
-          data = login.staff;
+          data = { staff: login.staff, generation };
         } else {
           const guard =
             (name === 'searchPatients' || name === 'readPatient') &&
