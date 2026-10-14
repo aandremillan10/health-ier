@@ -111,7 +111,7 @@ function correction<T>(content: Guard<Partial<T>>): Guard<Correction<T>> {
     id: uuid,
     originalEntryId: uuid,
     authorId: uuid,
-    reason: text(1000, 1),
+    reason: text(4000, 1),
     correctedContent: content,
     createdAt: timestamp,
     sourceRevision: revision,
@@ -251,7 +251,7 @@ export const requestGuards = {
   finalizeVitals: object<Requests['finalizeVitals']>(expected),
   correctVitals: object<Requests['correctVitals']>({
     ...expected,
-    reason: text(1000, 1),
+    reason: text(4000, 1),
     correctedContent: partial(vitalsFields),
   }),
   readEntries: object<Requests['readEntries']>({ patientId: uuid, discipline }),
@@ -264,7 +264,7 @@ export const requestGuards = {
   finalizeEntry: object<Requests['finalizeEntry']>(expected),
   correctEntry: object<Requests['correctEntry']>({
     ...expected,
-    reason: text(1000, 1),
+    reason: text(4000, 1),
     correctedContent: partial(medicalFields),
   }),
   readCorrections: object<Requests['readCorrections']>(id),

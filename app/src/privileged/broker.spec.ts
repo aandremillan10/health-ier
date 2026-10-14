@@ -7,6 +7,7 @@ import {
 } from './broker';
 import type { Requests, SessionReset } from '../shared/clinic-api';
 import { document, ids, instant, patient, principal } from './test-fixtures';
+import { requestGuards } from './contracts';
 
 const sender: RequestSender = {
   senderId: 7,
@@ -76,6 +77,106 @@ function expectCode(result: unknown, code: string): void {
   expect(result).toMatchObject({ ok: false, error: { code } });
 }
 describe('Electron clinic broker boundary', () => {
+  it.each([1001, 4000])(
+    'preserves a %i-character correction reason in medical and vitals history',
+    async (length) => {
+      const { broker, fetcher } = setup();
+      await login(broker);
+      const reason = 'R'.repeat(length);
+      const correction = {
+        id: ids.document,
+        originalEntryId: ids.entry,
+        authorId: ids.staff,
+        reason,
+        createdAt: instant,
+        sourceRevision: 1,
+        revision: 1,
+      };
+      const medicalCorrection = {
+        ...correction,
+        originalType: 'entry',
+        correctedContent: { findings: 'Synthetic corrected finding' },
+      };
+      fetcher.mockResolvedValue(json([medicalCorrection]));
+      expect(
+        await broker.invoke('readCorrections', { id: ids.entry }, sender),
+      ).toEqual({ ok: true, data: [medicalCorrection] });
+      const history = {
+        id: ids.entry,
+        patientId: ids.patient,
+        authorId: ids.staff,
+        status: 'finalized',
+        revision: 2,
+        createdAt: instant,
+        updatedAt: instant,
+        recordedAt: instant,
+        systolic: null,
+        diastolic: null,
+        temperature: null,
+        pulse: null,
+        respiratoryRate: null,
+        oxygenSaturation: null,
+        weight: null,
+        corrections: [
+          {
+            ...correction,
+            originalType: 'vitals',
+            correctedContent: { pulse: 72 },
+          },
+        ],
+      };
+      fetcher.mockResolvedValue(json([history]));
+      expect(
+        await broker.invoke('readVitals', { patientId: ids.patient }, sender),
+      ).toEqual({ ok: true, data: [history] });
+    },
+  );
+  it.each([1001, 4000])(
+    'accepts a %i-character reason when submitting either correction type',
+    (length) => {
+      const reason = 'R'.repeat(length);
+      const base = { id: ids.entry, expectedRevision: 1, reason };
+      expect(
+        requestGuards.correctEntry({
+          ...base,
+          correctedContent: { findings: 'Synthetic correction' },
+        }).reason,
+      ).toBe(reason);
+      expect(
+        requestGuards.correctVitals({
+          ...base,
+          correctedContent: { pulse: 72 },
+        }).reason,
+      ).toBe(reason);
+    },
+  );
+  it('rejects correction reasons over the server limit before network access', async () => {
+    const { broker, fetcher } = setup();
+    await login(broker);
+    fetcher.mockClear();
+    const base = {
+      id: ids.entry,
+      expectedRevision: 1,
+      reason: 'R'.repeat(4001),
+    };
+    expectCode(
+      await broker.invoke(
+        'correctEntry',
+        { ...base, correctedContent: { findings: 'Synthetic correction' } },
+        sender,
+      ),
+      'VALIDATION',
+    );
+    expectCode(
+      await broker.invoke(
+        'correctVitals',
+        { ...base, correctedContent: { pulse: 72 } },
+        sender,
+      ),
+      'VALIDATION',
+    );
+    expect(fetcher).not.toHaveBeenCalled();
+  });
   it('accepts trusted HTTPS and only an explicitly opted-in unpackaged synthetic loopback HTTP origin', () => {
     expect(serverOrigin('https://clinic.example:3000', false, true)).toBe(
       'https://clinic.example:3000',
