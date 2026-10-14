@@ -8,7 +8,12 @@ import type { MirrorEvent } from '../mirror-contract';
 import { MirrorService } from './mirror.service';
 import { MirrorFailure } from './validation';
 export async function httpsTransport(events: MirrorEvent[]): Promise<unknown> {
-  const url = new URL(process.env.MIRROR_URL ?? '');
+  let url: URL;
+  try {
+    url = new URL(process.env.MIRROR_URL ?? '');
+  } catch {
+    throw new MirrorFailure('INVALID_ENDPOINT');
+  }
   if (
     url.protocol !== 'https:' ||
     url.username ||

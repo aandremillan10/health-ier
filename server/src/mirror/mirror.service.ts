@@ -478,6 +478,34 @@ export class MirrorService {
           revision: Number(ack.revision),
         });
       }
+      const failures = new Map<string, string>();
+      const safeCodes = [
+        'MISSING_DEPENDENCY',
+        'INVALID_REFERENCE',
+        'EVENT_CONFLICT',
+        'REVISION_CONFLICT',
+        'IMMUTABLE_CONFLICT',
+        'IDENTITY_CONFLICT',
+        'DATABASE_UNAVAILABLE',
+      ];
+      if (response.rejected !== undefined) {
+        if (!Array.isArray(response.rejected))
+          throw new MirrorFailure('INVALID_ACK');
+        for (const candidate of response.rejected) {
+          const rejected = object(candidate);
+          if (
+            typeof rejected.eventId !== 'string' ||
+            typeof rejected.code !== 'string' ||
+            Object.keys(rejected).length !== 2 ||
+            !safeCodes.includes(rejected.code) ||
+            seen.has(rejected.eventId) ||
+            failures.has(rejected.eventId) ||
+            !sent.some((event) => event.eventId === rejected.eventId)
+          )
+            throw new MirrorFailure('INVALID_ACK');
+          failures.set(rejected.eventId, rejected.code);
+        }
+      }
       const now = new Date();
       await this.db.$transaction(async (tx) => {
         for (const ack of acknowledged)
@@ -493,21 +521,27 @@ export class MirrorService {
         const remaining = sent
           .filter((event) => !seen.has(event.eventId))
           .map((event) => event.eventId);
-        if (remaining.length)
+        for (const eventId of remaining)
           await tx.outbox.updateMany({
-            where: { eventId: { in: remaining }, acknowledgedAt: null },
-            data: { attempts: { increment: 1 }, lastError: 'REMOTE_REJECTED' },
+            where: { eventId, acknowledgedAt: null },
+            data: {
+              attempts: { increment: 1 },
+              lastError: failures.get(eventId) ?? 'REMOTE_REJECTED',
+            },
           });
+        const lastError = remaining.length
+          ? (failures.get(remaining[0]) ?? 'REMOTE_REJECTED')
+          : null;
         await tx.mirrorState.upsert({
           where: { clinicId: clinicId() },
           create: {
             clinicId: clinicId(),
             lastAcknowledgedAt: acknowledged.length ? now : null,
-            lastError: remaining.length ? 'REMOTE_REJECTED' : null,
+            lastError,
           },
           update: {
             ...(acknowledged.length ? { lastAcknowledgedAt: now } : {}),
-            lastError: remaining.length ? 'REMOTE_REJECTED' : null,
+            lastError,
           },
         });
       });
