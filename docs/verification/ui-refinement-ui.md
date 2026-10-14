@@ -68,3 +68,19 @@ Additional full-suite screenshots/PDFs and contrast results: `C:/Users/ajapa/.co
 ## Integration handoff
 
 The finishing skill was invoked after green checks. The user already chose a PR against master then merge after successful integrated checks; no duplicate menu is required. UI worker returns its conventional commit and evidence to the coordinator; it does not push, merge, delete a branch, or remove the worktree. Backend owns the four compatibility additions in `app/e2e/desktop.spec.ts`; they are intentionally absent from this UI-only commit.
+
+## Fresh interactive follow-up
+
+The user freshly authorized testing after clearing tabs. A new dedicated Chrome session “🏥 Clinic recovery QA” used browser2/tab1347446212 and task-owned memory-demo port5190 on the final UI. No source edits were made. This was an additional user-requested interaction check, not another visual redesign round. Actual viewport1745×808; no viewport override was applied. The prior Computer Use URL-verification stop was not bypassed.
+
+Verified through visible UI and accessible state:
+
+- Duplicate-name palette cues, ArrowDown selected the second identity, Escape restored the exact Findings field while keeping Lina/DEMO-0001 and input.
+- Simulated clinic server plus internet outage retained unsaved reason/findings and displayed an honest unavailable error. Restoring only the clinic server saved the same draft and immediately returned to its chart with memory-only success feedback.
+- Editing that draft and simulating a revision conflict preserved the revised findings and disabled Save. Review latest displayed the prior findings; explicit keep-my-input followed by Save succeeded.
+- Finalization used the application confirmation. A subsequent correction displayed the preserved finalized original and separate corrected findings, reason, author, timestamp, and source revision.
+- Sign-out removed the patient/chart and returned to Staff sign-in.
+
+The native dirty-switch dialog remained inconclusive through automation: clicking Mateo timed out on browser input dispatch; the documented `getJsDialog()` reported `confirm`, but `dismiss()` returned “No dialog is showing.” The subsequent visible state was Mateo/DEMO-0003 with no draft editor. This records the observed navigation outcome, not proof of an automated decline or its cause. No further native confirmation attempts were made. Passing headless decline/accept and real integration evidence remain the authoritative guard checks.
+
+Local evidence in the same directory: `UI-B01-disconnect-retained.jpg`, `UI-B02-conflict-retained.jpg`, `UI-B03-correction-preserved.jpg`, `UI-B04-switch-outcome.jpg`, and `interactive-recovery-final.txt`. These are synthetic renderer evidence, not live backend or physical printing proof.
