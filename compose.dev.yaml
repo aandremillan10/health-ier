@@ -4,9 +4,10 @@ services:
   postgres:
     image: postgres:17-bookworm
     environment:
-      POSTGRES_DB: ${POSTGRES_DB:-health_ier}
-      POSTGRES_USER: ${POSTGRES_USER:-health_ier}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in your local .env}
+      POSTGRES_DB: ${POSTGRES_DB:-healthier_demo_dev}
+      POSTGRES_USER: ${POSTGRES_USER:-healthier_dev}
+      # Shared synthetic development default only; production still requires a private password.
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-healthier_dev_only}
     ports:
       - '127.0.0.1:${POSTGRES_PORT:-5432}:5432'
     volumes:
