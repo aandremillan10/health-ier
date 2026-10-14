@@ -395,7 +395,6 @@ export function VitalsForm({
     const result = await run(() =>
       correction && record
         ? api.correctVitals({
-            ...input,
             id: record.id,
             expectedRevision: revision,
             reason,

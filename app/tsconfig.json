@@ -16,5 +16,11 @@
     "paths": { "@/*": ["src/renderer/*"] },
     "types": ["node", "vite/client"]
   },
-  "include": ["src/**/*.ts", "src/**/*.tsx", "e2e/**/*.ts", "*.mts"]
+  "include": [
+    "src/**/*.ts",
+    "src/**/*.tsx",
+    "e2e/**/*.ts",
+    "scripts/**/*.mts",
+    "*.mts"
+  ]
 }

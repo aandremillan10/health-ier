@@ -5,7 +5,7 @@ Repository: [aandremillan10/health-ier](https://github.com/aandremillan10/health
 
 The backend now implements named local staff sessions, protected patient registry, vitals and consultation lifecycle/corrections, and immutable prescription/certificate snapshots in PostgreSQL. A durable one-way mirror sends only approved exact record versions to CLOUD; EDGE remains authoritative and local clinical saves never wait for cloud. See [server setup](server/README.md), [implemented API and executable curl examples](server/API.md), and [mirror protocol/operator evidence](docs/backend-mirror.md).
 
-AMLIG provides the staff flows and an explicitly labeled in-memory synthetic demo. The supplied app logo appears on sign-in, in navigation, and as the browser icon. The repository remains `health-ier`. Privileged main/preload operations provide the session/network/document/printer boundary; the renderer now adapts the typed `window.desktop.clinic` bridge. Live integration must still be checked. See [frontend migration and issue coverage](docs/frontend-migration.md). Independent desktop databases, bidirectional editing and production rollout remain outside scope. Approved scope is [clinic-demo-v1.1](docs/specs/mirror-amendment.md).
+AMLIG provides the staff flows and an explicitly labeled in-memory synthetic demo. The supplied app logo appears on sign-in, in navigation, and as the browser icon. The repository remains `health-ier`. Privileged main/preload operations provide the session/network/document/printer boundary; the renderer adapts the typed `window.desktop.clinic` bridge. Local synthetic Electron/NestJS/PostgreSQL flows are verified; physical printing, second-machine LAN/TLS and cloud recovery remain separate checks. See [frontend migration and issue coverage](docs/frontend-migration.md). Independent desktop databases, bidirectional editing and production rollout remain outside scope. Approved scope is [clinic-demo-v1.1](docs/specs/mirror-amendment.md).
 
 Review the frontend with `pnpm dev:frontend` at `http://127.0.0.1:5175`. Select a synthetic staff member and **Open frontend demo**. The demo patient list appears on entry; open a record directly or search by name/number. Run `pnpm test:frontend` for the headless Chrome renderer checks. The existing Electron/LAN architecture remains in place. The old Next.js prototype was moved to a temporary archive after migration; this repository is the remaining project in the workspace.
 
@@ -25,6 +25,10 @@ The root lockfile owns both packages. Run installations from the repository root
 Electron's install script downloads its platform binary during setup.
 
 ### Verified local setup
+
+The latest `master` environment setup is applied to the existing `health-ier-dev` Docker project. PostgreSQL remains on `127.0.0.1:5433` with the dedicated `healthier_demo_amlig` database; the host clinic API runs on `http://127.0.0.1:3002`. Root, server and app environment settings match, and existing volumes/accounts were preserved. The temporary extra Docker project's container/network were removed. Private account credentials remain in `.private/demo-credentials.json`.
+
+Run `pnpm dev:app` to use live clinic data. `app/.env` is loaded only into the main process by the latest development loader. The browser on port 5175 remains a fixture demo. Run `pnpm --filter app test:integration` with the local clinic API running for a noninteractive check of the actual Electron renderer/preload/main and real database. Results are saved outside the repo; see [integration evidence](../verification/integration-report.md).
 
 Set up on 2026-10-14. Node.js 24.15.0 and pnpm 10.30.1 are installed. Existing private `.env`, `server/.env`, and `.env.production` files were validated and kept unchanged. Development credentials match between root Compose and `server/.env`; the container environment has separate matching credentials. All three files are ignored by Git.
 

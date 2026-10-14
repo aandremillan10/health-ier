@@ -36,7 +36,7 @@ Two Luna Max research agents inspected the eight requested UI sites through Exa.
 
 The shipped backend searches patient names only and has no document-list or patient-by-ID read operation. The adapter refreshes a known patient by name and matches the returned ID; it reports a failure if that identity is absent. Its issued-document list is scoped to the current session. Authorized staff can open an earlier document by its known ID; the UI checks that it belongs to the selected patient before displaying it. These backend gaps remain unresolved. The adapter does not add renderer networking or pretend to have a complete document history.
 
-Repeatable renderer checks and the interface review are saved outside the repo in [ui-overhaul-report.md](../../verification/ui-overhaul-report.md). Real clinic hardware and live service verification remain separate.
+Repeatable renderer checks and the interface review are saved outside the repo in [ui-overhaul-report.md](../../verification/ui-overhaul-report.md). The later integration run verifies the actual Electron renderer, preload and main process with local NestJS/PostgreSQL: staff sign-in, shared registry, nullable vitals, finalization/corrections, consultations and both immutable document types. It caught and fixed extra top-level fields in the vital-sign correction request. The latest master development loader supplies the named main-process connection settings. The existing Docker database/volume and account credentials remain intact. See [integration evidence](../../verification/integration-report.md). Real clinic hardware, physical printing, LAN/TLS and cloud proof remain separate.
 
 ## Run
 
