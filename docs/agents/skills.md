@@ -1,5 +1,7 @@
 # Local skill inventory
 
+Added on 2026-10-15 for clinic UI work: `find-animation-opportunities/SKILL.md` and `animate/SKILL.md` with `animate/RECIPES.md`, copied unchanged from `C:/Users/ajapa/.agents/skills/`. Root AGENTS.md defines their invocation points. These additions are separate from the original 2026-10-14 manifest below; copy the complete directories when moving this guidance to another host.
+
 Complete source directories copied unchanged on 2026-10-14: **14 skill directories, 92 files; zero SHA-256 mismatches and zero missing relative Markdown resource links outside code examples**. The [manifest](skill-manifest.json) records original source, local path, bytes, and SHA-256 for every file.
 
 Requested skills: lead-orchestrator (2 files), ponytail (1), setup-matt-pocock-skills (7), grill-with-docs (2), emil-design-eng (1), apple-design (1), design-taste-frontend (1), impeccable (63), handoff-ui-to-astra (3). Their entry points are `.agents/skills/<name>/SKILL.md` at the repository root.

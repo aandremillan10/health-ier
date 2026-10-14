@@ -43,6 +43,8 @@ For web UI QA, invoke the computer-use skill and use Chrome. For Android UI QA, 
 
 Read [DESIGN.md](DESIGN.md) before UI planning or edits. Clinic staff need understandable task flows, specific button labels, accessible help, predictable feedback, and keyboard access. Apply design sources within their scopes. The user preauthorizes Astra handoff only for future print-template implementation after a separate build instruction, using the supplied assets under `docs/headers/`. This does not authorize broad frontend handoff or present template coding. Copying a skill alone does not invoke it.
 
+When creating or improving UI, invoke [find-animation-opportunities](.agents/skills/find-animation-opportunities/SKILL.md) before proposing new motion. Record the frequency and purpose of each candidate, including rejected candidates. Before implementing an accepted animation, invoke [animate](.agents/skills/animate/SKILL.md) and load its matching recipes. Extend the existing motion tokens and follow `DESIGN.md`: keep keyboard and routine clinic actions immediate, use purposeful brief transitions, and support reduced motion.
+
 ## Agent skills
 
 - **Issue tracker:** [aandremillan10/health-ier](https://github.com/aandremillan10/health-ier) GitHub Issues after finalized spec approval. Read [docs/agents/issue-tracker.md](docs/agents/issue-tracker.md) before tracker operations.
