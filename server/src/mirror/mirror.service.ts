@@ -453,7 +453,33 @@ export class MirrorService {
       operation: row.operation,
       payload: inputJson(row.payload),
     }));
-    const sent = parseBatch({ clinicId: clinicId(), events }, clinicId());
+    const selected: typeof events = [];
+    for (const event of events) {
+      const bytes = Buffer.byteLength(
+        JSON.stringify({ clinicId: clinicId(), events: [...selected, event] }),
+        'utf8',
+      );
+      if (bytes > 512 * 1024) {
+        if (selected.length) break;
+        await this.db.$transaction([
+          this.db.outbox.update({
+            where: { eventId: event.eventId },
+            data: { attempts: { increment: 1 }, lastError: 'EVENT_TOO_LARGE' },
+          }),
+          this.db.mirrorState.upsert({
+            where: { clinicId: clinicId() },
+            create: { clinicId: clinicId(), lastError: 'EVENT_TOO_LARGE' },
+            update: { lastError: 'EVENT_TOO_LARGE' },
+          }),
+        ]);
+        return 0;
+      }
+      selected.push(event);
+    }
+    const sent = parseBatch(
+      { clinicId: clinicId(), events: selected },
+      clinicId(),
+    );
     try {
       const response = object(await transport(sent));
       if (!Array.isArray(response.acknowledged))

@@ -332,6 +332,124 @@ describe.skipIf(!edgeUrl || !cloudUrl)(
       ).toBe(3);
     });
 
+    it('byte-bounds valid Unicode document batches and keeps safe actionable rejection codes', async () => {
+      const patient = await createPatient();
+      await sender.deliver(async (events) => ({
+        acknowledged: [],
+        rejected: [{ eventId: events[0].eventId, code: 'MISSING_DEPENDENCY' }],
+      }));
+      expect((await sender.status()).lastError).toBe('MISSING_DEPENDENCY');
+      await sender.deliver(async (events) => ({
+        acknowledged: [],
+        rejected: [
+          { eventId: events[0].eventId, code: 'untrusted-secret-like-text' },
+        ],
+      }));
+      expect((await sender.status()).lastError).toBe('INVALID_ACK');
+      await flush();
+      const doctor = await edge.$transaction(async (tx) => {
+        const row = await tx.staff.create({
+          data: {
+            username: randomUUID(),
+            passwordHash: 'local-only',
+            displayName: 'Synthetic Batch Doctor',
+            role: 'doctor',
+          },
+        });
+        await enqueue(tx, 'staff', row);
+        return row;
+      });
+      const unicode = '診'.repeat(4000);
+      const entry = await edge.$transaction(async (tx) => {
+        const row = await tx.entry.create({
+          data: {
+            patientId: patient.id,
+            authorId: doctor.id,
+            discipline: 'medical',
+            consultationDate: '2026-10-14',
+            status: 'finalized',
+            reason: unicode,
+            findings: unicode,
+            clinicalImpression: unicode,
+            plan: unicode,
+          },
+        });
+        await enqueue(tx, 'entry', row);
+        return row;
+      });
+      await flush();
+      const documentIds: string[] = [];
+      const patientRow = await edge.patient.findUniqueOrThrow({
+        where: { id: patient.id },
+      });
+      for (let n = 0; n < 10; n++) {
+        const document = await edge.$transaction(async (tx) => {
+          const row = await tx.document.create({
+            data: {
+              kind: 'medical_certificate',
+              patientId: patient.id,
+              consultationId: entry.id,
+              issuerId: doctor.id,
+              issueDate: '2026-10-14',
+              snapshot: {
+                patient: {
+                  id: patient.id,
+                  fullName: patientRow.fullName,
+                  sex: patientRow.sex,
+                  address: patientRow.address,
+                  age: null,
+                  cs: null,
+                },
+                issuer: {
+                  id: doctor.id,
+                  displayName: doctor.displayName,
+                  licenseText: doctor.licenseText,
+                  ptrText: doctor.ptrText,
+                },
+                consultation: {
+                  id: entry.id,
+                  revision: entry.revision,
+                  consultationDate: entry.consultationDate,
+                  reason: entry.reason,
+                  findings: entry.findings,
+                  clinicalImpression: entry.clinicalImpression,
+                  plan: entry.plan,
+                },
+                body: unicode,
+                purpose: unicode,
+                remarks: unicode,
+                restriction: unicode,
+                followUp: unicode,
+              },
+            },
+          });
+          await enqueue(tx, 'document', row);
+          return row;
+        });
+        documentIds.push(document.id);
+      }
+      const batchCounts: number[] = [];
+      for (let n = 0; n < 10 && (await sender.status()).pending; n++)
+        await sender.deliver(async (events) => {
+          expect(
+            Buffer.byteLength(
+              JSON.stringify({ clinicId: clinic, events }),
+              'utf8',
+            ),
+          ).toBeLessThanOrEqual(512 * 1024);
+          batchCounts.push(events.length);
+          return deliver(events);
+        });
+      expect(batchCounts.length).toBeGreaterThan(1);
+      expect(batchCounts.reduce((sum, count) => sum + count, 0)).toBe(10);
+      expect(
+        await cloud.mirrorReceipt.count({
+          where: { entityId: { in: documentIds } },
+        }),
+      ).toBe(10);
+      expect((await sender.status()).pending).toBe(0);
+    });
+
     it('bootstrap replays exact retained source history into empty CLOUD and concurrent writes remain catch-up', async () => {
       await cloud.mirrorReceipt.deleteMany();
       await cloud.mirrorVersion.deleteMany();
