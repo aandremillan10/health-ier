@@ -1,0 +1,14 @@
+.git
+.husky
+**/node_modules
+**/dist
+**/out
+**/coverage
+**/.env
+**/.env.*
+**/.agents
+**/.claude
+**/.windsurf
+docs
+app/src
+*.tsbuildinfo

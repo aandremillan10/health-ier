@@ -1,0 +1,12 @@
+node_modules
+**/node_modules
+**/dist
+**/out
+**/coverage
+**/.agents
+**/.claude
+**/.windsurf
+**/src/generated
+pnpm-lock.yaml
+server/pnpm-lock.yaml
+docs/references

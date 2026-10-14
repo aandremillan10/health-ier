@@ -1,0 +1,563 @@
+{
+  "copiedOn": "2026-10-14",
+  "skills": [
+    {
+      "name": "lead-orchestrator",
+      "source": "C:/Users/ajapa/.codex/skills/lead-orchestrator",
+      "local": ".agents/skills/lead-orchestrator",
+      "files": [
+        {
+          "path": "SKILL.md",
+          "sha256": "efe6718c98a4d98d41583b3e9badb110121b447cfdcf8b3690a62df046bbdcdf",
+          "bytes": 7754
+        },
+        {
+          "path": "agents/openai.yaml",
+          "sha256": "13e00d8a94a35c29eaa10804a79a53b49da4ff4c1c5cad54024b6f916d3772f3",
+          "bytes": 267
+        }
+      ]
+    },
+    {
+      "name": "ponytail",
+      "source": "C:/Users/ajapa/.codex/plugins/cache/ponytail/ponytail/5.2.0/skills/ponytail",
+      "local": ".agents/skills/ponytail",
+      "files": [
+        {
+          "path": "SKILL.md",
+          "sha256": "fc12a0b9588a7fa3543d31ddc41541f735a5626105781643873110f2da1bd52a",
+          "bytes": 3544
+        }
+      ]
+    },
+    {
+      "name": "setup-matt-pocock-skills",
+      "source": "C:/Users/ajapa/.agents/skills/setup-matt-pocock-skills",
+      "local": ".agents/skills/setup-matt-pocock-skills",
+      "files": [
+        {
+          "path": "domain.md",
+          "sha256": "19f59c9e72afd05199a79f82500baae05f0c445528636282dcd4400da3facd54",
+          "bytes": 2084
+        },
+        {
+          "path": "issue-tracker-github.md",
+          "sha256": "0809582ea8cf5f91fd72ae2b59aa62a07c1236ad194ef7dd40d9e2f01c3e753b",
+          "bytes": 3776
+        },
+        {
+          "path": "issue-tracker-gitlab.md",
+          "sha256": "6fe462c8dbffdf90e66d2ee62f6fa74666d777d0933c244e2a22a295848cb3ab",
+          "bytes": 3855
+        },
+        {
+          "path": "issue-tracker-local.md",
+          "sha256": "a604b658f0730eae3107671b09323ed8382bd546e82dc3bedc265bccbeb35021",
+          "bytes": 1840
+        },
+        {
+          "path": "SKILL.md",
+          "sha256": "86c0dee483fb69f7f5ecfcd010f6d7cbb30df2c47a9b059ac95f98380f383d86",
+          "bytes": 6957
+        },
+        {
+          "path": "triage-labels.md",
+          "sha256": "493d08d7a8007d3604cdf64d45717045034a5037c9e9917bae1ad9340fad75b8",
+          "bytes": 1060
+        },
+        {
+          "path": "agents/openai.yaml",
+          "sha256": "53d0bf3786862a1cb5013ca78f12013b166d0819823dae0d3f9eb13eee2acdf2",
+          "bytes": 157
+        }
+      ]
+    },
+    {
+      "name": "grill-with-docs",
+      "source": "C:/Users/ajapa/.agents/skills/grill-with-docs",
+      "local": ".agents/skills/grill-with-docs",
+      "files": [
+        {
+          "path": "SKILL.md",
+          "sha256": "abc0fa7948db18b5fb0e1cc1c522ac5ff47d874e2da1e5df60619d79be11f38b",
+          "bytes": 254
+        },
+        {
+          "path": "agents/openai.yaml",
+          "sha256": "81e6af95559517a292767439da8f46a468b4d88a6773a3316d511a428eb16ff3",
+          "bytes": 150
+        }
+      ]
+    },
+    {
+      "name": "emil-design-eng",
+      "source": "C:/Users/ajapa/.agents/skills/emil-design-eng",
+      "local": ".agents/skills/emil-design-eng",
+      "files": [
+        {
+          "path": "SKILL.md",
+          "sha256": "a2ee9da0840c23b509a27e742edbc8f8fdb4416ca7d6ffde67d79023bfb8a5bf",
+          "bytes": 27797
+        }
+      ]
+    },
+    {
+      "name": "apple-design",
+      "source": "C:/Users/ajapa/.agents/skills/apple-design",
+      "local": ".agents/skills/apple-design",
+      "files": [
+        {
+          "path": "SKILL.md",
+          "sha256": "bcab965ec01d05101b817714f8ccaf68632d1697b822f65718e811119a77c049",
+          "bytes": 23326
+        }
+      ]
+    },
+    {
+      "name": "design-taste-frontend",
+      "source": "C:/Users/ajapa/.agents/skills/design-taste-frontend",
+      "local": ".agents/skills/design-taste-frontend",
+      "files": [
+        {
+          "path": "SKILL.md",
+          "sha256": "2e064e92aca020b2e0bad69326fe7ea55d59005ed53d1a8cbce1bd135d44b8b3",
+          "bytes": 88459
+        }
+      ]
+    },
+    {
+      "name": "impeccable",
+      "source": "C:/Users/ajapa/.agents/skills/impeccable",
+      "local": ".agents/skills/impeccable",
+      "files": [
+        {
+          "path": "SKILL.md",
+          "sha256": "37680abf9a8e446619fcd33862718f483d197bf2652f966adca8dc54d2909b9d",
+          "bytes": 11868
+        },
+        {
+          "path": "agents/impeccable_asset_producer.toml",
+          "sha256": "d6a51f4df6d76f16b95ab81268a689f4c5936d505c5bb25c80ad7423f927bbc6",
+          "bytes": 8324
+        },
+        {
+          "path": "agents/impeccable_documenter.toml",
+          "sha256": "2feb3768125ba6469c92a50d516727e6d42f44579165ddfd33409948e2a3803d",
+          "bytes": 3203
+        },
+        {
+          "path": "agents/impeccable_finish_reviewer.toml",
+          "sha256": "d57c3e0453f601ad688911fca4471057c7b46b561fcd42a1e12a581101c5186c",
+          "bytes": 15315
+        },
+        {
+          "path": "agents/impeccable_manual_edit_applier.toml",
+          "sha256": "6c9ce3e27ec4520ead001da3aad2a2ebba481c4e5cd22873db8890259ee579fe",
+          "bytes": 7032
+        },
+        {
+          "path": "agents/openai.yaml",
+          "sha256": "cbd8bd68fa00935dd0f179adb169252629cf7ee443ea9dc7db77e7ef2cf77446",
+          "bytes": 235
+        },
+        {
+          "path": "reference/adapt.md",
+          "sha256": "871a8e4d749b807c693ebabd83defbd6c76e1bd2a0f53a28a460cb1308ba8634",
+          "bytes": 11301
+        },
+        {
+          "path": "reference/adapt.native.md",
+          "sha256": "6acc0bf221a4ddc6e5c6438348920b2ca2393b29c4314dbde2cdc23f2b1a9639",
+          "bytes": 3910
+        },
+        {
+          "path": "reference/android.md",
+          "sha256": "058f81f256134841875fd3183e06b37a023de0c877fd2b9eecd97011640791fe",
+          "bytes": 4093
+        },
+        {
+          "path": "reference/animate.md",
+          "sha256": "d658c48ffbe0031e8e3b318996cad6ceafe29e40aa50d5bb25e4bf1d6839dc7c",
+          "bytes": 5236
+        },
+        {
+          "path": "reference/audit.md",
+          "sha256": "d5f83912eda93d42f93522bb74aeff0ea04d9c559577ec52fcccc130dd03166d",
+          "bytes": 8528
+        },
+        {
+          "path": "reference/audit.native.md",
+          "sha256": "960cb922bc934adbf9192e9428ff6bec1f382038166f02a785939c93b7391067",
+          "bytes": 8364
+        },
+        {
+          "path": "reference/bolder.md",
+          "sha256": "f964506c0fae87b3c2c1db7016ddc9be9ef970bbcf5548d684b997b5d5991586",
+          "bytes": 3564
+        },
+        {
+          "path": "reference/clarify.md",
+          "sha256": "173dd66abe65633910dcb04a51f40d6ff2a793f87088f022a02fc4cad24dd133",
+          "bytes": 4590
+        },
+        {
+          "path": "reference/colorize.md",
+          "sha256": "bc5f71f1129d0f2c310d913d07c8dc609a1d25644121bd78c308f42d52a0b9e9",
+          "bytes": 4537
+        },
+        {
+          "path": "reference/component-review.md",
+          "sha256": "514a27fc9830455828d337cfc2fa95fa86be8e5464501bbabb9aca09a66b40ad",
+          "bytes": 7660
+        },
+        {
+          "path": "reference/craft-floor.md",
+          "sha256": "e802e4f7bdc89050a9c0f2ca506e1d493a2316e6e810c0336c57aa073717ef3e",
+          "bytes": 5500
+        },
+        {
+          "path": "reference/craft.md",
+          "sha256": "9205e222bc6565b37fb504ceec93233c2d2a456802b69d16e6b1c44723907c4c",
+          "bytes": 555
+        },
+        {
+          "path": "reference/critique.md",
+          "sha256": "cb8caddbb3919e5bf7f252143b519fb16db28a244642d937b186cb89962d9201",
+          "bytes": 45944
+        },
+        {
+          "path": "reference/delight.md",
+          "sha256": "098a891028ce59c212b747d3c70468dd750aff7053a703d1336045ed31e0da7c",
+          "bytes": 3716
+        },
+        {
+          "path": "reference/distill.md",
+          "sha256": "ea8432c90c30ecb0426662a681ead5c0941113079704e1a766cda09e85b15b4f",
+          "bytes": 5717
+        },
+        {
+          "path": "reference/doctor.md",
+          "sha256": "a98b397cedeeaa1da57f3395b3d9b6c1fc477f4247fb9dc13e4da3da588283ff",
+          "bytes": 5481
+        },
+        {
+          "path": "reference/document.md",
+          "sha256": "3673248740bcdd1122ccc610093ba2fe52f3943a61ce0b7170b74dc49e5b6098",
+          "bytes": 27521
+        },
+        {
+          "path": "reference/extract.md",
+          "sha256": "31b90048c0b540daec46762a10c2b6b6434737a89af005054d8b848d829d003b",
+          "bytes": 3433
+        },
+        {
+          "path": "reference/generate.md",
+          "sha256": "53628d05b7eff0d4f48b95e48fad40266452fe1b42f398bd88dd9328353e0dd8",
+          "bytes": 13219
+        },
+        {
+          "path": "reference/harden.md",
+          "sha256": "16ba7fca1973c5faf53dd2ca523559129c0fe9e5f8d50b645f527afa78186cd2",
+          "bytes": 9450
+        },
+        {
+          "path": "reference/hooks.md",
+          "sha256": "56cc1bba51e6805de370160ce4a9399fef3740571204f13c3c751725870305e5",
+          "bytes": 13922
+        },
+        {
+          "path": "reference/init.md",
+          "sha256": "bb069b43c09109d7031b0374e31955749fec657b252d39782f11e8985aca2b51",
+          "bytes": 11536
+        },
+        {
+          "path": "reference/ios.md",
+          "sha256": "40c87038b5f75147a5952a96237acf312a327bf70c1bcd8e0a5f064625ae9668",
+          "bytes": 3812
+        },
+        {
+          "path": "reference/layout.md",
+          "sha256": "0bc7d7971b3edf2acd0580e847458dc6d84129d90715b452799ace3bed815c7c",
+          "bytes": 5161
+        },
+        {
+          "path": "reference/live-setup.md",
+          "sha256": "2b5b2fbf5f658f34ea1997fb1aeebe01604d05187f75c6a4f1f55a5bc78520a4",
+          "bytes": 8186
+        },
+        {
+          "path": "reference/live.md",
+          "sha256": "68c5636a7858dd0b5137a9229c15e25fdc2ee40a0f8a4e9d809f78e809256262",
+          "bytes": 36490
+        },
+        {
+          "path": "reference/mode-operate.md",
+          "sha256": "385a0efe833bd4afe4a257e7159590de0cf1b7fd8f7b213b732f1e537c62dab7",
+          "bytes": 4483
+        },
+        {
+          "path": "reference/mode-persuade.md",
+          "sha256": "21e78c8a77badb3f83290cd4577ed3b24bd4dd3b57136d7da75733d4f3ee9ac0",
+          "bytes": 3638
+        },
+        {
+          "path": "reference/mode-read.md",
+          "sha256": "a569989e6a3d6453b4c45e9474e162a15cc54e11732ac6baa7990a6e7cccc0b5",
+          "bytes": 4396
+        },
+        {
+          "path": "reference/new-work.md",
+          "sha256": "634257e766b1fecacd25e27dbfc7e21ef3b440b01e94e92b8b17711018d8a661",
+          "bytes": 57020
+        },
+        {
+          "path": "reference/onboard.md",
+          "sha256": "ef2dde00030580ed2765cbf7be9b2ea4a6f64cb915b804fd6f6abcf38051c7b9",
+          "bytes": 7740
+        },
+        {
+          "path": "reference/operate.md",
+          "sha256": "a9d2203acd45ca33a13d5c68b02b23ed512425ac15f0e8438318ed124b43729d",
+          "bytes": 4145
+        },
+        {
+          "path": "reference/optimize.md",
+          "sha256": "f672ef8251a3ed4051a053d30819664951b17540b2899acd27d20e500c234abc",
+          "bytes": 7614
+        },
+        {
+          "path": "reference/overdrive.md",
+          "sha256": "fce6688138d2ceb1e3d2cde5231f54b1d8dc8748b4c95a7919aa83b6f924cf96",
+          "bytes": 9178
+        },
+        {
+          "path": "reference/polish.md",
+          "sha256": "81666fc7f783b4e3514db6554e713dc0479bd9cdedb06e93d15f8b579aae869a",
+          "bytes": 6646
+        },
+        {
+          "path": "reference/quieter.md",
+          "sha256": "190a4e642ca362d7499f3c3ab123e21f18f75457d11f072b545a183f296e6495",
+          "bytes": 4952
+        },
+        {
+          "path": "reference/region-map.md",
+          "sha256": "778cedc9199b407d3e23fa1041e38d548b00b1101a33517aa2a2eb299f9d0edc",
+          "bytes": 3361
+        },
+        {
+          "path": "reference/routing.md",
+          "sha256": "77ae09542fbc10aa4e8b119d6fd19359908a47c13c30068d6a150bfdb50e3e10",
+          "bytes": 3336
+        },
+        {
+          "path": "reference/shape.md",
+          "sha256": "a55f016c046cb6a27c55bd7f346375aeb506a755c4fbca19a5f92dbd42309c23",
+          "bytes": 3547
+        },
+        {
+          "path": "reference/typeset.md",
+          "sha256": "442749aed338f51c1a3ccfb182c6ade9b74b90590b67984062ac94a5b100e914",
+          "bytes": 5256
+        },
+        {
+          "path": "reference/visualize.md",
+          "sha256": "88549c11ea55d5dfc9f551db9a9c270d7362a9d42aa83db7747c9a7f020e1255",
+          "bytes": 12985
+        },
+        {
+          "path": "reference/degraded/asset-producer.md",
+          "sha256": "754e9f0aa2101245a83cb17d8cc5bc49cf87997b29a83dedbfff283dbd0a8c4f",
+          "bytes": 8476
+        },
+        {
+          "path": "reference/degraded/documenter.md",
+          "sha256": "bcc05ea92faebb5c74037a9d4263a5ce9a56f5ab07c8ab3c59ee704d8cade745",
+          "bytes": 3325
+        },
+        {
+          "path": "reference/degraded/finish-reviewer.md",
+          "sha256": "275dd1b6e63bbd30d2713227c4f79b880a8bc4e01cc48d392068bb86939d3afa",
+          "bytes": 15415
+        },
+        {
+          "path": "reference/degraded/manual-edit-applier.md",
+          "sha256": "5fae7f8a2fc3ddd49ad0a413446dc44daedef5b6b7de5eb935bd2fbfad646d58",
+          "bytes": 7196
+        },
+        {
+          "path": "scripts/command-metadata.json",
+          "sha256": "e8720f3aa41135211cc58cc299a39eeda86c75651f4279cc1ede8db10dcc0584",
+          "bytes": 8392
+        },
+        {
+          "path": "scripts/impeccable",
+          "sha256": "39d9600489073e227e4f4d55c451ce4252a6632ed7ae37923efbbcbc91f16d07",
+          "bytes": 8514
+        },
+        {
+          "path": "scripts/impeccable.cmd",
+          "sha256": "69cad1ae7355825ef320ac9638a1c9675ba9fda01c9a0fa12244cc4a1973e550",
+          "bytes": 8498
+        },
+        {
+          "path": "scripts/live-browser-dom.js",
+          "sha256": "de1b7404f4cdfd7b515196afb17b74b1980f0bc88cb8681ae93a76ca48ec7bdb",
+          "bytes": 4917
+        },
+        {
+          "path": "scripts/live-browser-ignores.js",
+          "sha256": "c1cb6877ca99a0c1b38ba0c7d59f32702d3022f6821d8045f7133f7c40b6362f",
+          "bytes": 10346
+        },
+        {
+          "path": "scripts/live-browser-session.js",
+          "sha256": "42831c3cd874346d8e7f120808d91e6ed3cda5c3eca6eefd76b126659536bc87",
+          "bytes": 4346
+        },
+        {
+          "path": "scripts/live-browser.js",
+          "sha256": "f68a3d68ac92606e91aa8878e003d9432ddd09aa97ca01c6b3ce46c937dca316",
+          "bytes": 547395
+        },
+        {
+          "path": "scripts/modern-screenshot.umd.js",
+          "sha256": "bb36665889124a0b6e15f16045265737449c3bdcf2712cdb08af3cfa01563e2b",
+          "bytes": 29290
+        },
+        {
+          "path": "scripts/VERSION",
+          "sha256": "66d60356172ccafdd334fca9bf33243c8409216a733dcde0d66a24fd70ee8132",
+          "bytes": 7
+        },
+        {
+          "path": "scripts/bin/windows-x64/impeccable.exe",
+          "sha256": "605b5b442d2a65d270ef989de13371444849526249f511d397ca7424c184db49",
+          "bytes": 17096584
+        },
+        {
+          "path": "scripts/data/font-index-failures.json",
+          "sha256": "835f19a0a3812f3652dd6979a2ce5597f654fd01f26e1b420b92d5f42b997ce4",
+          "bytes": 2437
+        },
+        {
+          "path": "scripts/data/font-index.json",
+          "sha256": "47edbdfaf27073c47033d1ac7dfee881be49e2dcbda7671d1157300481dde6da",
+          "bytes": 1100013
+        }
+      ]
+    },
+    {
+      "name": "handoff-ui-to-astra",
+      "source": "C:/Users/ajapa/.codex/skills/handoff-ui-to-astra",
+      "local": ".agents/skills/handoff-ui-to-astra",
+      "files": [
+        {
+          "path": "SKILL.md",
+          "sha256": "cfb7cccfcbc98c716e4182b61dedda52e5a7e5d4e3792d023bf7796eccde717f",
+          "bytes": 9982
+        },
+        {
+          "path": "agents/openai.yaml",
+          "sha256": "4baa530e2ece6d51c2fe3915ba6eaadd32c75883fad0790b51f6476bc37828d8",
+          "bytes": 298
+        },
+        {
+          "path": "references/worker-contract.md",
+          "sha256": "5655460007351dc397d5c55c21199019e52a304c2ae7403b26ed3ad811dca0dd",
+          "bytes": 3913
+        }
+      ]
+    },
+    {
+      "name": "grilling",
+      "source": "C:/Users/ajapa/.agents/skills/grilling",
+      "local": ".agents/skills/grilling",
+      "files": [
+        {
+          "path": "SKILL.md",
+          "sha256": "d806733216b16e51adad834e724bfec5540a436d06395bfc75b843cda9f7404b",
+          "bytes": 2015
+        },
+        {
+          "path": "agents/openai.yaml",
+          "sha256": "ad75163922ff8263acdd25ebc37420e8fcf1fccb93483fd5742e9bd26f5c45f6",
+          "bytes": 116
+        }
+      ]
+    },
+    {
+      "name": "domain-modeling",
+      "source": "C:/Users/ajapa/.agents/skills/domain-modeling",
+      "local": ".agents/skills/domain-modeling",
+      "files": [
+        {
+          "path": "ADR-FORMAT.md",
+          "sha256": "b7021c31a1c2485b07356a8110fd1fd1ae4facbab3e210983789f425f867d95b",
+          "bytes": 2780
+        },
+        {
+          "path": "CONTEXT-FORMAT.md",
+          "sha256": "6097d3a11b96be24425091ed6e8a744c53644d3685455b2d828100f1853b9b89",
+          "bytes": 2350
+        },
+        {
+          "path": "SKILL.md",
+          "sha256": "dd4c753a617bd7db97c34fd3e049581c4bc0c0590e8a8b1f97d3b9d6013131dc",
+          "bytes": 3405
+        },
+        {
+          "path": "agents/openai.yaml",
+          "sha256": "ce496c77c77a090877bff10f198c9770fb52e23088351350ea0826380f948ff8",
+          "bytes": 104
+        }
+      ]
+    },
+    {
+      "name": "using-git-worktrees",
+      "source": "C:/Users/ajapa/.agents/skills/using-git-worktrees",
+      "local": ".agents/skills/using-git-worktrees",
+      "files": [
+        {
+          "path": "SKILL.md",
+          "sha256": "8cfb86f121269e8f7f12361e6795c4f6738828340e28964c9229d365666c9edd",
+          "bytes": 6813
+        }
+      ]
+    },
+    {
+      "name": "finishing-a-development-branch",
+      "source": "C:/Users/ajapa/.agents/skills/finishing-a-development-branch",
+      "local": ".agents/skills/finishing-a-development-branch",
+      "files": [
+        {
+          "path": "SKILL.md",
+          "sha256": "8db5a922b242dd4e1bf824cb91c13b3e8d8e8a86d6ceaf7f0774eb9cce909d65",
+          "bytes": 7781
+        }
+      ]
+    },
+    {
+      "name": "writing-for-agents",
+      "source": "C:/Users/ajapa/.agents/skills/writing-for-agents",
+      "local": ".agents/skills/writing-for-agents",
+      "files": [
+        {
+          "path": "SKILL-MECHANICS.md",
+          "sha256": "86f112c08d785cc224c13dcda75c0724b74bd62622cc61d4b7ab3dbbaf37f6fc",
+          "bytes": 2651
+        },
+        {
+          "path": "SKILL.md",
+          "sha256": "1c0c4ebf2d221917591144f0ced4fe46dae13301cb3d6d93fc88ecf0dda6aed2",
+          "bytes": 10967
+        },
+        {
+          "path": "agents/openai.yaml",
+          "sha256": "486c388ed1babac6ea25001147b41d3ff6c8892b0128ae1b0bef8feea6363428",
+          "bytes": 105
+        }
+      ]
+    }
+  ]
+}

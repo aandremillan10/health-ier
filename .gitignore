@@ -1,0 +1,19 @@
+node_modules/
+dist/
+out/
+build/
+coverage/
+.vite/
+*.tsbuildinfo
+*.log
+.env
+.env.*
+!.env.example
+!.env.production.example
+.DS_Store
+.husky/_/
+# Keep the supplied mock screenshot local until its person-like sample data is cleared.
+/docs/references/possible-ui-for-cert-builder.png
+# Generated Windows junction copies; the canonical Prisma skills are retained.
+/server/.claude/
+/server/.windsurf/

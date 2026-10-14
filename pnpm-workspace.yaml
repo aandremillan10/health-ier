@@ -1,0 +1,11 @@
+packages:
+  - app
+  - server
+
+onlyBuiltDependencies:
+  - '@nestjs/core'
+  - '@prisma/engines'
+  - '@swc/core'
+  - electron
+  - esbuild
+  - prisma

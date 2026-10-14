@@ -1,0 +1,2 @@
+# Windows command shims have an 8191-character limit.
+pnpm exec lint-staged --max-arg-length 6000

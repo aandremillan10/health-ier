@@ -1,0 +1,4 @@
+interface:
+  display_name: "Handoff UI to Astra"
+  short_description: "Send UI work to Astra High with skills and images"
+  default_prompt: "Use $handoff-ui-to-astra with $lead-orchestrator to implement this UI using Astra High, the required design skills, and all supplied visual references."
