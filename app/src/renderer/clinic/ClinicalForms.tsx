@@ -1,8 +1,42 @@
-import { useEffect, useRef, useState } from 'react';
-import type { FormEvent, ReactElement } from 'react';
+import { useEffect, useState } from 'react';
+import type { FocusEvent, FormEvent, ReactElement } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
+
+function revealFocusedField(event: FocusEvent<HTMLFormElement>): void {
+  const field = event.target;
+  if (!field.matches('input, textarea, select')) return;
+  const region = field.closest('.field') ?? field;
+  const bounds = region.getBoundingClientRect();
+  const identity = document
+    .querySelector('.patient-banner')
+    ?.getBoundingClientRect();
+  const actions = event.currentTarget
+    .querySelector('.sticky-form-actions')
+    ?.getBoundingClientRect();
+  if (
+    bounds.top < (identity?.bottom ?? 0) ||
+    bounds.bottom > (actions?.top ?? innerHeight)
+  ) {
+    region.scrollIntoView({ block: 'center', behavior: 'instant' });
+    const visible = region.getBoundingClientRect();
+    const top =
+      document.querySelector('.patient-banner')?.getBoundingClientRect()
+        .bottom ?? 0;
+    const bottom =
+      event.currentTarget
+        .querySelector('.sticky-form-actions')
+        ?.getBoundingClientRect().top ?? innerHeight;
+    if (visible.bottom > bottom - 12)
+      window.scrollBy({
+        top: visible.bottom - bottom + 12,
+        behavior: 'instant',
+      });
+    else if (visible.top < top + 12)
+      window.scrollBy({ top: visible.top - top - 12, behavior: 'instant' });
+  }
+}
 import type {
   ClinicApi,
   ClinicError,
@@ -47,8 +81,6 @@ export function EntryForm({
     plan: content?.plan ?? '',
   });
   const [reason, setReason] = useState('');
-  const [saved, setSaved] = useState(false);
-  const savedTimer = useRef(0);
   const [vitals, setVitals] = useState<Vitals[]>([]);
   const [vitalsError, setVitalsError] = useState<ClinicError | null>(null);
   const [revision, setRevision] = useState(entry?.revision ?? 0);
@@ -80,8 +112,6 @@ export function EntryForm({
       active = false;
     };
   }, [api, patient.id, onExpired]);
-  useEffect(() => (): void => onDirty(false), [onDirty]);
-  useEffect(() => (): void => window.clearTimeout(savedTimer.current), []);
   function change<K extends keyof typeof form>(
     key: K,
     value: (typeof form)[K],
@@ -112,9 +142,7 @@ export function EntryForm({
           }),
     );
     if (result) {
-      onDirty(false);
-      setSaved(true);
-      savedTimer.current = window.setTimeout(onDone, 700);
+      onDone();
     }
   }
   async function review(): Promise<void> {
@@ -147,6 +175,7 @@ export function EntryForm({
       </div>
       <form
         className="panel form-panel"
+        onFocusCapture={revealFocusedField}
         aria-busy={busy}
         onSubmit={(e) => void save(e)}
       >
@@ -259,7 +288,12 @@ export function EntryForm({
               required
             />
           </Field>
-          <Field label="CS (optional)" name="cs" error={error}>
+          <Field
+            label="CS (optional)"
+            name="cs"
+            hint="Optional text from the clinic form. Leave blank if not recorded."
+            error={error}
+          >
             <Input
               disabled={busy}
               id="cs"
@@ -291,7 +325,8 @@ export function EntryForm({
           </Field>
         </div>
         <Field label="Reason / symptoms" name="reason" error={error}>
-          <Input
+          <Textarea
+            rows={3}
             disabled={busy}
             id="reason"
             value={form.reason}
@@ -325,38 +360,17 @@ export function EntryForm({
             />
           </Field>
         ))}
-        <div className="form-actions">
+        <div className="form-actions sticky-form-actions">
+          <p className="hint">
+            {correction
+              ? 'The original entry is preserved.'
+              : 'Save a draft now. Finalize it from the chart after review.'}
+          </p>
           <Button type="button" variant="outline" onClick={onCancel}>
             Cancel
           </Button>
-          <Button
-            type="submit"
-            disabled={busy || saved || conflict || latest !== null}
-          >
-            {saved ? (
-              <span className="saved-check">
-                <svg
-                  aria-hidden="true"
-                  width="16"
-                  height="16"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2.5"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                >
-                  <path d="m4 12.5 5 5L20 6.5" />
-                </svg>
-                {correction ? 'Correction saved' : 'Saved'}
-              </span>
-            ) : busy ? (
-              'Saving…'
-            ) : correction ? (
-              'Save correction'
-            ) : (
-              'Save draft'
-            )}
+          <Button type="submit" disabled={busy || conflict || latest !== null}>
+            {busy ? 'Saving…' : correction ? 'Save correction' : 'Save draft'}
           </Button>
         </div>
       </form>
@@ -403,14 +417,10 @@ export function VitalsForm({
       : new Date(Date.now() + 8 * 3600000).toISOString().slice(0, 16),
   );
   const [reason, setReason] = useState('');
-  const [saved, setSaved] = useState(false);
-  const savedTimer = useRef(0);
   const [revision, setRevision] = useState(record?.revision ?? 0);
   const [latest, setLatest] = useState<Vitals | null>(null);
   const [reviewError, setReviewError] = useState<ClinicError | null>(null);
   const { busy, error, conflict, run, clearError } = useOperation(onExpired);
-  useEffect(() => (): void => onDirty(false), [onDirty]);
-  useEffect(() => (): void => window.clearTimeout(savedTimer.current), []);
   async function save(event: FormEvent): Promise<void> {
     event.preventDefault();
     const input: VitalsInput = {
@@ -442,9 +452,7 @@ export function VitalsForm({
           }),
     );
     if (result) {
-      onDirty(false);
-      setSaved(true);
-      savedTimer.current = window.setTimeout(onDone, 700);
+      onDone();
     }
   }
   async function review(): Promise<void> {
@@ -469,6 +477,7 @@ export function VitalsForm({
       </div>
       <form
         className="panel form-panel"
+        onFocusCapture={revealFocusedField}
         aria-busy={busy}
         onSubmit={(e) => void save(e)}
       >
@@ -574,38 +583,17 @@ export function VitalsForm({
             </Field>
           ))}
         </div>
-        <div className="form-actions">
+        <div className="form-actions sticky-form-actions">
+          <p className="hint">
+            {correction
+              ? 'The original entry is preserved.'
+              : 'Save a draft now. Finalize it from the chart after review.'}
+          </p>
           <Button type="button" variant="outline" onClick={onCancel}>
             Cancel
           </Button>
-          <Button
-            type="submit"
-            disabled={busy || saved || conflict || latest !== null}
-          >
-            {saved ? (
-              <span className="saved-check">
-                <svg
-                  aria-hidden="true"
-                  width="16"
-                  height="16"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2.5"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                >
-                  <path d="m4 12.5 5 5L20 6.5" />
-                </svg>
-                {correction ? 'Correction saved' : 'Saved'}
-              </span>
-            ) : busy ? (
-              'Saving…'
-            ) : correction ? (
-              'Save correction'
-            ) : (
-              'Save draft'
-            )}
+          <Button type="submit" disabled={busy || conflict || latest !== null}>
+            {busy ? 'Saving…' : correction ? 'Save correction' : 'Save draft'}
           </Button>
         </div>
       </form>

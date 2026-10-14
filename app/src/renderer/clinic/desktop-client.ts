@@ -7,24 +7,12 @@ import type {
   Entry,
   Patient,
   PatientInput,
-  Principal,
   Result,
   Vitals,
 } from './contract';
 
 // The renderer view model also serves the explicit demo; only named preload calls cross this seam.
 export function createDesktopClient(wire: Wire.ClinicApi): ClinicApi {
-  let staff: Principal | null = null;
-  const patients = new Map<string, Patient>();
-  const documents = new Map<string, ClinicDocument>();
-  function clear(): void {
-    staff = null;
-    patients.clear();
-    documents.clear();
-  }
-  function author(id: string): string {
-    return id === staff?.id ? staff.displayName : 'Other clinician';
-  }
   async function result<A, B>(
     operation: Promise<Wire.Result<A>>,
     convert: (data: A) => B,
@@ -68,7 +56,6 @@ export function createDesktopClient(wire: Wire.ClinicApi): ClinicApi {
       employeeIdentifier:
         'employeeIdentifier' in data ? (data.employeeIdentifier ?? '') : '',
     };
-    patients.set(mapped.id, mapped);
     return mapped;
   }
   function fields(input: PatientInput): Wire.PatientFields {
@@ -88,7 +75,7 @@ export function createDesktopClient(wire: Wire.ClinicApi): ClinicApi {
   ): Correction {
     return {
       ...data,
-      authorName: author(data.authorId),
+      authorName: data.authorName,
       correctedContent: { ...data.correctedContent },
     };
   }
@@ -97,7 +84,7 @@ export function createDesktopClient(wire: Wire.ClinicApi): ClinicApi {
   ): Vitals {
     return {
       ...data,
-      authorName: author(data.authorId),
+      authorName: data.authorName,
       corrections: data.corrections?.map(correction) ?? [],
     };
   }
@@ -110,7 +97,7 @@ export function createDesktopClient(wire: Wire.ClinicApi): ClinicApi {
       findings: data.findings ?? '',
       clinicalImpression: data.clinicalImpression ?? '',
       plan: data.plan ?? '',
-      authorName: author(data.authorId),
+      authorName: data.authorName,
       corrections,
     };
   }
@@ -183,20 +170,16 @@ export function createDesktopClient(wire: Wire.ClinicApi): ClinicApi {
       restriction: snapshot.restriction ?? '',
       followUp: snapshot.followUp ?? '',
     };
-    if (mapped.id) documents.set(mapped.id, mapped);
     return mapped;
   }
   const client: ClinicApi = {
     async login(input) {
-      clear();
       return result(wire.login(input), (data) => {
-        staff = data;
         return data;
       });
     },
     async logout() {
       const response = await wire.logout();
-      clear();
       if (response.ok && !response.data.serverRevoked)
         return {
           ok: false,
@@ -210,53 +193,15 @@ export function createDesktopClient(wire: Wire.ClinicApi): ClinicApi {
     },
     me: () =>
       result(wire.currentStaff(), (data) => {
-        staff = data;
         return data;
       }),
     health: () =>
       result(wire.health(), (data) => ({
         available: data.status === 'ok' && data.mode === 'EDGE',
       })),
-    async findPatients(input) {
-      if (/^[0-9a-f]{8}-[0-9a-f-]{27}$/i.test(input.search))
-        return {
-          ok: false,
-          error: {
-            code: 'UNAVAILABLE',
-            message:
-              'Search by patient name. Patient-number lookup is not available on this clinic server yet.',
-          },
-        };
-      return result(wire.searchPatients(input), (data) => data.map(patient));
-    },
-    async getPatient({ id }) {
-      // shortcut: refresh by name until the bridge adds a patient-by-ID read.
-      const known = patients.get(id);
-      if (!known)
-        return {
-          ok: false,
-          error: {
-            code: 'NOT_FOUND',
-            message: 'Search for the patient by name, then open their record.',
-          },
-        };
-      const response = await result(
-        wire.searchPatients({ search: known.fullName }),
-        (data) => data.map(patient),
-      );
-      if (!response.ok) return response;
-      const found = response.data.find((data) => data.id === id);
-      return found
-        ? { ok: true, data: found }
-        : {
-            ok: false,
-            error: {
-              code: 'NOT_FOUND',
-              message:
-                'This record was not returned. Search by the current patient name and retry.',
-            },
-          };
-    },
+    findPatients: (input) =>
+      result(wire.searchPatients(input), (data) => data.map(patient)),
+    getPatient: (input) => result(wire.readPatient(input), patient),
     createPatient: (input) =>
       result(wire.createPatient(fields(input)), patient),
     updatePatient: ({ id, expectedRevision, ...input }) =>
@@ -326,13 +271,8 @@ export function createDesktopClient(wire: Wire.ClinicApi): ClinicApi {
       result(wire.correctEntry(input), (data) =>
         entry(data.original, [correction(data.correction)]),
       ),
-    // shortcut: session-only list until the bridge adds document listing; known IDs can be read/reprinted.
-    listDocuments: async ({ patientId }) => ({
-      ok: true,
-      data: [...documents.values()].filter(
-        (data) => data.patient.id === patientId,
-      ),
-    }),
+    listDocuments: (input) =>
+      result(wire.readDocuments(input), (data) => data.map(document)),
     previewDocument: (input) =>
       result(wire.previewDocument(documentInput(input)), document),
     issueDocument: (input) =>
@@ -358,7 +298,6 @@ export function createDesktopClient(wire: Wire.ClinicApi): ClinicApi {
       ),
     onSessionReset: (listener) =>
       wire.onSessionReset((event) => {
-        clear();
         listener(event.reason);
       }),
   };

@@ -44,6 +44,15 @@ Assert-True ($patient.revision -eq 2) 'patient revision advanced'
 Call-Api PATCH "/patients/$syntheticPatientId" @{expectedRevision=1;address='stale'} $clerk 409 | Out-Null
 $found = @(Call-Api GET '/patients?search=Synthetic' $null $doctor 200)
 Assert-True (($found | Where-Object id -eq $syntheticPatientId).address -eq 'Synthetic Updated Address') 'second client persisted identity'
+$byId = Call-Api GET "/patients/$syntheticPatientId" $null $doctor 200
+Assert-True ($byId.id -eq $syntheticPatientId) 'direct identity read'
+$byNumber = @(Call-Api GET "/patients?search=$syntheticPatientId" $null $doctor 200)
+Assert-True ($byNumber.Count -eq 1 -and $byNumber[0].id -eq $syntheticPatientId) 'exact UUID patient number lookup'
+Call-Api GET "/patients/$syntheticPatientId" $null '' 401 | Out-Null
+Call-Api GET '/patients/not-a-uuid' $null $doctor 400 | Out-Null
+Call-Api GET '/patients/ffffffff-ffff-4fff-8fff-ffffffffffff' $null $doctor 404 | Out-Null
+$singleMinimum = Call-Api GET "/patients/$syntheticPatientId" $null $medtech 200
+Assert-True (-not ($singleMinimum.PSObject.Properties.Name -contains 'address')) 'medtech direct identity remains minimal'
 $minimum = @(Call-Api GET '/patients?search=Synthetic' $null $medtech 200)
 Assert-True (-not ($minimum[0].PSObject.Properties.Name -contains 'address')) 'medtech minimum identity'
 Call-Api GET "/patients/$syntheticPatientId/charts/medical/entries" $null $clerk 403 | Out-Null
@@ -94,6 +103,14 @@ Call-Api POST /documents $draftDoc $head 409 | Out-Null
 $preview = Call-Api POST /documents/preview $docBody $doctor 201
 Assert-True ($preview.issuerId -eq $entry.authorId -and $preview.snapshot.patient.fullName -eq 'Synthetic API Patient') 'trusted preview'
 $document = Call-Api POST /documents $docBody $doctor 201
+$history = @(Call-Api GET "/patients/$syntheticPatientId/documents" $null $doctor 200)
+Assert-True ($history.Count -eq 1 -and $history[0].id -eq $document.id) 'persistent patient document history'
+$headHistory = @(Call-Api GET "/patients/$syntheticPatientId/documents" $null $head 200)
+Assert-True ($headHistory[0].snapshot.body -eq $document.snapshot.body) 'head read-only document history'
+foreach ($denied in @($clerk,$attendant,$dentist,$medtech)) { Call-Api GET "/patients/$syntheticPatientId/documents" $null $denied 403 | Out-Null }
+Call-Api GET "/patients/$syntheticPatientId/documents" $null '' 401 | Out-Null
+Call-Api GET '/patients/not-a-uuid/documents' $null $doctor 400 | Out-Null
+Call-Api GET '/patients/ffffffff-ffff-4fff-8fff-ffffffffffff/documents' $null $doctor 404 | Out-Null
 Call-Api GET "/documents/$($document.id)" $null '' 401 | Out-Null
 Call-Api GET "/documents/$($document.id)" $null $clerk 404 | Out-Null
 Call-Api GET "/documents/$($document.id)" $null $medtech 404 | Out-Null

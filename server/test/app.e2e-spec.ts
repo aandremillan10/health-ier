@@ -42,6 +42,12 @@ describe('AppController (e2e)', () => {
       .get('/patients')
       .expect(401)
       .expect({ code: 'UNAUTHENTICATED', message: 'Sign in to continue.' }));
+  it.each([
+    '/patients/20000000-0000-4000-8000-000000000001',
+    '/patients/20000000-0000-4000-8000-000000000001/documents',
+  ])('protects new identity/history route %s', async (path) => {
+    await request(app.getHttpServer()).get(path).expect(401);
+  });
   it('malformed JSON is a safe validation failure', () =>
     request(app.getHttpServer())
       .post('/auth/login')

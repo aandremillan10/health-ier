@@ -31,6 +31,20 @@ export class ClinicController {
   ): ReturnType<ClinicService['createPatient']> {
     return this.clinic.createPatient(req.staff, body);
   }
+  @Get('patients/:id')
+  patient(
+    @Req() req: StaffRequest,
+    @Param('id') id: string,
+  ): ReturnType<ClinicService['readPatient']> {
+    return this.clinic.readPatient(req.staff, id);
+  }
+  @Get('patients/:id/documents')
+  documents(
+    @Req() req: StaffRequest,
+    @Param('id') id: string,
+  ): ReturnType<ClinicService['listDocuments']> {
+    return this.clinic.listDocuments(req.staff, id);
+  }
   @Patch('patients/:id')
   updatePatient(
     @Req() req: StaffRequest,

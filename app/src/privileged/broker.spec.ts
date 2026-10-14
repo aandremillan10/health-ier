@@ -87,6 +87,7 @@ describe('Electron clinic broker boundary', () => {
         id: ids.document,
         originalEntryId: ids.entry,
         authorId: ids.staff,
+        authorName: principal.displayName,
         reason,
         createdAt: instant,
         sourceRevision: 1,
@@ -105,6 +106,7 @@ describe('Electron clinic broker boundary', () => {
         id: ids.entry,
         patientId: ids.patient,
         authorId: ids.staff,
+        authorName: principal.displayName,
         status: 'finalized',
         revision: 2,
         createdAt: instant,
@@ -171,6 +173,75 @@ describe('Electron clinic broker boundary', () => {
       await broker.invoke(
         'correctVitals',
         { ...base, correctedContent: { pulse: 72 } },
+        sender,
+      ),
+      'VALIDATION',
+    );
+    expect(fetcher).not.toHaveBeenCalled();
+  });
+  it('maps patient identity and persisted history through fixed routes and rejects cross-patient responses', async () => {
+    const { broker, fetcher } = setup();
+    await login(broker);
+    fetcher.mockResolvedValue(json(patient));
+    expect(
+      await broker.invoke('readPatient', { id: ids.patient }, sender),
+    ).toEqual({ ok: true, data: patient });
+    expect(fetcher.mock.lastCall?.[0]).toBe(
+      `https://clinic.example:3000/patients/${ids.patient}`,
+    );
+    fetcher.mockResolvedValue(json([document]));
+    expect(
+      await broker.invoke('readDocuments', { patientId: ids.patient }, sender),
+    ).toEqual({ ok: true, data: [document] });
+    expect(fetcher.mock.lastCall?.[0]).toBe(
+      `https://clinic.example:3000/patients/${ids.patient}/documents`,
+    );
+    fetcher.mockResolvedValue(json([document]));
+    expectCode(
+      await broker.invoke('readDocuments', { patientId: ids.entry }, sender),
+      'INVALID_RESPONSE',
+    );
+    fetcher.mockResolvedValue(json({ ...patient, id: ids.entry }));
+    expectCode(
+      await broker.invoke('readPatient', { id: ids.patient }, sender),
+      'INVALID_RESPONSE',
+    );
+  });
+  it('filters single patient identity for medtech and rejects broader payloads', async () => {
+    const { broker, fetcher } = setup();
+    fetcher.mockResolvedValue(
+      json({ ...loginData, staff: { ...principal, role: 'medtech' } }),
+    );
+    await broker.invoke(
+      'login',
+      { username: 'medtech', password: 'synthetic' },
+      sender,
+    );
+    const minimum = {
+      id: patient.id,
+      revision: patient.revision,
+      fullName: patient.fullName,
+      sex: patient.sex,
+      dateOfBirth: patient.dateOfBirth,
+    };
+    fetcher.mockResolvedValue(json(minimum));
+    expect(
+      await broker.invoke('readPatient', { id: ids.patient }, sender),
+    ).toEqual({ ok: true, data: minimum });
+    fetcher.mockResolvedValue(json(patient));
+    expectCode(
+      await broker.invoke('readPatient', { id: ids.patient }, sender),
+      'INVALID_RESPONSE',
+    );
+    fetcher.mockClear();
+    expectCode(
+      await broker.invoke('readPatient', { id: '../auth/me' }, sender),
+      'VALIDATION',
+    );
+    expectCode(
+      await broker.invoke(
+        'readDocuments',
+        { patientId: ids.patient, url: '/auth/me' },
         sender,
       ),
       'VALIDATION',
@@ -635,6 +706,7 @@ describe('Electron clinic broker boundary', () => {
       id: ids.entry,
       patientId: ids.patient,
       authorId: ids.staff,
+      authorName: principal.displayName,
       status: 'draft',
       revision: 1,
       createdAt: instant,

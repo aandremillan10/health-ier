@@ -41,6 +41,7 @@ export interface AuthoredRecord {
   id: string;
   patientId: string;
   authorId: string;
+  authorName: string;
   status: 'draft' | 'finalized';
   revision: number;
   createdAt: string;
@@ -70,6 +71,7 @@ export interface Correction<T> {
   id: string;
   originalEntryId: string;
   authorId: string;
+  authorName: string;
   reason: string;
   correctedContent: Partial<T>;
   createdAt: string;
@@ -149,6 +151,8 @@ export interface Requests {
   logout: undefined;
   health: undefined;
   searchPatients: { search: string };
+  readPatient: IdInput;
+  readDocuments: { patientId: string };
   createPatient: PatientFields;
   updatePatient: IdInput &
     Partial<PatientFields> & { expectedRevision: number };
@@ -182,6 +186,8 @@ export interface Responses {
   logout: { loggedOut: true; serverRevoked: boolean };
   health: { status: 'ok'; mode: 'EDGE' | 'CLOUD' };
   searchPatients: (Patient | PatientIdentity)[];
+  readPatient: Patient | PatientIdentity;
+  readDocuments: IssuedDocument[];
   createPatient: Patient;
   updatePatient: Patient;
   readVitals: (Vitals & { corrections: Correction<VitalsFields>[] })[];

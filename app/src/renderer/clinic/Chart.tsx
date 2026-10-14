@@ -1,6 +1,6 @@
 import { chartNames } from './contract';
 import type { ChartTab } from './contract';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import type { ReactElement } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -50,17 +50,46 @@ export function Chart({
 }): ReactElement {
   const [entries, setEntries] = useState<Entry[] | null>(null);
   const [vitals, setVitals] = useState<Vitals[] | null>(null);
-  const [documents, setDocuments] = useState<ClinicDocument[]>([]);
+  const [documents, setDocuments] = useState<ClinicDocument[] | null>(null);
+  const [documentsError, setDocumentsError] = useState<ClinicError | null>(
+    null,
+  );
   const [documentId, setDocumentId] = useState('');
   const [confirm, setConfirm] = useState<Entry | Vitals | null>(null);
   const [notice, setNotice] = useState('');
   const [loadError, setLoadError] = useState<ClinicError | null>(null);
   const { busy, error, run } = useOperation(onExpired);
+  const mounted = useRef(true);
+  useEffect(() => {
+    mounted.current = true;
+    return (): void => {
+      mounted.current = false;
+    };
+  }, []);
+  async function loadDocuments(): Promise<void> {
+    setDocuments(null);
+    setDocumentsError(null);
+    try {
+      const result = await api.listDocuments({ patientId: patient.id });
+      if (!mounted.current) return;
+      if (result.ok) setDocuments(result.data);
+      else {
+        setDocumentsError(result.error);
+        if (result.error.code === 'UNAUTHENTICATED') onExpired();
+      }
+    } catch {
+      if (!mounted.current) return;
+      setDocumentsError({
+        code: 'UNAVAILABLE',
+        message:
+          'Unable to load issued documents. Check the clinic connection and try again.',
+      });
+    }
+  }
   const load = useCallback(async (): Promise<void> => {
     setLoadError(null);
     setEntries(null);
     setVitals(null);
-    setDocuments([]);
     if (tab === 'details') return;
     if (tab === 'vitals') {
       const result = await run(() => api.listVitals({ patientId: patient.id }));
@@ -72,11 +101,6 @@ export function Chart({
       if (!result) return;
       setEntries(result);
       if (tab === 'medical') {
-        const result = await run(() =>
-          api.listDocuments({ patientId: patient.id }),
-        );
-        if (result) setDocuments(result);
-        else return;
         const measurements = await run(() =>
           api.listVitals({ patientId: patient.id }),
         );
@@ -129,15 +153,19 @@ export function Chart({
           .then((result) => {
             if (!active) return;
             if (result.ok) setDocuments(result.data);
-            else failed(result.error);
+            else {
+              setDocumentsError(result.error);
+              if (result.error.code === 'UNAUTHENTICATED') onExpired();
+            }
           })
-          .catch(() =>
-            failed({
+          .catch(() => {
+            if (!active) return;
+            setDocumentsError({
               code: 'UNAVAILABLE',
               message:
                 'Unable to load documents. Check the clinic connection and try again.',
-            }),
-          );
+            });
+          });
     }
     return (): void => {
       active = false;
@@ -290,14 +318,7 @@ export function Chart({
             <p className="hint">
               Recorded by {v.authorName} · Revision {v.revision}
             </p>
-            <dl className="measurements">
-              {Object.entries(measures).map(([key, label]) => (
-                <div key={key}>
-                  <dt>{label}</dt>
-                  <dd>{v[key as keyof typeof measures] ?? 'Not taken'}</dd>
-                </div>
-              ))}
-            </dl>
+            <Measurements record={v} />
             <Corrections original={v} />
             {staff.role === 'attendant' && v.authorId === staff.id ? (
               <div className="entry-actions">
@@ -324,13 +345,7 @@ export function Chart({
           </article>
         ))}
       {tab !== 'vitals' && entries && entries.length === 0 && (
-        <Empty
-          action={
-            tab === 'medical' && canWriteEntry(staff, tab) ? (
-              <Button onClick={() => onEntry()}>New medical entry</Button>
-            ) : undefined
-          }
-        >
+        <Empty>
           No entries in this chart.
           {tab === 'medical' && canWriteEntry(staff, tab)
             ? ' Select New medical entry to record a consultation.'
@@ -381,13 +396,10 @@ export function Chart({
                       </dd>
                       {selectedVitals && (
                         <dd>
-                          {selectedVitals.authorName} ·{' '}
-                          {Object.entries(measures)
-                            .map(
-                              ([key, label]) =>
-                                `${label}: ${selectedVitals[key as keyof typeof measures] ?? 'Not taken'}`,
-                            )
-                            .join(' · ')}
+                          <p className="hint">
+                            Recorded by {selectedVitals.authorName}
+                          </p>
+                          <Measurements record={selectedVitals} />
                         </dd>
                       )}
                     </div>
@@ -446,9 +458,20 @@ export function Chart({
             </article>
           );
         })}
-      {tab === 'medical' && (documents.length > 0 || !demo) && (
-        <section className="panel">
+      {tab === 'medical' && (
+        <section className="panel" aria-label="Issued documents">
           <h2>Issued documents</h2>
+          {documents === null && !documentsError && (
+            <Loading>Loading issued documents…</Loading>
+          )}
+          <ErrorNotice error={documentsError}>
+            <Button variant="outline" onClick={() => void loadDocuments()}>
+              Retry document history
+            </Button>
+          </ErrorNotice>
+          {documents?.length === 0 && (
+            <p className="hint">No issued documents for this patient.</p>
+          )}
           {!demo && (
             <form
               className="document-lookup"
@@ -458,8 +481,8 @@ export function Chart({
               }}
             >
               <p className="hint">
-                This list shows documents opened or issued in this session. Use
-                the document ID to open an earlier copy.
+                Documents issued for this patient remain available for reprint.
+                You can also open a known document ID.
               </p>
               <Field label="Issued document ID" name="document-id">
                 <div className="search-controls">
@@ -479,7 +502,7 @@ export function Chart({
             </form>
           )}
           <ul className="document-list">
-            {documents.map((doc) => (
+            {documents?.map((doc) => (
               <li key={doc.id}>
                 <div>
                   <strong>
@@ -520,5 +543,18 @@ export function Chart({
         </Confirm>
       )}
     </section>
+  );
+}
+
+function Measurements({ record }: { record: Vitals }): ReactElement {
+  return (
+    <dl className="measurements">
+      {Object.entries(measures).map(([key, label]) => (
+        <div key={key}>
+          <dt>{label}</dt>
+          <dd>{record[key as keyof typeof measures] ?? 'Not taken'}</dd>
+        </div>
+      ))}
+    </dl>
   );
 }

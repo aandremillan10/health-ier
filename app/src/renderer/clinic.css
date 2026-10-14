@@ -253,13 +253,6 @@ dt {
   width: 3px;
   background: var(--primary);
   transform-origin: top;
-  animation: bar-in var(--dur-med) var(--ease-standard);
-}
-
-@keyframes bar-in {
-  from {
-    transform: scaleY(0);
-  }
 }
 
 .patient-navigation {
@@ -508,7 +501,7 @@ dt {
 }
 
 .field label {
-  font-size: 1rem;
+  font-size: 0.875rem;
   font-weight: 500;
 }
 
@@ -836,18 +829,6 @@ dd {
   margin-bottom: 8px;
 }
 
-.table-panel,
-.panel.entry {
-  animation: reveal-in var(--dur-med) var(--ease-standard);
-}
-
-@keyframes reveal-in {
-  from {
-    opacity: 0;
-    transform: translateY(4px);
-  }
-}
-
 .entry > .clinical-content > div {
   border-left: 2px solid var(--border);
   padding-left: 16px;
@@ -1064,10 +1045,10 @@ dd {
 
 .draft-mark {
   font:
-    600 0.7rem system-ui,
+    600 0.875rem system-ui,
     sans-serif;
   letter-spacing: 0.05em;
-  color: #7b4c10;
+  color: var(--warning);
   text-align: center;
   margin-bottom: 20px;
 }
@@ -1287,7 +1268,7 @@ dd {
   top: 50%;
   translate: 0 -50%;
   width: 40px;
-  height: 36px;
+  height: 40px;
   display: grid;
   place-items: center;
   border-radius: var(--radius-sm);
@@ -1309,16 +1290,6 @@ dd {
   width: 24px;
   color: var(--muted-foreground);
   pointer-events: none;
-}
-
-.saved-check {
-  /* Light green: renders on the filled primary button. */
-  color: oklch(0.85 0.14 152);
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  font-weight: 500;
-  animation: notice-in var(--dur-med) var(--ease-standard);
 }
 
 .swap-icon {
@@ -1580,5 +1551,53 @@ dd {
   .paper-writing p,
   .rx-body {
     white-space: pre-wrap;
+  }
+}
+
+/* Keep completion in reach while the long form scrolls beneath patient identity. */
+.sticky-form-actions {
+  position: sticky;
+  bottom: 0;
+  z-index: 4;
+  align-items: center;
+  background: var(--card);
+  padding: 16px 0;
+}
+.sticky-form-actions > .hint {
+  flex: 1 1 16rem;
+}
+.form-panel .field,
+.form-panel :is(input, textarea, select),
+.form-panel :is(h1, h2, h3) {
+  scroll-margin-top: 12rem;
+  scroll-margin-bottom: 8rem;
+}
+.command-identity {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+.command-number {
+  overflow-wrap: anywhere;
+  min-width: 0;
+  text-align: right;
+}
+.command-search .search-clear-slot button {
+  min-height: 40px;
+}
+.preview-guidance {
+  margin-bottom: 12px;
+}
+.paper-scale {
+  width: 800px;
+  margin-inline: auto;
+}
+@media print {
+  .paper-scale {
+    width: auto;
+    zoom: 1 !important;
+  }
+  .preview-guidance {
+    display: none;
   }
 }

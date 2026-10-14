@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import type {
   ClinicApi,
+  ClinicError,
   ClinicDocument,
   Entry,
   Patient,
@@ -310,15 +311,40 @@ function Workspace({
   onLogout: () => Promise<void>;
   onExpired: () => void;
 }): ReactElement {
-  const [screen, setScreen] = useState<Screen>({ kind: 'registry' });
+  const [context, setContext] = useState<{
+    screen: Screen;
+    patient: Patient | null;
+    generation: number;
+  }>({ screen: { kind: 'registry' }, patient: null, generation: 0 });
+  const { screen, patient, generation } = context;
   const [palette, setPalette] = useState(false);
-  const [patient, setPatient] = useState<Patient | null>(null);
+  const paletteOrigin = useRef<HTMLElement | null>(null);
+  const restorePaletteFocus = useCallback((): void => {
+    if (paletteOrigin.current?.isConnected) paletteOrigin.current.focus();
+  }, []);
   const [dirty, setDirty] = useState(false);
+  const dirtyRef = useRef(false);
+  const selection = useRef(0);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<ClinicError | null>(null);
   const [available, setAvailable] = useState<boolean | null>(null);
   const [wan, setWan] = useState(true);
   const [notice, setNotice] = useState('');
   const heading = useRef<HTMLElement>(null);
-  const { busy, error, run } = useOperation(onExpired);
+  const markDirty = useCallback((value: boolean): void => {
+    dirtyRef.current = value;
+    setDirty(value);
+    if (value) {
+      selection.current++;
+      setBusy(false);
+    }
+  }, []);
+  useEffect(
+    () => (): void => {
+      selection.current++;
+    },
+    [],
+  );
   const refreshHealth = useCallback(async (): Promise<void> => {
     try {
       setAvailable(null);
@@ -355,6 +381,11 @@ function Workspace({
     function toggle(event: KeyboardEvent): void {
       if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'k') {
         event.preventDefault();
+        if (!document.querySelector('.command-dialog[open]'))
+          paletteOrigin.current =
+            document.activeElement instanceof HTMLElement
+              ? document.activeElement
+              : null;
         setPalette((current) => !current);
       }
     }
@@ -418,41 +449,75 @@ function Workspace({
       window.clearInterval(timer);
     };
   }, [api, demo, onExpired, staff]);
-  function navigate(next: Screen): void {
-    if (dirty && !window.confirm('Discard unsaved changes?')) return;
-    setDirty(false);
-    setNotice('');
-    setScreen(next);
+  function commit(
+    next: Screen,
+    nextPatient: Patient | null,
+    feedback = '',
+  ): void {
+    selection.current++;
+    setBusy(false);
+    setError(null);
+    markDirty(false);
+    setNotice(feedback);
+    setContext((current) => ({
+      screen: next,
+      patient: nextPatient,
+      generation: current.generation + 1,
+    }));
     requestAnimationFrame(() => heading.current?.focus());
     window.scrollTo(0, 0);
   }
+  function navigate(next: Screen, nextPatient = patient): void {
+    selection.current++;
+    setBusy(false);
+    if (dirtyRef.current && !window.confirm('Discard unsaved changes?')) return;
+    commit(
+      next,
+      next.kind === 'registry' || next.kind === 'register' ? null : nextPatient,
+    );
+  }
   async function select(record: Patient): Promise<void> {
-    const result = await run(() => api.getPatient({ id: record.id }));
-    if (result) {
-      setPatient(result);
-      navigate({ kind: 'chart', tab: 'details' });
+    const request = ++selection.current;
+    setBusy(true);
+    setError(null);
+    try {
+      const result = await api.getPatient({ id: record.id });
+      if (request !== selection.current) return;
+      if (!result.ok) {
+        setError(result.error);
+        if (result.error.code === 'UNAUTHENTICATED') onExpired();
+        return;
+      }
+      if (result.data.id !== record.id) {
+        setError({
+          code: 'UNAVAILABLE',
+          message: 'The selected patient could not be confirmed. Search again.',
+        });
+        return;
+      }
+      navigate({ kind: 'chart', tab: 'details' }, result.data);
+    } catch {
+      if (request === selection.current)
+        setError({
+          code: 'UNAVAILABLE',
+          message:
+            'Unable to open this patient. Your current input is unchanged. Check the clinic connection and try again.',
+        });
+    } finally {
+      if (request === selection.current) setBusy(false);
     }
   }
   function saved(record: Patient): void {
-    setPatient(record);
-    setDirty(false);
-    setScreen({ kind: 'chart', tab: 'details' });
-    requestAnimationFrame(() => {
-      heading.current?.focus();
-      window.scrollTo(0, 0);
-    });
-    setNotice(
+    commit(
+      { kind: 'chart', tab: 'details' },
+      record,
       demo ? 'Demo patient saved in memory.' : 'Saved on this clinic server.',
     );
   }
   function done(tab: ChartTab): void {
-    setDirty(false);
-    setScreen({ kind: 'chart', tab });
-    requestAnimationFrame(() => {
-      heading.current?.focus();
-      window.scrollTo(0, 0);
-    });
-    setNotice(
+    commit(
+      { kind: 'chart', tab },
+      patient,
       demo ? 'Demo changes saved in memory.' : 'Saved on this clinic server.',
     );
   }
@@ -558,10 +623,12 @@ function Workspace({
                 size="sm"
                 onClick={() => {
                   if (
-                    !dirty ||
+                    !dirtyRef.current ||
                     window.confirm('Discard unsaved changes and sign out?')
-                  )
+                  ) {
+                    selection.current++;
                     void onLogout();
+                  }
                 }}
               >
                 Sign out
@@ -615,6 +682,11 @@ function Workspace({
               </p>
             )}
             {error && <ErrorNotice error={error} />}
+            {busy && (
+              <p role="status" className="notice">
+                Opening patient record…
+              </p>
+            )}
             {notice && (
               <p className="notice success" role="status">
                 {notice}
@@ -652,7 +724,6 @@ function Workspace({
                 demo={demo}
                 onSelect={(p) => void select(p)}
                 onRegister={() => {
-                  setPatient(null);
                   navigate({ kind: 'register' });
                 }}
                 onExpired={onExpired}
@@ -660,6 +731,7 @@ function Workspace({
             )}
             {(screen.kind === 'register' || screen.kind === 'editPatient') && (
               <PatientForm
+                key={generation}
                 api={api}
                 patient={
                   screen.kind === 'editPatient' && patient ? patient : undefined
@@ -673,7 +745,7 @@ function Workspace({
                       : { kind: 'registry' },
                   )
                 }
-                onDirty={setDirty}
+                onDirty={markDirty}
                 onExpired={onExpired}
               />
             )}
@@ -700,36 +772,39 @@ function Workspace({
             )}
             {patient && screen.kind === 'entry' && (
               <EntryForm
+                key={generation}
                 api={api}
                 patient={patient}
                 entry={screen.entry}
                 correction={screen.correction}
                 onDone={() => done('medical')}
-                onDirty={setDirty}
+                onDirty={markDirty}
                 onCancel={() => backToChart('medical')}
                 onExpired={onExpired}
               />
             )}
             {patient && screen.kind === 'vitals' && (
               <VitalsForm
+                key={generation}
                 api={api}
                 patient={patient}
                 record={screen.record}
                 correction={screen.correction}
                 onDone={() => done('vitals')}
-                onDirty={setDirty}
+                onDirty={markDirty}
                 onCancel={() => backToChart('vitals')}
                 onExpired={onExpired}
               />
             )}
             {patient && screen.kind === 'document' && (
               <Documents
+                key={generation}
                 api={api}
                 entry={screen.entry}
                 issued={screen.document}
                 kind={screen.documentKind}
                 demo={demo}
-                onDirty={setDirty}
+                onDirty={markDirty}
                 onBack={() => backToChart('medical')}
                 onExpired={onExpired}
               />
@@ -803,6 +878,7 @@ function Workspace({
         api={api}
         staff={staff}
         open={palette}
+        restoreFocus={restorePaletteFocus}
         onDismiss={() => setPalette(false)}
         onSelect={(record) => {
           setPalette(false);
@@ -810,7 +886,6 @@ function Workspace({
         }}
         onRegister={() => {
           setPalette(false);
-          setPatient(null);
           navigate({ kind: 'register' });
         }}
       />

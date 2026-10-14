@@ -159,6 +159,10 @@ function route<K extends keyof Requests>(name: K, input: Requests[K]): Route {
         path: `/patients?search=${encodeURIComponent(value?.search as string)}`,
         method: 'GET',
       };
+    case 'readPatient':
+      return { path: `/patients/${id}`, method: 'GET' };
+    case 'readDocuments':
+      return { path: `/patients/${patientId}/documents`, method: 'GET' };
     case 'createPatient':
       return { path: '/patients', method: 'POST', body: input };
     case 'updatePatient':
@@ -427,8 +431,11 @@ export class ClinicBroker {
           data = login.staff;
         } else {
           const guard =
-            name === 'searchPatients' && this.principal?.role === 'medtech'
-              ? array(patientIdentity)
+            (name === 'searchPatients' || name === 'readPatient') &&
+            this.principal?.role === 'medtech'
+              ? name === 'searchPatients'
+                ? array(patientIdentity)
+                : patientIdentity
               : responseGuards[name as keyof typeof responseGuards];
           data = guard(raw);
           if (
@@ -448,6 +455,27 @@ export class ClinicBroker {
             )
           )
             throw new BoundaryError('INVALID_RESPONSE', 'Wrong discipline');
+          if (
+            name === 'readPatient' &&
+            (data as Responses['readPatient']).id !==
+              (input as Requests['readPatient']).id.toLowerCase()
+          )
+            throw new BoundaryError(
+              'INVALID_RESPONSE',
+              'Patient identity mismatch',
+            );
+          if (
+            name === 'readDocuments' &&
+            (data as Responses['readDocuments']).some(
+              (document) =>
+                document.patientId !==
+                (input as Requests['readDocuments']).patientId.toLowerCase(),
+            )
+          )
+            throw new BoundaryError(
+              'INVALID_RESPONSE',
+              'Patient history mismatch',
+            );
           if (
             name === 'readDocument' &&
             (data as IssuedDocument).id !==
