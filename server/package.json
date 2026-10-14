@@ -6,7 +6,7 @@
   "private": true,
   "license": "UNLICENSED",
   "scripts": {
-    "build": "nest build",
+    "build": "pnpm prisma:generate && nest build",
     "typecheck": "tsc --noEmit -p tsconfig.json",
     "format": "prettier --write src test *.mts *.json prisma7.config.ts",
     "format:check": "prettier --check src test *.mts *.json prisma7.config.ts",
@@ -20,7 +20,11 @@
     "test:cov": "vitest run --coverage --config vitest.config.mts",
     "test:e2e": "vitest run --config vitest.e2e.config.mts",
     "prisma:validate": "prisma validate --config prisma7.config.ts",
-    "prisma:generate": "prisma generate --config prisma7.config.ts"
+    "prisma:generate": "prisma generate --config prisma7.config.ts",
+    "prisma:migrate": "prisma migrate deploy --config prisma7.config.ts",
+    "demo:seed": "pnpm build && node dist/demo-seed.js",
+    "demo:reset": "pnpm build && node dist/demo-reset.js --reset-synthetic-demo",
+    "test:live": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/verify-live.ps1"
   },
   "dependencies": {
     "@nestjs/common": "^11.0.1",

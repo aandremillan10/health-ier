@@ -4,9 +4,16 @@ import { PrismaClient } from '../generated/prisma/client';
 @Injectable()
 export class DatabaseService extends PrismaClient implements OnModuleDestroy {
   constructor() {
-    const connectionString = process.env.DATABASE_URL;
-    if (!connectionString) throw new Error('DATABASE_URL is required');
-    super({ adapter: new PrismaPg({ connectionString }) });
+    const connectionString =
+      process.env.DATABASE_URL ??
+      'postgresql://unconfigured@127.0.0.1:1/healthier_unconfigured';
+    super({
+      adapter: new PrismaPg({
+        connectionString,
+        connectionTimeoutMillis: 5000,
+        query_timeout: 5000,
+      }),
+    });
   }
   async onModuleDestroy(): Promise<void> {
     await this.$disconnect();

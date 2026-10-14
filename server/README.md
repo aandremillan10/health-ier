@@ -1,98 +1,63 @@
-<p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" /></a>
-</p>
+# Clinic EDGE backend
 
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
+NestJS 11, Prisma 7.10 and PostgreSQL implement the approved synthetic clinic-demo-v1.1 staff API. [API.md](API.md) contains every route, fields, permission/error rules and executable curl.exe examples. The database migration and exact immutable outbox contract are versioned under prisma/ and src/mirror-contract.ts.
 
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg" alt="Donate us"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow" alt="Follow us on Twitter"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
+## Fresh Windows setup
 
-## Description
+Node 24 and pnpm 10.30.1 are required. From repository root:
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
-
-## Project setup
-
-```bash
-$ pnpm install
+```powershell
+pnpm install --frozen-lockfile
+powershell -NoProfile -ExecutionPolicy Bypass -File server/scripts/setup-local.ps1
+pnpm --filter server start:prod
 ```
 
-## Compile and run the project
+The setup script downloads pinned official PostgreSQL 16.2 binaries and verifies SHA-256, creates a separate user-local cluster bound to 127.0.0.1:55432, creates only a dedicated healthier_demo_* database, applies migrations, then seeds eight named synthetic accounts. It preserves an existing server/.env by refusing to overwrite it. No existing production database is reset. Docker is optional; an existing dedicated loopback PostgreSQL database may instead be configured privately in server/.env, followed by prisma:migrate and demo:seed.
 
-```bash
-# development
-$ pnpm run start
+Secure random account passwords are scrypt-hashed in PostgreSQL. Plaintext credentials exist only in ignored .private/demo-credentials.json; Windows setup restricts that directory to the current user. Open that local file privately. Never paste credentials into Git, issues, screenshots or logs. Seeding again verifies/preserves existing accounts, password hashes, metadata revisions and event timestamps. No public account administration or role registration exists.
 
-# watch mode
-$ pnpm run start:dev
+| Username                            | Synthetic role           |
+| ----------------------------------- | ------------------------ |
+| demo.doctor.head                    | Doctor, exactly one head |
+| demo.doctor                         | Doctor                   |
+| demo.dentist.one / demo.dentist.two | Dentists                 |
+| demo.medtech.one / demo.medtech.two | Medical technologists    |
+| demo.attendant                      | Nursing attendant        |
+| demo.clerk                          | Clerk                    |
 
-# production mode
-$ pnpm run start:prod
+The isolated authorization patient is 20000000-0000-4000-8000-000000000001; dental and laboratory fixture entries are 30000000-0000-4000-8000-000000000001 and 30000000-0000-4000-8000-000000000002. They contain only synthetic proof text.
+
+## Run and verify
+
+```powershell
+pnpm --filter server prisma:migrate
+pnpm --filter server demo:seed
+pnpm --filter server start:prod
+# In a separate terminal:
+pnpm --filter server test:live
+cd server
+node dist/live-db-checks.js
+# Restart only this API, then:
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts/verify-persistence.ps1
+cd ..
+pnpm check
 ```
 
-## Run tests
+Normal pnpm check uses isolated mocked database readiness plus unit security checks; the explicitly named live scripts exercise the real PostgreSQL API and actual atomic rollback/immutability. Server connection/query timeouts are five seconds and unavailable dependencies return safe 503. Stop/restart the API process for connection-failure and persistence proof; do not stop shared databases or unrelated applications.
 
-```bash
-# unit tests
-$ pnpm run test
+For a deliberate synthetic reset only, stop this API and run pnpm --filter server demo:reset followed by demo:seed. This command removes every record, session, issued document, mirror event and private account credential file in the configured dedicated loopback healthier_demo_* EDGE database. The script refuses CLOUD mode, non-loopback hosts and other database names. It never runs automatically.
 
-# e2e tests
-$ pnpm run test:e2e
+## Actual local proof runtime
 
-# test coverage
-$ pnpm run test:cov
+The implementation run used C:/Users/ajapa/.codex/healthier-runtime with portable PostgreSQL on 127.0.0.1:55432 and database healthier_demo_core. Its private admin password file is outside Git at admin-password.private in that directory. Current EDGE configuration and accounts are at C:/Users/ajapa/.codex/worktrees/backend-demo/health-ier/server/.env and the sibling .private/demo-credentials.json. These paths are temporary task/runtime locations; fresh setup above creates the equivalent under the chosen checkout and LOCALAPPDATA/HealthierSyntheticPostgres.
+
+Cluster commands (use only this application's dedicated runtime):
+
+```powershell
+& 'C:/Users/ajapa/.codex/healthier-runtime/pgsql/bin/pg_ctl.exe' -D 'C:/Users/ajapa/.codex/healthier-runtime/data' status
+& 'C:/Users/ajapa/.codex/healthier-runtime/pgsql/bin/pg_ctl.exe' -D 'C:/Users/ajapa/.codex/healthier-runtime/data' -l 'C:/Users/ajapa/.codex/healthier-runtime/postgresql.log' -o '-h 127.0.0.1 -p 55432' start
+# Stop only when no local mirror/API worker is using it:
+& 'C:/Users/ajapa/.codex/healthier-runtime/pgsql/bin/pg_ctl.exe' -D 'C:/Users/ajapa/.codex/healthier-runtime/data' stop
 ```
 
-## Deployment
-
-When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.
-
-If you are looking for a cloud-based platform to deploy your NestJS application, check out [Mau](https://mau.nestjs.com), our official platform for deploying NestJS applications on AWS. Mau makes deployment straightforward and fast, requiring just a few simple steps:
-
-```bash
-$ pnpm install -g @nestjs/mau
-$ mau deploy
-```
-
-With Mau, you can deploy your application in just a few clicks, allowing you to focus on building features rather than managing infrastructure.
-
-## Resources
-
-Check out a few resources that may come in handy when working with NestJS:
-
-- Visit the [NestJS Documentation](https://docs.nestjs.com) to learn more about the framework.
-- For questions and support, please visit our [Discord channel](https://discord.gg/G7Qnnhy).
-- To dive deeper and get more hands-on experience, check out our official video [courses](https://courses.nestjs.com/).
-- Deploy your application to AWS with the help of [NestJS Mau](https://mau.nestjs.com) in just a few clicks.
-- Visualize your application graph and interact with the NestJS application in real-time using [NestJS Devtools](https://devtools.nestjs.com).
-- Need help with your project (part-time to full-time)? Check out our official [enterprise support](https://enterprise.nestjs.com).
-- To stay in the loop and get updates, follow us on [X](https://x.com/nestframework) and [LinkedIn](https://linkedin.com/company/nestjs).
-- Looking for a job, or have a job to offer? Check out our official [Jobs board](https://jobs.nestjs.com).
-
-## Support
-
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
-
-## Stay in touch
-
-- Author - [Kamil Myśliwiec](https://twitter.com/kammysliwiec)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
-
-## License
-
-Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
+Internet is not needed by the local auth/domain/issuance code. Independent workstation persistence during LAN/server failure is outside scope. Fixed-template presentation, Electron token/IPC/printer boundaries and real cloud mirror evidence are separate coordinated stages. Neither API issuance nor accepted printer submission proves physical paper output. The demo makes no production rollout or backup/privacy/retention assurance.

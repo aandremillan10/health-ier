@@ -1,12 +1,13 @@
 import { Controller, Get } from '@nestjs/common';
-import { AppService } from './app.service';
+import { DatabaseService } from './database/database.service';
+import { serverMode } from './config';
 
 @Controller()
 export class AppController {
-  constructor(private readonly appService: AppService) {}
-
-  @Get()
-  getHello(): string {
-    return this.appService.getHello();
+  constructor(private readonly db: DatabaseService) {}
+  @Get('health')
+  async health(): Promise<{ status: 'ok'; mode: 'EDGE' | 'CLOUD' }> {
+    await this.db.$queryRaw`SELECT 1`;
+    return { status: 'ok', mode: serverMode() };
   }
 }
