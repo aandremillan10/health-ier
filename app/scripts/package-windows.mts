@@ -54,15 +54,22 @@ async function files(directory: string): Promise<string[]> {
 }
 try {
   await mkdir(output, { recursive: true });
-  await cp(join(appDirectory, 'out'), join(stage, 'out'), { recursive: true });
+  for (const part of ['main', 'preload', 'renderer'])
+    await cp(join(appDirectory, 'out', part), join(stage, 'out', part), {
+      recursive: true,
+    });
   const compiled = await files(join(stage, 'out'));
   assert.ok(
     compiled.some((file) => /header-.*\.jpg$/.test(file)),
     'Missing print header asset',
   );
   for (const file of compiled) {
+    const relative = file.slice(stage.length + 1).replaceAll('\\', '/');
     assert.ok(
-      !/\.(map|env|ts|tsx|mts)$/.test(file),
+      !relative
+        .split('/')
+        .some((part) => /^\.env/i.test(part) || part === '.private') &&
+        !/\.(map|ts|tsx|mts)$/.test(file),
       `Unexpected compiled file: ${file}`,
     );
     if (!file.endsWith('.cjs')) continue;

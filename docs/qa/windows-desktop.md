@@ -38,12 +38,12 @@ Set the process environment before starting the executable from PowerShell:
 ```powershell
 # Replace with the actual writable clinic EDGE origin and trusted certificate.
 $env:HEALTH_IER_SERVER_URL = 'https://clinic-edge.example.org:3000'
-Start-Process -FilePath .\AMLIG-win32-x64\AMLIG.exe
+Start-Process -FilePath .\AMLIG\AMLIG-win32-x64\AMLIG.exe
 ```
 
 The origin must have no path, query, username or password. The server certificate must already be trusted by Windows/Electron. A packaged app does **not** load a nearby `.env` file. No password/token belongs in the launch command or exported folder. Staff sign in using their assigned server accounts.
 
-The packaged client requires HTTPS even if `HEALTH_IER_ALLOW_SYNTHETIC_HTTP=true` is present. That flag allows loopback HTTP only in an unpackaged synthetic development session. Do not disable certificate verification or change a workstation's trust store to make a test server work. A CLOUD mirror is read-only and does not substitute for a writable EDGE server.
+The packaged client requires HTTPS even if `HEALTH_IER_ALLOW_SYNTHETIC_HTTP=true` is present. That flag allows loopback HTTP only in an unpackaged synthetic development session. Do not disable certificate verification, trust an unverified CA or change trust automatically. Authorized clinic CA installation requires verifying its fingerprint through a trusted channel; follow the clinic LAN/TLS deployment guide. A CLOUD mirror is read-only and does not substitute for a writable EDGE server.
 
 The Electron shell retains context isolation, sandboxing, disabled renderer Node integration and named preload methods. Account permissions and validation remain enforced by the server. Internet outages are supported while the LAN/server remain available; workstation operation during LAN/server failure is outside scope.
 
