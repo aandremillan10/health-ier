@@ -219,6 +219,23 @@ test('failed desktop sign-in keeps its actionable error after the replacement re
   ).toBeVisible();
 });
 
+test('a delayed failed-login reset preserves the actionable sign-in error', async ({
+  page,
+}): Promise<void> => {
+  await boot(page, { loginFails: true, deferLoginReset: true });
+  await page.getByLabel('Username', { exact: true }).fill('synthetic');
+  await page.getByLabel('Password', { exact: true }).fill('SYNTHETIC-TEST');
+  await page.getByRole('button', { name: 'Sign in', exact: true }).click();
+  await expect(page.getByRole('alert')).toContainText(
+    'Check your username and password.',
+  );
+  await page.evaluate(() => window.desktopFixture.loginReset());
+  await expect(page.getByRole('alert')).toContainText(
+    'Check your username and password.',
+  );
+  await expect(page.getByLabel('Password', { exact: true })).toHaveValue('');
+});
+
 for (const reason of [
   'expired',
   'logout',

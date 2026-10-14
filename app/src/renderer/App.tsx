@@ -72,10 +72,9 @@ export function App(): ReactElement {
     setStaff(null);
     setPassword('');
     setUsername('');
-    clearError();
     setSession((s) => s + 1);
     setSessionNotice('Your session changed or expired. Sign in again.');
-  }, [clearError]);
+  }, []);
   function wobble(): void {
     const element = panelRef.current;
     if (!element) return;
