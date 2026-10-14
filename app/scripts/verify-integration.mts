@@ -477,7 +477,7 @@ try {
     .click();
   await expect(
     page.getByRole('heading', {
-      name: `Latest version � Revision ${advanced.revision} � draft`,
+      name: `Latest version \u00b7 Revision ${advanced.revision} \u00b7 draft`,
       exact: true,
     }),
   ).toBeVisible();
