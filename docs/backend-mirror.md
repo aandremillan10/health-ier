@@ -63,7 +63,7 @@ Successful response: `{"acknowledged":[{"eventId":"895cfa11-1377-416a-95c3-2df69
 
 ## Delivery and authorized outage proof
 
-The worker selects committed rows with `acknowledgedAt=null`, bounded to 50 events, ordering by attempts then creation time so missing parents can pass blocked children. There is no last-sequence cursor. A 10-second HTTPS timeout, rejected redirects and a bounded 1–60 second retry delay preserve local pending work. The worker updates only exact sent IDs/revisions after validating every ACK. New versions committed during an in-flight send stay pending. No request to save local domain data awaits the worker.
+The worker selects committed rows with `acknowledgedAt=null`, bounded to 50 events and a 512 KiB UTF-8 JSON envelope, ordering by attempts then creation time so missing parents can pass blocked children. The Nest JSON parser permits 1 MiB, so valid large/Unicode clinical versions split into deliverable batches. An oversized individual event remains pending with `EVENT_TOO_LARGE`; unknown remote error strings never enter status. There is no last-sequence cursor. A 10-second HTTPS timeout, rejected redirects and a bounded 1–60 second retry delay preserve local pending work. The worker updates only exact sent IDs/revisions after validating every ACK. New versions committed during an in-flight send stay pending. No request to save local domain data awaits the worker.
 
 To pause only this app's outbound mirror, run/restart EDGE with `MIRROR_ENABLED=false`. Exercise local clinic writes, verify durable pending events, then restore `MIRROR_ENABLED=true`. Shared internet, network adapters, firewalls and unrelated processes remain untouched. Compare allowed cloud IDs/revisions/content through an authorized Railway SSH database/operator command; do not add staff cloud login/read APIs for evidence.
 
@@ -83,3 +83,15 @@ Deploy current local source using `railway up --detach --yes --project 2683af6d-
 `pnpm --filter server test` exercises schema/secret allowlists, digest canonicalization, byte-safe machine authentication and secure transport configuration. With private `MIRROR_TEST_EDGE_URL`/`MIRROR_TEST_CLOUD_URL` pointing to newly provisioned dedicated databases with migrations applied, `pnpm --filter server test:e2e` exercises atomic rollback, immutable DB event content, lost ACK/restart, receipt failure rollback, late commit, in-flight writes, wrong ACK, event/equal/stale revision handling, dependencies/finalized protection, bootstrap replay/concurrent writes, and absence of cloud authentication authority. Without these explicit test URLs, live cases are skipped rather than silently touching the clinic database. Only the isolated test databases are cleared during empty-cloud bootstrap verification.
 
 Physical printing, teammate renderer flows, production privacy/retention and independent workstation operation remain separate verification/scope.
+
+Run `server/scripts/verify-mirror-cloud.ps1` for ten real HTTPS curl assertions covering health, exact ACK/replay, staff-token ingestion denial, wrong clinic/schema, excluded secret fields, conflicting event content, CLOUD bootstrap denial and unauthenticated status denial. Compare actual EDGE allowed versions with controlled operator output:
+
+```powershell
+$env:DOTENV_CONFIG_PATH = 'C:/Users/ajapa/.codex/worktrees/backend-demo/health-ier/server/.env'
+node server/dist/mirror/operator.js validate-edge
+# Run inside CLOUD; output contains IDs/revisions/digests and authentication-row counts only.
+ssh -i C:/Users/ajapa/.ssh/health-ier-demo -o BatchMode=yes -o ConnectTimeout=20 clinic-cloud-production-21ec.up.railway.app@ssh.railway.com 'node /workspace/server/dist/mirror/operator.js inspect' > cloud-comparison.json
+node server/dist/mirror/operator.js compare cloud-comparison.json
+```
+
+Each parallel verification process needs its own two fresh test databases and private URL file; running two suites against the same fixture races the intentionally cleared CLOUD tables. Task operator SSH key copies are private at `C:/Users/ajapa/.codex/secrets/health-ier-demo/railway-demo` and `C:/Users/ajapa/.ssh/health-ier-demo`; its registered public key is named `health-ier-synthetic-demo`. The initial local CLI account differed from the connected Railway account; after the user's explicit re-login, exact project access and local-source upload were verified.
