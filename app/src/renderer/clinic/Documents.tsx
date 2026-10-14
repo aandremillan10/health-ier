@@ -66,14 +66,13 @@ export function Documents({
   >('loading');
   const [headerAttempt, setHeaderAttempt] = useState(0);
   const [copied, setCopied] = useState(false);
+  const [copyError, setCopyError] = useState(false);
   const copyTimer = useRef(0);
   const paperShell = useRef<HTMLDivElement>(null);
   const [fitPreview, setFitPreview] = useState(true);
   const [paperZoom, setPaperZoom] = useState(1);
-  const zoomRef = useRef(1);
   const { busy, error, conflict, run, clearError } = useOperation(onExpired);
   const title = form.kind === 'prescription' ? 'prescription' : 'certificate';
-  useEffect(() => (): void => onDirty(false), [onDirty]);
   useEffect(
     () => (): void => {
       window.clearTimeout(copyTimer.current);
@@ -86,14 +85,12 @@ export function Documents({
     const measure = (): void => {
       const paper = shell.querySelector<HTMLElement>('.document-paper');
       if (!paper) return;
-      const natural = paper.offsetWidth / zoomRef.current;
+      const natural = paper.offsetWidth;
       const next = Math.min(1, (shell.clientWidth - 32) / natural);
-      zoomRef.current = next;
       setPaperZoom(next);
     };
     const frame = requestAnimationFrame((): void => {
       if (!fitPreview) {
-        zoomRef.current = 1;
         setPaperZoom(1);
         return;
       }
@@ -229,12 +226,14 @@ export function Documents({
   }
   async function copyId(): Promise<void> {
     if (!document?.id) return;
+    setCopyError(false);
     try {
       await navigator.clipboard.writeText(document.id);
       setCopied(true);
       copyTimer.current = window.setTimeout(() => setCopied(false), 1400);
     } catch {
       setCopied(false);
+      setCopyError(true);
     }
   }
   return (
@@ -419,7 +418,11 @@ export function Documents({
             <>
               <div className="section-heading">
                 <h3>Print preview</h3>
-                <div className="segmented">
+                <div
+                  className="segmented"
+                  role="group"
+                  aria-label="Preview scale"
+                >
                   <Button
                     variant="ghost"
                     size="sm"
@@ -439,6 +442,14 @@ export function Documents({
                 </div>
                 <State status={document.status} />
               </div>
+              <p className="hint preview-guidance">
+                {document.status === 'preview'
+                  ? 'Draft preview. Review the full document before issuing.'
+                  : 'Issued copy. Reprinting keeps this document ID and content.'}
+                {fitPreview
+                  ? ` Fit width (${Math.round(paperZoom * 100)}%).`
+                  : ' 100% scale. Scroll to inspect the full page.'}
+              </p>
               <div
                 className="paper-container"
                 tabIndex={0}
@@ -446,7 +457,10 @@ export function Documents({
                 aria-label="Document preview"
                 ref={paperShell}
               >
-                <div style={{ zoom: fitPreview ? paperZoom : 1 }}>
+                <div
+                  className="paper-scale"
+                  style={{ zoom: fitPreview ? paperZoom : 1 }}
+                >
                   <DocumentPaper
                     key={headerAttempt}
                     document={document}
@@ -481,6 +495,12 @@ export function Documents({
                   <p className="hint" data-testid="document-id">
                     Document ID: {document.id}
                   </p>
+                  {copyError && (
+                    <p role="alert" className="notice error">
+                      Could not copy the document ID. Select and copy the ID
+                      above.
+                    </p>
+                  )}
                   {printersLoading && <p role="status">Finding printers…</p>}
                   {!printersLoading &&
                     !printerError &&

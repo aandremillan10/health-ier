@@ -84,7 +84,7 @@ export function Registry({
               id="patient-search"
               value={query}
               onValueChange={setQuery}
-              placeholder={demo ? 'Patient name or number' : 'Patient name'}
+              placeholder="Patient name or number"
               autoFocus
             />
             <Button disabled={busy} type="submit">
@@ -104,10 +104,7 @@ export function Registry({
       </ErrorNotice>
       {loading && <Loading>Finding patient records…</Loading>}
       {!loading && !displayError && patients === null && (
-        <Empty>
-          Enter a patient {demo ? 'name or number' : 'name'} to find their
-          record.
-        </Empty>
+        <Empty>Enter a patient name or number to find their record.</Empty>
       )}
       {patients && patients.length === 0 && (
         <Empty
@@ -217,15 +214,11 @@ export function PatientForm({
     employeeIdentifier: patient?.employeeIdentifier ?? '',
   });
   const [revision, setRevision] = useState(patient?.revision ?? 0);
-  const [saved, setSaved] = useState(false);
-  const savedTimer = useRef(0);
   const [matches, setMatches] = useState<Patient[] | null>(null);
   const [confirmed, setConfirmed] = useState(false);
   const [latest, setLatest] = useState<Patient | null>(null);
   const checkId = useRef(0);
   const { busy, error, conflict, run, clearError } = useOperation(onExpired);
-  useEffect(() => (): void => onDirty(false), [onDirty]);
-  useEffect(() => (): void => window.clearTimeout(savedTimer.current), []);
   function change(name: keyof typeof form, value: string): void {
     setForm({ ...form, [name]: value });
     onDirty(true);
@@ -255,9 +248,7 @@ export function PatientForm({
         : api.createPatient(input),
     );
     if (result) {
-      onDirty(false);
-      setSaved(true);
-      savedTimer.current = window.setTimeout(() => onSaved(result), 700);
+      onSaved(result);
     }
   }
   async function reviewLatest(): Promise<void> {
@@ -449,7 +440,7 @@ export function PatientForm({
             )}
           </section>
         )}
-        <div className="form-actions">
+        <div className="form-actions sticky-form-actions">
           <Button type="button" variant="outline" onClick={onCancel}>
             Cancel
           </Button>
@@ -457,35 +448,13 @@ export function PatientForm({
             type="submit"
             disabled={
               busy ||
-              saved ||
               conflict ||
               latest !== null ||
               (!patient &&
                 (matches === null || (matches.length > 0 && !confirmed)))
             }
           >
-            {saved ? (
-              <span className="saved-check">
-                <svg
-                  aria-hidden="true"
-                  width="16"
-                  height="16"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2.5"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                >
-                  <path d="m4 12.5 5 5L20 6.5" />
-                </svg>
-                Patient saved
-              </span>
-            ) : busy ? (
-              'Saving…'
-            ) : (
-              'Save patient'
-            )}
+            {busy ? 'Saving…' : 'Save patient'}
           </Button>
         </div>
       </form>
