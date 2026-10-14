@@ -111,6 +111,7 @@ let patientId: string | undefined;
 let prescriptionId: string | undefined;
 let certificateId: string | undefined;
 let otherPatientId: string | undefined;
+let printerCount = 0;
 const errors: string[] = [];
 async function start(): Promise<void> {
   application = await _electron.launch({
@@ -581,6 +582,7 @@ try {
   await expect(page.getByTestId('entry')).toContainText(
     'Synthetic corrected findings',
   );
+  printerCount = (await bridge('listPrinters', undefined)).length;
   const persistedHistory = await bridge('readDocuments', { patientId });
   assert.deepEqual(persistedHistory, issuedSnapshots);
   assert.deepEqual(
@@ -717,6 +719,8 @@ try {
         certificateId,
         results,
         rendererErrors: errors,
+        printerCount,
+        printerSubmissionTested: false,
         physicalPrintTested: false,
       },
       null,
