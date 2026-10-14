@@ -18,8 +18,34 @@ export function fail(
 export class SafeErrorFilter implements ExceptionFilter {
   catch(error: unknown, host: ArgumentsHost): void {
     const response = host.switchToHttp().getResponse<Response>();
+    if (typeof error === 'object' && error !== null && 'type' in error) {
+      if (error.type === 'entity.parse.failed') {
+        response.status(400).json({
+          code: 'VALIDATION',
+          message: 'The request body must contain valid JSON.',
+        });
+        return;
+      }
+      if (error.type === 'entity.too.large') {
+        response.status(413).json({
+          code: 'PAYLOAD_TOO_LARGE',
+          message: 'The request body is too large.',
+        });
+        return;
+      }
+    }
     if (error instanceof HttpException) {
       const body = error.getResponse();
+      if (
+        error.getStatus() === 400 &&
+        !(typeof body === 'object' && 'code' in body)
+      ) {
+        response.status(400).json({
+          code: 'VALIDATION',
+          message: 'The request body is invalid.',
+        });
+        return;
+      }
       response
         .status(error.getStatus())
         .json(

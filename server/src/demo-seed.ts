@@ -1,6 +1,6 @@
 import 'dotenv/config';
 import { randomBytes } from 'node:crypto';
-import { mkdir, readFile, writeFile } from 'node:fs/promises';
+import { mkdir, readFile, rm, writeFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import { DatabaseService } from './database/database.service';
 import { hashPassword } from './auth';
@@ -76,6 +76,21 @@ export function assertSyntheticDatabase(value: string | undefined): void {
       'Seed/reset requires a dedicated loopback healthier_demo_* EDGE database.',
     );
 }
+export async function seedWithPrivateCredentials<T>(
+  path: string,
+  content: string,
+  action: () => Promise<T>,
+  rollbackConfirmed: () => Promise<boolean>,
+): Promise<T> {
+  await writeFile(path, content, { mode: 0o600, flag: 'wx' });
+  try {
+    return await action();
+  } catch (error: unknown) {
+    // An uncertain commit keeps credentials; remove only this attempt's file after confirmed rollback.
+    if (await rollbackConfirmed().catch(() => false)) await rm(path);
+    throw error;
+  }
+}
 async function seed(): Promise<void> {
   assertSyntheticDatabase(process.env.DATABASE_URL);
   const db = new DatabaseService();
@@ -115,63 +130,65 @@ async function seed(): Promise<void> {
     }));
     await mkdir(resolve(privatePath, '..'), { recursive: true });
     // Write credentials before committing accounts so a filesystem failure cannot strand users.
-    await writeFile(
+    await seedWithPrivateCredentials(
       privatePath,
       JSON.stringify({ accounts: credentials }, null, 2),
-      { mode: 0o600, flag: 'wx' },
+      () =>
+        db.$transaction(async (tx) => {
+          const timestamp = new Date('2026-10-14T00:00:00.000Z');
+          const staff = [];
+          for (let index = 0; index < credentials.length; index++) {
+            const account = credentials[index];
+            const record = await tx.staff.create({
+              data: {
+                id: `10000000-0000-4000-8000-${String(index + 1).padStart(12, '0')}`,
+                username: account.username,
+                passwordHash: hashPassword(account.password),
+                displayName: account.displayName,
+                role: account.role,
+                isHead: account.isHead,
+                licenseText:
+                  account.role === 'doctor' ? 'SYNTHETIC-LICENSE' : null,
+                ptrText: account.role === 'doctor' ? 'SYNTHETIC-PTR' : null,
+                createdAt: timestamp,
+                updatedAt: timestamp,
+              },
+            });
+            staff.push(record);
+            await enqueue(tx, 'staff', record);
+          }
+          const patient = await tx.patient.create({
+            data: {
+              id: '20000000-0000-4000-8000-000000000001',
+              fullName: 'Synthetic Authorization Patient',
+              sex: 'unknown',
+              patientCategory: 'other',
+              createdAt: timestamp,
+              updatedAt: timestamp,
+            },
+          });
+          await enqueue(tx, 'patient', patient);
+          for (const [index, discipline, author] of [
+            [1, 'dental', staff[2]],
+            [2, 'laboratory', staff[4]],
+          ] as const) {
+            const entry = await tx.entry.create({
+              data: {
+                id: `30000000-0000-4000-8000-${String(index).padStart(12, '0')}`,
+                patientId: patient.id,
+                authorId: author.id,
+                discipline,
+                text: `Synthetic isolated ${discipline} proof only.`,
+                status: 'draft',
+                createdAt: timestamp,
+                updatedAt: timestamp,
+              },
+            });
+            await enqueue(tx, 'entry', entry);
+          }
+        }),
+      async () => (await db.staff.count()) === 0,
     );
-    await db.$transaction(async (tx) => {
-      const timestamp = new Date('2026-10-14T00:00:00.000Z');
-      const staff = [];
-      for (let index = 0; index < credentials.length; index++) {
-        const account = credentials[index];
-        const record = await tx.staff.create({
-          data: {
-            id: `10000000-0000-4000-8000-${String(index + 1).padStart(12, '0')}`,
-            username: account.username,
-            passwordHash: hashPassword(account.password),
-            displayName: account.displayName,
-            role: account.role,
-            isHead: account.isHead,
-            licenseText: account.role === 'doctor' ? 'SYNTHETIC-LICENSE' : null,
-            ptrText: account.role === 'doctor' ? 'SYNTHETIC-PTR' : null,
-            createdAt: timestamp,
-            updatedAt: timestamp,
-          },
-        });
-        staff.push(record);
-        await enqueue(tx, 'staff', record);
-      }
-      const patient = await tx.patient.create({
-        data: {
-          id: '20000000-0000-4000-8000-000000000001',
-          fullName: 'Synthetic Authorization Patient',
-          sex: 'unknown',
-          patientCategory: 'other',
-          createdAt: timestamp,
-          updatedAt: timestamp,
-        },
-      });
-      await enqueue(tx, 'patient', patient);
-      for (const [index, discipline, author] of [
-        [1, 'dental', staff[2]],
-        [2, 'laboratory', staff[4]],
-      ] as const) {
-        const entry = await tx.entry.create({
-          data: {
-            id: `30000000-0000-4000-8000-${String(index).padStart(12, '0')}`,
-            patientId: patient.id,
-            authorId: author.id,
-            discipline,
-            text: `Synthetic isolated ${discipline} proof only.`,
-            status: 'draft',
-            createdAt: timestamp,
-            updatedAt: timestamp,
-          },
-        });
-        await enqueue(tx, 'entry', entry);
-      }
-    });
     console.log(
       `Seeded eight synthetic accounts; private credentials: ${privatePath}`,
     );

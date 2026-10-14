@@ -1,13 +1,16 @@
 import { NestFactory } from '@nestjs/core';
+import type { NestExpressApplication } from '@nestjs/platform-express';
 import { AppModule } from './app.module';
-import { SafeErrorFilter } from './errors';
+import { configureHttp } from './http';
 import { clinicId, serverMode } from './config';
 
 async function bootstrap(): Promise<void> {
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create<NestExpressApplication>(AppModule, {
+    bodyParser: false,
+  });
   clinicId();
   serverMode();
-  app.useGlobalFilters(new SafeErrorFilter());
+  configureHttp(app);
   app.enableShutdownHooks();
   await app.listen(process.env.PORT ?? 3000);
 }

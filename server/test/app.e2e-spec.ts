@@ -1,25 +1,33 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { INestApplication } from '@nestjs/common';
+import type { NestExpressApplication } from '@nestjs/platform-express';
 import request from 'supertest';
-import { App } from 'supertest/types';
 import { AppModule } from './../src/app.module';
 import { DatabaseService } from '../src/database/database.service';
-import { SafeErrorFilter } from '../src/errors';
+import { configureHttp } from '../src/http';
 import { afterEach, beforeEach, describe, it } from 'vitest';
 
 describe('AppController (e2e)', () => {
-  let app: INestApplication<App>;
+  let app: NestExpressApplication;
+  let databaseAvailable: boolean;
 
   beforeEach(async () => {
+    databaseAvailable = true;
     const moduleFixture: TestingModule = await Test.createTestingModule({
       imports: [AppModule],
     })
       .overrideProvider(DatabaseService)
-      .useValue({ $queryRaw: async (): Promise<[]> => [] })
+      .useValue({
+        $queryRaw: async (): Promise<[]> => {
+          if (!databaseAvailable) throw new Error('private connection detail');
+          return [];
+        },
+      })
       .compile();
 
-    app = moduleFixture.createNestApplication();
-    app.useGlobalFilters(new SafeErrorFilter());
+    app = moduleFixture.createNestApplication<NestExpressApplication>({
+      bodyParser: false,
+    });
+    configureHttp(app);
     await app.init();
   });
 
@@ -34,6 +42,33 @@ describe('AppController (e2e)', () => {
       .get('/patients')
       .expect(401)
       .expect({ code: 'UNAUTHENTICATED', message: 'Sign in to continue.' }));
+  it('malformed JSON is a safe validation failure', () =>
+    request(app.getHttpServer())
+      .post('/auth/login')
+      .set('Content-Type', 'application/json')
+      .send('{"broken":')
+      .expect(400)
+      .expect({
+        code: 'VALIDATION',
+        message: 'The request body is invalid.',
+      }));
+  it('oversized bodies are bounded without echoing their content', () =>
+    request(app.getHttpServer())
+      .post('/auth/login')
+      .send({ password: 'x'.repeat(1100000) })
+      .expect(413)
+      .expect({
+        code: 'PAYLOAD_TOO_LARGE',
+        message: 'The request body is too large.',
+      }));
+  it('unavailable PostgreSQL never reports ready or leaks connection details', () => {
+    databaseAvailable = false;
+    return request(app.getHttpServer()).get('/health').expect(503).expect({
+      code: 'UNAVAILABLE',
+      message:
+        'Clinic service is temporarily unavailable. The operation was not confirmed.',
+    });
+  });
 
   afterEach(async () => {
     await app.close();
