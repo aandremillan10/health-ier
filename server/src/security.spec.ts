@@ -7,6 +7,7 @@ import type { Discipline, Principal, Role } from './mirror-contract';
 import {
   dateOnly,
   measurement,
+  medicalValue,
   object,
   patientValue,
   revision,
@@ -63,6 +64,7 @@ describe('security boundaries', () => {
     expect(() => patientValue('unapproved', 'patientCategory')).toThrow();
     expect(() => measurement(Number.NaN, 'pulse')).toThrow();
     expect(() => measurement(101, 'oxygenSaturation')).toThrow();
+    expect(() => medicalValue(2147483648, 'ageAtConsultation')).toThrow();
     expect(measurement(240, 'systolic')).toBe(240);
     expect(measurement(null, 'weight')).toBeNull();
   });

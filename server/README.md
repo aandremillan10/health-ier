@@ -45,7 +45,7 @@ pnpm check
 
 Normal pnpm check uses isolated mocked database readiness plus unit security checks; the explicitly named live scripts exercise the real PostgreSQL API and actual atomic rollback/immutability. Server connection/query timeouts are five seconds and unavailable dependencies return safe 503. Stop/restart the API process for connection-failure and persistence proof; do not stop shared databases or unrelated applications.
 
-For a deliberate synthetic reset only, stop this API and run pnpm --filter server demo:reset followed by demo:seed. This command removes every record, session, issued document, mirror event and private account credential file in the configured dedicated loopback healthier_demo_* EDGE database. The script refuses CLOUD mode, non-loopback hosts and other database names. It never runs automatically.
+For a deliberate synthetic reset only, stop this API and run pnpm --filter server demo:reset followed by demo:seed. This command removes every record, session, issued document, mirror event and private account credential file in the configured dedicated loopback healthier_demo_* EDGE database. The script refuses CLOUD mode, non-loopback hosts and other database names. It never runs automatically. A remote cloud copy is preserved; coordinate a fresh dedicated cloud database separately if the next synthetic demonstration requires an empty mirror.
 
 ## Actual local proof runtime
 

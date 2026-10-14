@@ -157,7 +157,12 @@ export function medicalValue(
   if (key === 'vitalsId') return value === null ? null : uuid(value, key);
   if (key === 'ageAtConsultation') {
     if (value === null) return null;
-    if (typeof value !== 'number' || !Number.isSafeInteger(value) || value < 0)
+    if (
+      typeof value !== 'number' ||
+      !Number.isSafeInteger(value) ||
+      value < 0 ||
+      value > 2147483647
+    )
       invalid(key);
     return value;
   }
