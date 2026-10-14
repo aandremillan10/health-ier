@@ -4,6 +4,8 @@ NestJS 11, Prisma 7.10 and PostgreSQL implement the approved synthetic clinic-de
 
 ## Fresh Windows setup
 
+For teammates using Docker, follow [the copy-and-paste development guide](../docs/development.md). Root/server/app environment examples agree on the loopback synthetic database, including the public dev-only database password; staff passwords remain random/private. The portable PostgreSQL alternative below remains available and preserves existing configuration.
+
 Node 24 and pnpm 10.30.1 are required. From repository root:
 
 ```powershell

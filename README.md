@@ -11,7 +11,9 @@ Review the frontend with `pnpm dev:frontend` at `http://127.0.0.1:5175`. Select 
 
 ## Setup
 
-Use Node.js 24.13 or a later Node.js 24 release and pnpm 10.30.1.
+Use Node.js 24.13 or a later Node.js 24 release and pnpm 10.30.1. For the copy-and-paste teammate setup, including all three environment files and the development Compose password, use [local development](docs/development.md).
+
+For a later second-machine test, use the [Windows laptop LAN/TLS and optional SSH guide](docs/lan-tls-setup.md). It records a future procedure; no certificate, firewall or SSH configuration was changed.
 
 ```sh
 corepack enable
@@ -91,7 +93,7 @@ Husky runs check-only Prettier and ESLint on staged files before commits. It run
 
 ## PostgreSQL and Docker
 
-Docker Desktop must be running for container commands. Copy `.env.example` to a private root `.env`, choose a password, and copy `server/.env.example` to `server/.env` only if it does not already exist. Keep both credentials consistent; never overwrite an existing private environment file.
+Docker Desktop must be running for container commands. The development defaults are database `healthier_demo_dev`, user `healthier_dev`, shared **dev-only** password `healthier_dev_only`, and loopback port 5432. [The full setup](docs/development.md) copies matching root/server/app examples without overwriting existing files, starts the database, migrates/seeds secure staff accounts, and loads the Electron origin. Production retains its separate required private password.
 
 Development Compose starts PostgreSQL only. Run app/server development on the host:
 
@@ -99,6 +101,8 @@ Development Compose starts PostgreSQL only. Run app/server development on the ho
 docker compose -f compose.dev.yaml up -d
 docker compose -f compose.dev.yaml config --quiet
 ```
+
+Existing PostgreSQL volumes retain the credentials/database from their first initialization; new environment defaults never reset them. Use the original settings or an explicitly separate fresh project as explained in the development guide.
 
 Versioned Prisma 7 migrations define the clinic records, authentication sessions, immutable outbox and mirror history/receipts. Prisma scripts explicitly select `prisma7.config.ts`:
 
