@@ -59,7 +59,7 @@ curl.exe --fail http://127.0.0.1:3000/health
 pnpm --filter server test:live
 ```
 
-The live script uses the private generated accounts and exercises every staff route. [API fields/examples](../server/API.md) and [typed desktop operations](backend-electron.md) are available for the teammate's renderer integration. The renderer remains a technical shell until those screens are implemented.
+The live script uses the private generated accounts and exercises every staff route. [API fields/examples](../server/API.md) and [typed desktop operations](backend-electron.md) support the implemented staff screens. Run `pnpm --filter app test:integration` with the API running to exercise the real Electron renderer/preload/main against the configured dedicated synthetic database. This check reads the credential path from `server/.env`, sends no print job, and saves results outside the repository. Browser review on port 5175 remains an explicit in-memory fixture demo.
 
 When testing more than one database, give each its own ignored credential/evidence directory (for example `DEMO_CREDENTIALS_FILE=../.private/teammate-dev/credentials.json`). The live verification scripts write a fixed `api-evidence.json` beside the selected credential file, so different databases must not share that directory. Pass the matching `-CredentialsFile` and `-BaseUrl` to the scripts.
 

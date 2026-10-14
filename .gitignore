@@ -3,6 +3,10 @@ dist/
 out/
 build/
 coverage/
+test-results/
+playwright-report/
+# Generated evidence belongs outside the repository; ignore accidental local output.
+/docs/verification/
 .vite/
 *.tsbuildinfo
 *.log
@@ -15,6 +19,8 @@ coverage/
 .husky/_/
 # Keep the supplied mock screenshot local until its person-like sample data is cleared.
 /docs/references/possible-ui-for-cert-builder.png
+# Local original inputs preserved during prototype cleanup; publication is outside scope.
+/docs/references/prototype-inputs/
 # Generated Windows junction copies; the canonical Prisma skills are retained.
 /server/.claude/
 /server/.windsurf/
