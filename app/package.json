@@ -12,6 +12,7 @@
     "test:integration": "pnpm build && node scripts/verify-integration.mts",
     "preview": "electron-vite preview",
     "build": "electron-vite build",
+    "package:windows": "pnpm build && node scripts/package-windows.mts",
     "typecheck": "tsc --noEmit",
     "lint": "eslint .",
     "test": "vitest run",
@@ -26,6 +27,7 @@
     "tailwind-merge": "3.7.0"
   },
   "devDependencies": {
+    "@electron/packager": "20.3.0",
     "@playwright/test": "1.62.1",
     "@tailwindcss/vite": "4.3.3",
     "@types/node": "^24.0.0",
