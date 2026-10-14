@@ -653,13 +653,18 @@ try {
   // Decline a real quick-search switch; context and server data must remain with the original patient.
   page.once('dialog', (dialog) => void dialog.dismiss());
   await page.keyboard.press('Control+k');
+  assert.ok(otherPatientId);
+  const otherDrafts = await bridge('readEntries', {
+    patientId: otherPatientId,
+    discipline: 'medical',
+  });
   await page
     .getByRole('combobox', { name: 'Search patient name or number' })
-    .fill('Synthetic');
+    .fill(otherPatientId);
   await page
+    .getByRole('listbox', { name: 'Patient results and actions' })
     .getByRole('option')
-    .filter({ hasText: 'Synthetic Authorization Patient' })
-    .first()
+    .filter({ hasText: otherPatientId })
     .click();
   await expect(page.getByRole('heading', { name, exact: true })).toBeVisible();
   await expect(
@@ -668,6 +673,13 @@ try {
   assert.equal(
     (await bridge('readEntries', { patientId, discipline: 'medical' })).length,
     beforeDrafts.length,
+  );
+  assert.deepEqual(
+    await bridge('readEntries', {
+      patientId: otherPatientId,
+      discipline: 'medical',
+    }),
+    otherDrafts,
   );
   page.once('dialog', (dialog) => void dialog.accept());
   await page.getByRole('button', { name: 'Cancel', exact: true }).click();
