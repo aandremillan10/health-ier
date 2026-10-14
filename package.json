@@ -13,6 +13,8 @@
   "scripts": {
     "prepare": "husky",
     "dev:app": "pnpm --filter app dev",
+    "dev:frontend": "pnpm --filter app dev:renderer",
+    "test:frontend": "pnpm --filter app test:e2e",
     "dev:server": "pnpm --filter server start:dev",
     "lint": "eslint .",
     "format": "prettier --write .",

@@ -1,12 +1,14 @@
 {
   "name": "app",
   "version": "0.0.1",
-  "description": "Health-ier Electron desktop shell",
+  "description": "AMLIG clinic desktop app",
   "private": true,
   "main": "out/main/index.cjs",
   "scripts": {
     "postinstall": "install-electron",
     "dev": "electron-vite dev",
+    "dev:renderer": "vite --config renderer.vite.config.mts",
+    "test:e2e": "playwright test",
     "preview": "electron-vite preview",
     "build": "electron-vite build",
     "typecheck": "tsc --noEmit",
@@ -23,6 +25,7 @@
     "tailwind-merge": "3.7.0"
   },
   "devDependencies": {
+    "@playwright/test": "1.62.1",
     "@tailwindcss/vite": "4.3.3",
     "@types/node": "^24.0.0",
     "@types/react": "19.3.0",

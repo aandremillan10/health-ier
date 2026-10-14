@@ -9,7 +9,7 @@ export function createWindowOptions(
     minWidth: 900,
     minHeight: 600,
     show: false,
-    title: 'Health-ier',
+    title: 'AMLIG',
     autoHideMenuBar: true,
     webPreferences: {
       preload: preloadPath,

@@ -1,11 +1,13 @@
-# Health-ier
+# AMLIG
 
 Electron desktop and NestJS server workspace for the clinic application.
 Repository: [aandremillan10/health-ier](https://github.com/aandremillan10/health-ier).
 
 The backend now implements named local staff sessions, protected patient registry, vitals and consultation lifecycle/corrections, and immutable prescription/certificate snapshots in PostgreSQL. A durable one-way mirror sends only approved exact record versions to CLOUD; EDGE remains authoritative and local clinical saves never wait for cloud. See [server setup](server/README.md), [implemented API and executable curl examples](server/API.md), and [mirror protocol/operator evidence](docs/backend-mirror.md).
 
-The Electron renderer remains the teammate's clinic-screen work. Privileged main/preload operations provide the coordinated session/network/document/printer boundary; API and headless boundary proof do not establish the complete renderer flow or physical paper output. Independent desktop databases, bidirectional editing and production rollout remain outside scope. Approved scope is [clinic-demo-v1.1](docs/specs/mirror-amendment.md).
+AMLIG provides the staff flows and an explicitly labeled in-memory synthetic demo. The supplied app logo appears on sign-in, in navigation, and as the browser icon. The repository remains `health-ier`. Privileged main/preload operations provide the session/network/document/printer boundary; the renderer now adapts the typed `window.desktop.clinic` bridge. Live integration must still be checked. See [frontend migration and issue coverage](docs/frontend-migration.md). Independent desktop databases, bidirectional editing and production rollout remain outside scope. Approved scope is [clinic-demo-v1.1](docs/specs/mirror-amendment.md).
+
+Review the frontend with `pnpm dev:frontend` at `http://127.0.0.1:5175`. Select a synthetic staff member and **Open frontend demo**. The demo patient list appears on entry; open a record directly or search by name/number. Run `pnpm test:frontend` for the headless Chrome renderer checks. The existing Electron/LAN architecture remains in place. The old Next.js prototype was moved to a temporary archive after migration; this repository is the remaining project in the workspace.
 
 ## Setup
 
@@ -20,6 +22,31 @@ pnpm install
 The root lockfile owns both packages. Run installations from the repository root.
 Electron's install script downloads its platform binary during setup.
 
+### Verified local setup
+
+Set up on 2026-10-14. Node.js 24.15.0 and pnpm 10.30.1 are installed. Existing private `.env`, `server/.env`, and `.env.production` files were validated and kept unchanged. Development credentials match between root Compose and `server/.env`; the container environment has separate matching credentials. All three files are ignored by Git.
+
+This section records the original scaffold setup. After the latest `master` update, use the dedicated synthetic database setup in `server/README.md` before live clinic operations; the earlier shell checks do not prove the new backend is configured locally.
+
+| Service                 | Local address            | Start command                                                                  |
+| ----------------------- | ------------------------ | ------------------------------------------------------------------------------ |
+| Development PostgreSQL  | `127.0.0.1:5433`         | `docker compose -f compose.dev.yaml up -d`                                     |
+| Host Nest server        | `http://127.0.0.1:3002/` | Set `PORT=3002`, then `pnpm dev:server`                                        |
+| Electron renderer       | `http://127.0.0.1:5173/` | `pnpm dev:app`                                                                 |
+| Browser frontend review | `http://127.0.0.1:5175/` | `pnpm dev:frontend`                                                            |
+| Local container server  | `http://127.0.0.1:3001/` | `docker compose --env-file .env.production -f compose.prod.yaml up --build -d` |
+
+Port 3000 already serves another application, so this setup uses a process-only override for the host server. The saved `server/.env` remains unchanged. In its PowerShell terminal:
+
+```powershell
+$env:PORT = '3002'
+pnpm dev:server
+```
+
+The container server uses `.env.production` with `SERVER_PORT=3001`; its PostgreSQL database is private to the Compose network and uses a separate persistent volume. This is a local scaffold check, not a clinic deployment.
+
+Dependency installation, both Compose configurations, Prisma validation/generation, authenticated PostgreSQL queries, smoke routes, repository checks, and builds passed. The frontend suite covers the approved renderer flows with synthetic fixtures. See the [frontend evidence and remaining integration checks](../verification/frontend-report.md) and [local setup evidence](../verification/setup-report.md), stored outside this repository.
+
 Start the desktop and server in separate terminals:
 
 ```sh
@@ -27,7 +54,7 @@ pnpm dev:app
 pnpm dev:server
 ```
 
-The Electron renderer is sandboxed, has no Node integration, and uses an isolated preload. Development loads only `http://127.0.0.1:5173/`; packaged builds load bundled local files. The narrow privileged boundary keeps session tokens in main-process memory and checks sender, operation, payload and clinic server identity. General clinic renderer workflows still require teammate implementation/integrated QA.
+The Electron renderer is sandboxed, has no Node integration, and uses an isolated preload. Development loads only `http://127.0.0.1:5173/`; packaged builds load bundled local files. The narrow privileged boundary keeps session tokens in main-process memory and checks sender, operation, payload and clinic server identity. The updated bridge is `window.desktop.clinic`; live renderer integration and physical printing remain separate checks. Browser review uses the explicit synthetic demo.
 
 ## Local backend
 
@@ -47,6 +74,8 @@ pnpm --filter server test:live
 
 The loopback HTTP exception is for synthetic development only. Clinic production transport requires TLS, and hosting/privacy/retention/backups remain separate decisions. See [server/API.md](server/API.md) for fields, scoped DTOs, revision conflicts and document linkage.
 
+On this workstation, use port 3002 for the host server or port 3001 for the container server while port 3000 belongs to another application. Configure the Electron clinic URL to match the selected clinic server; do not connect to an unrelated service.
+
 ## Verification
 
 ```sh
@@ -55,6 +84,8 @@ pnpm build
 ```
 
 `check` runs ESLint, Prettier checks, both package typechecks and unit tests, server HTTP e2e tests, and Prisma generation/server build. Optional mirror live tests use dedicated private test URLs; every parallel runner needs its own databases. `build` also bundles Electron main, sandbox preload, and React renderer; it does not produce an installer.
+
+Frontend screenshots, PDFs, reports, and setup evidence are stored in sibling `../verification/`. Playwright run metadata and failure traces are stored in sibling `../test-results/`. These local folders are outside Git; `pnpm test:frontend` regenerates its evidence there. The test source remains in `app/e2e/`.
 
 Husky runs check-only Prettier and ESLint on staged files before commits. It runs `pnpm check` before pushes. Hooks never automatically rewrite source files; use `pnpm format` when you intend to format files. Copied agent skills, generated code, build artifacts, and reference images are excluded from formatting and linting.
 
