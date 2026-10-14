@@ -1,6 +1,6 @@
-# clinic-demo-v1 specifications
+# clinic-demo-v1.1 specifications
 
-Status: **approved clinic-demo-v1 on 2026-10-14, Asia/Manila**. See the [exact approval/document set](approval.md). Publication of the ten paired issues and setup/specification commit/push is authorized; product feature implementation requires a separate explicit build instruction.
+Status: **approved clinic-demo-v1.1 amendment on 2026-10-14, Asia/Manila**. See the [exact approval/document set](approval.md). The ten original paired issues plus one Backend mirror issue and their scope updates are authorized; product feature implementation requires a separate explicit build instruction.
 
 ## Read in this order
 
@@ -9,9 +9,10 @@ Status: **approved clinic-demo-v1 on 2026-10-14, Asia/Manila**. See the [exact a
 3. [Demo flow](demo-flow.md): concrete Backend/Frontend and end-to-end acceptance criteria.
 4. [API contract](api-contract.md): approved fields/operation plans for teammate coordination; routes are not implemented yet.
 5. [Decision record](pending-decisions.md): confirmed answers, deferred scope, and approval record.
-6. [Issue plan/index](backlog.md): ten approved paired Backend/Frontend outcomes and publication links.
+6. [Issue plan/index](backlog.md): ten original paired outcomes plus one Backend mirror and publication links.
 7. [Document/data baseline](demo-data-and-documents.md): approved source format, scan inputs, and synthetic accounts.
-8. [Feature template](feature-template.md): format for later approved features.
+8. [One-way mirror amendment](mirror-amendment.md): authoritative edge, durable delivery, read-only cloud and mandatory cloud proof.
+9. [Feature template](feature-template.md): format for later approved features.
 
 The root [glossary](../../CONTEXT.md) holds terminology. [DESIGN.md](../../DESIGN.md) holds the approved staff-tool baseline. [Tracker guidance](../agents/issue-tracker.md) controls publication/status changes. No route or product screen is claimed implemented by this approval.
 

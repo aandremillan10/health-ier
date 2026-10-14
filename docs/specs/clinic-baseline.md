@@ -1,6 +1,6 @@
 # Approved clinic baseline
 
-Status: **approved clinic-demo-v1, 2026-10-14, Asia/Manila**. See [approval record](approval.md). Facts are current user decisions from 2026-10-14. Final spec approval permits agreed GitHub issue publication. Product feature implementation still requires a separate explicit build instruction; only tooling is authorized now.
+Status: **approved clinic-demo-v1.1, 2026-10-14, Asia/Manila**. See [approval record](approval.md). Facts are current user decisions from 2026-10-14. Final spec approval permits agreed GitHub issue publication. Product feature implementation still requires a separate explicit build instruction; only tooling is authorized now.
 
 | Area               | Confirmed decision                                                                                                                                                                                                                                                                                                       |
 | ------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
@@ -24,9 +24,11 @@ See [permissions](permissions.md), [demo flow](demo-flow.md), [API contract](api
 
 ## Evidence and scope boundaries
 
+Current v1.1 adds required one-way edge-to-cloud structured-record mirroring for October 16. Edge alone accepts clinic writes; cloud is read-only to staff, trusted machine ingestion writes mirror data, WAN failure never blocks local work, and no credential/session/secret or unapproved attachment is mirrored. See [mirror amendment](mirror-amendment.md). No cloud portal/UI is required; actual authorized cloud endpoint proof is mandatory during the future build/demo.
+
 [Source analysis](../references/source-analysis.md) maps the pitch, Gemini transcript, photographed forms, and technical docs. Current user decisions govern over historical suggestions. Pitch slide 3 names employees/dependents but does not establish an eligibility rejection policy. Example forms have different headers and unverified physical page sizes.
 
-Cloud/full mirror, replication, live queue, scanning/import, eligibility enforcement/family linking, dispensing/inventory, reports/dashboard, inactive historical-author correction, and complete dental/lab workflows are deferred beyond the October 15 demo. Minimal dental/lab authorization proof is included; full clinical modules are not implied by that proof.
+Bidirectional/cloud clinical edits, provincial/multi-clinic merging, live queue, scanning/import, eligibility enforcement/family linking, dispensing/inventory, reports/dashboard, inactive historical-author correction, and complete dental/lab workflows are deferred beyond the October 15 demo. Minimal dental/lab authorization proof is included; full clinical modules are not implied by that proof.
 
 The builder UI image contains unverified person-like identifiers, credentials, and clinical content. Exclude or redact it before public publication; keep all demo fixtures synthetic. No reference/mock identifiers become product facts.
 

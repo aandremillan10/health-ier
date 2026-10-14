@@ -1,6 +1,6 @@
 # Approved demo API and field contract
 
-Status: **approved clinic-demo-v1 implementation plan, 2026-10-14, Asia/Manila; routes are not implemented yet**. See [approval record](approval.md). The user/teammate should use one approved contract before feature work. Exact paths are reversible implementation choices; the behavior and permission boundaries govern. Feature build remains gated on separate instruction.
+Status: **approved clinic-demo-v1.1 implementation plan, 2026-10-14, Asia/Manila; routes are not implemented yet**. See [approval record](approval.md). The user/teammate should use one approved contract before feature work. Exact paths are reversible implementation choices; the behavior and permission boundaries govern. Feature build remains gated on separate instruction.
 
 ## Minimum demo data
 
@@ -36,6 +36,10 @@ Approved native session transport: packaged renderer is `file://`, so use a serv
 Errors use a discriminated `code`, safe `message`, optional `fieldErrors`, and authorized conflict revision details. Approved statuses: 400 validation; 401 missing/expired credentials; 403 denied known operation without sensitive resource identity; 404 absent or concealed inaccessible patient/entry/document; 409 stale revision/lifecycle conflict; 503 unavailable dependency. No error includes restricted content. Search/list responses omit inaccessible records, and every nested DTO is scoped before transmission. Protected documents have no unauthenticated static path.
 
 ## Planned usage examples (not yet implemented)
+
+### v1.1 machine mirror addition
+
+The [mirror amendment](mirror-amendment.md) adds server-only POST /internal/mirror/events and controlled edge delivery-status/bootstrap verification. It does not change clinic renderer authority or expose machine credentials/tokens. Domain mutations from registry/vitals/entries/corrections/issuance atomically write the exact immutable outbox version locally and never await cloud. Cloud receipt/apply is atomic, exact unacknowledged committed events are selected, and IDs/revisions/references are validated. Staff cloud writes are denied; any exposed staff reads keep existing RBAC. No frontend sync API or cloud portal is added. Exact envelope/ack examples and bootstrap/retry tests are in the amendment; implemented routes receive working usage examples/end-to-end checks.
 
 Examples use synthetic IDs/content and planned approved routes. Replace them with verified working examples during implementation; they do not claim these APIs already exist.
 

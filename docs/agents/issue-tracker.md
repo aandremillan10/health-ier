@@ -4,7 +4,7 @@ GitHub Issues is the chosen tracker. Confirmed repository: [aandremillan10/healt
 
 ## Publication gate
 
-The user explicitly approved [clinic-demo-v1](../specs/approval.md) on 2026-10-14 and authorized publishing its ten paired GitHub issues. This publication gate is satisfied for that version; later material scope changes need approval. Feature implementation still requires a separate explicit build instruction. The confirmed origin matches the GitHub destination.
+The user approved clinic-demo-v1 on 2026-10-14, published ten paired issues, then explicitly required the [clinic-demo-v1.1 one-way mirror amendment](../specs/approval.md): one additional Backend issue and scope/verification updates. This publication gate is satisfied for that version; later material scope changes need approval. Feature implementation still requires a separate explicit build instruction. The confirmed origin matches the GitHub destination.
 
 Before tracker operations, verify `git remote -v` and `gh auth status`; if the chosen repository is not inferable from a verified remote, use `--repo aandremillan10/health-ier`. Surface any conflicting remote rather than changing the destination silently.
 

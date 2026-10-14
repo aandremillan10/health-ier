@@ -1,6 +1,6 @@
 # Fixed-document and synthetic-data baseline
 
-Status: **approved clinic-demo-v1, 2026-10-14, Asia/Manila**; see [approval record](approval.md). No feature implementation yet.
+Status: **approved clinic-demo-v1.1, 2026-10-14, Asia/Manila**; see [approval record](approval.md). No feature implementation yet.
 
 Use [flattened certificate](../headers/flattened_medcert.jpg) (1792×2370) and [flattened prescription](../headers/flattened_prescription.jpg) (1632×2566) as form-body wording/layout references. Both are blank RGB images with 300-DPI metadata; they retain some skew/shading, so later templates rebuild native text/rules rather than print a photographic page background.
 

@@ -1,5 +1,7 @@
 # Clinic source analysis
 
+**Current scope update (2026-10-14):** Earlier source-review decisions below are historical. The user confirmed one-way edge-to-cloud mirroring for the October 16 demo: the clinic edge remains write-authoritative, and the cloud is read-only for staff. See the [clinic-demo-v1.1 mirror amendment](../specs/mirror-amendment.md) for current scope; the underlying source evidence is preserved.
+
 Reviewed 2026-10-14. This note records source evidence, verified technical facts, and proposed decisions. It does not authorize implementation or deployment. Current direct user answers govern over historical prompts and generated suggestions inside the attached Gemini transcript.
 
 ## Current confirmed decisions

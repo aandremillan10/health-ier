@@ -1,6 +1,6 @@
 # Approved clinic staff demo specification
 
-Status: **approved clinic-demo-v1 acceptance criteria, 2026-10-14, Asia/Manila**. See [approval record](approval.md). Target ready date: October 15, 2026; presentation October 16 morning, Asia/Manila. Final spec approval enables issue publication; feature code waits for a separate explicit build instruction.
+Status: **approved clinic-demo-v1.1 acceptance criteria, 2026-10-14, Asia/Manila**. See [approval record](approval.md). Target ready date: October 15, 2026; presentation October 16 morning, Asia/Manila. Final spec approval enables issue publication; feature code waits for a separate explicit build instruction.
 
 ## Outcome and ownership
 
@@ -35,6 +35,10 @@ Staff find/register a synthetic patient, record vitals, finalize a medical consu
 
 ## Shared end-to-end evidence
 
+### Mandatory v1.1 cloud proof
+
+Backend mirror ticket and #9 prove allowed structured records reach a real authorized cloud-hosted endpoint, with read-only staff cloud routes, no credentials/sessions/secrets, durable exact-event retries/bootstrap/revision/reference behavior. Disable WAN/cloud while the clinic Frontend continues edge login/registration/vitals/consultation/correction/issuance/printing. Restore connectivity and verify exact allowed versions catch up through Backend/operator/API/database evidence. Frontend #10 owns clinic UX/integration evidence only; no sync transport or new cloud screen. Test replay/lost acknowledgment, restart, earlier-ID-later-commit selection, edit during in-flight send, missing references, stale/conflicting revisions and concurrent bootstrap writes. Two local containers are tests, not sufficient real-cloud proof. See [mirror amendment](mirror-amendment.md).
+
 Use synthetic patient and named role accounts. Exercise registration → vitals → medical draft → finalization → original-author correction → prescription/certificate preview → selected printer. Re-read from another client/restart to prove server persistence. Compare document content/header against approved photos; test physical paper when the printer is available.
 
 Show colleague shared read, denied cross-author/cross-discipline direct calls, head read-only boundaries, minimum lab response, protected document access, stale mutation conflict, and logout/cache clearing. Disconnect WAN with LAN/server intact and repeat local login/read/save/print. Record actual command results, synthetic fixture IDs, flow evidence, and gaps. Headless/API checks are authorized. Interactive Chrome/device QA requires shared-resource confirmation and exact-session identification under AGENTS; coordinate physical printing in the assigned office/demo setup.
@@ -43,4 +47,4 @@ User supplied flattened forms and unified JPEG/transparent header in `docs/heade
 
 ## Deferred beyond October 15
 
-Cloud/full mirror/replication; independent workstation databases and WatermelonDB; live queue; scanner/import automation; eligibility enforcement/family linking; dispensing/inventory; reports/dashboard; historical inactive-author corrections; complete dental/lab modules; visual template builder. Production rollout, backup/retention, and broad administrative features require a separate scope; the demo must not claim production readiness.
+Bidirectional cloud editing/provincial multi-clinic merging; independent workstation databases and WatermelonDB; live queue; scanner/import automation; eligibility enforcement/family linking; dispensing/inventory; reports/dashboard; historical inactive-author corrections; complete dental/lab modules; visual template builder. Production rollout, backup/retention, and broad administrative features require a separate scope; the demo must not claim production readiness.

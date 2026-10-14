@@ -6,13 +6,13 @@ Before planning or editing, identify the repository root and read applicable `AG
 
 ## Specification approval
 
-Read [docs/specs/README.md](docs/specs/README.md) before product planning or implementation. The user approved `clinic-demo-v1` on 2026-10-14; see [approval record](docs/specs/approval.md). Approval authorizes the ten agreed GitHub issues and setup/specification commit/push; product feature implementation still requires a separate explicit build instruction. Tooling scaffolding is authorized. Distinguish approved implementation plans from existing behavior and source suggestions.
+Read [docs/specs/README.md](docs/specs/README.md) before product planning or implementation. The user approved `clinic-demo-v1` and directly selected the `clinic-demo-v1.1` one-way mirror amendment on 2026-10-14; see [approval record](docs/specs/approval.md). Approval authorizes the original ten issues plus one Backend mirror issue and specification publication; product feature implementation still requires a separate explicit build instruction. Tooling scaffolding is authorized. Distinguish approved implementation plans from existing behavior and source suggestions.
 
 ## Responsibilities and boundaries
 
 The user owns backend implementation; their teammate owns frontend implementation. Keep feature acceptance criteria separated by Backend and Frontend, with a shared API contract and integration check. The server enforces authorization, validation, and domain rules. UI visibility and disabled controls supplement server checks.
 
-The selected application shape is an Electron desktop client with React, Tailwind CSS, and shadcn/ui, plus a NestJS server and PostgreSQL on the clinic LAN. Internet outages are supported while LAN/server remain available; independent workstation operation during server/LAN failure is outside this requirement. Keep Electron renderer privileges minimal: use context isolation, disable renderer Node integration, expose narrow preload APIs, and validate IPC input and sender at privileged boundaries. Keep secrets and privileged operations out of renderer code. Read [ADR-0001](docs/adr/0001-clinic-lan-persistence.md) before changing storage/topology.
+The selected application shape is an Electron desktop client with React, Tailwind CSS, and shadcn/ui, plus a NestJS server and PostgreSQL on the clinic LAN. Internet outages are supported while LAN/server remain available; independent workstation operation during server/LAN failure is outside this requirement. Keep Electron renderer privileges minimal: use context isolation, disable renderer Node integration, expose narrow preload APIs, and validate IPC input and sender at privileged boundaries. Keep secrets and privileged operations out of renderer code. Read [ADR-0001](docs/adr/0001-clinic-lan-persistence.md) and [ADR-0002](docs/adr/0002-one-way-application-mirror.md) before changing storage/topology. Required edge-to-cloud mirroring is Backend-owned, one-way, nonblocking for LAN work, and excludes auth secrets; see [mirror scope](docs/specs/mirror-amendment.md).
 
 ## CodeGraph
 

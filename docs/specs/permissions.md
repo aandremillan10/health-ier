@@ -1,6 +1,6 @@
 # Approved staff access specification
 
-Status: **approved clinic-demo-v1, 2026-10-14, Asia/Manila**. See [approval record](approval.md). Server authorization applies to every operation and returned payload. Feature build permission remains separate from spec approval.
+Status: **approved clinic-demo-v1.1, 2026-10-14, Asia/Manila**. See [approval record](approval.md). Server authorization applies to every operation and returned payload. Feature build permission remains separate from spec approval.
 
 ## Named accounts and head designation
 
@@ -24,6 +24,8 @@ The author edits their draft, then explicitly finalizes it. Preserve original fi
 For the selected medical documents, only the medical doctor who authored the finalized medical consultation may preview/issue a prescription or certificate from it, using their trusted issuer identity. Head oversight or colleague read access cannot issue as another author. An authorized read-only viewer may view/reprint an existing document under its chart policy; reprint retains document identity and never mutates or reissues it.
 
 ## Backend acceptance criteria
+
+v1.1 mirror boundary: dedicated clinic-scoped machine ingestion may write the CLOUD mirror, but staff clinical mutations are denied in CLOUD mode. Staff tokens cannot ingest. Any exposed cloud staff reads enforce this matrix and filtered DTOs; no cloud staff-login/portal is required for operator/API/database demo proof. Minimum mirrored staff/author display metadata grants no login authority. Passwords/hashes/sessions/tokens/secrets/unapproved attachments stay excluded. See [mirror amendment](mirror-amendment.md).
 
 1. Authenticate named staff; enforce role, discipline, head capability, author, and lifecycle checks on reads/searches/writes/documents. Direct API requests cannot bypass the matrix.
 2. Same-discipline colleagues read allowed entries but cannot edit/finalize/correct another author. Head reads all disciplines, is denied others' writes, and edits own medical draft through medical authority.

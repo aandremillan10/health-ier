@@ -1,8 +1,8 @@
-# Approved clinic-demo-v1 issue plan
+# Approved clinic-demo-v1.1 issue plan
 
-Status: **approved clinic-demo-v1; ten issues published on 2026-10-14, Asia/Manila**. See [approval record](approval.md) and [actual issue index](issue-index.md). Feature implementation waits for a separate explicit build instruction. Use the confirmed [GitHub destination](../agents/issue-tracker.md) and exact labels `todo`, `in progress`, `in review`, `done`.
+Status: **clinic-demo-v1.1 amendment published on 2026-10-14, Asia/Manila: eleven issues, six Backend/five Frontend**. Original ten issues are retained/amended; additional [Backend #11](https://github.com/aandremillan10/health-ier/issues/11) owns required one-way mirroring. See [approval/history](approval.md), [mirror spec](mirror-amendment.md), and [actual issue index](issue-index.md). Features still require a separate explicit build instruction. Workflow labels remain `todo`, `in progress`, `in review`, `done`.
 
-Create separate `[Backend]` (user) and `[Frontend]` (teammate) issues for each of the five outcomes below: **10 approved tickets**. Link paired tickets with the shared API contract/version, dependencies, and integration acceptance. The split supports two independently tracked coders; it is not permission to add deferred modules.
+The five original outcomes retain separate Backend (user) and Frontend (teammate) tickets. Add one standalone Backend mirror outcome; no extra Frontend cloud ticket is inferred. Pair links/shared contracts/ownership remain intact. The amendment supersedes broad cloud deferral and adds delivery/QA requirements without repurposing old outcomes.
 
 | Approved outcome                                | Backend acceptance                                                                                                                     | Frontend acceptance                                                                                                           | Dependency                       |
 | ----------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- | -------------------------------- |
@@ -13,3 +13,9 @@ Create separate `[Backend]` (user) and `[Frontend]` (teammate) issues for each o
 | Verify staff LAN demo and dental/lab boundaries | Seed isolated dental/lab records, deny cross-discipline/author/document issue calls, WAN-off persistence checks                        | Integrated flow/cache/oversight proof, local printing evidence                                                                | Prior outcomes                   |
 
 Use paired `[Backend]` and `[Frontend]` title prefixes, without extra role labels. Copy the shared end-to-end acceptance onto both tickets or their verification pair and link dependencies so frontend can work against the approved contract. Do not invent teammate handles, sprint estimates, or extra tracker labels. Relevant route usage examples and end-to-end checks are required during implementation. Record interactive QA authorization and evidence; distinguish unverified physical-print/deployment gaps.
+
+## Additional required Backend mirror
+
+[#11](https://github.com/aandremillan10/health-ier/issues/11) owns EDGE/CLOUD modes, atomic immutable versioned outbox/domain writes, commit-safe unacknowledged event selection, outbound HTTPS whitelist/secret boundaries, atomic cloud receipt/apply, dependency-safe revisions/retry, exact acknowledgment and consistent bootstrap/catch-up. Real authorized HTTPS cloud endpoint proof is mandatory for October 16; local container tests are insufficient.
+
+#11 depends on #1/#3/#5/#7 for final domain/auth integration. Registry/vitals/consultation/issuance writers in #3/#5/#7 add atomic exact-event integration; #1 adds cloud staff-denial/machine-only guards. #9 and #10 additionally depend on #11 for actual outage/recovery/replay/in-flight/bootstrap proof. Contract-first Frontend #2/#4/#6/#8 retain no native Backend start blockers. No cloud portal/Frontend transport issue is added. Current graph has 24 native edges and no cycles; see issue index.

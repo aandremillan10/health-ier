@@ -1,6 +1,6 @@
 # Clinic interface direction
 
-Status: **approved clinic-demo-v1 staff-tool design system, 2026-10-14, Asia/Manila**. See [approval record](docs/specs/approval.md). It uses the technical scaffold's neutral shadcn foundation. Product screens and print-template reproduction are not implemented or visually approved; feature work still waits for a separate build instruction.
+Status: **approved clinic-demo-v1.1 staff-tool design system, 2026-10-14, Asia/Manila**. See [approval record](docs/specs/approval.md). It uses the technical scaffold's neutral shadcn foundation. Product screens and print-template reproduction are not implemented or visually approved; feature work still waits for a separate build instruction.
 
 ## Approved system baseline
 
@@ -22,6 +22,8 @@ Use shadcn Button, Input, Label, Textarea, Select, Table, Tabs, Alert, Tooltip, 
 Clinic tasks use a stable task-oriented shell, selected patient identity, clear Medical/Dental/Laboratory chart labels, and named staff role/head status. Routine navigation is consistent. A section becomes visible only under server-authorized data; hiding tabs cannot secure broad responses. No unrequested statistics dashboard.
 
 ## Users and setting
+
+v1.1 adds Backend-owned one-way cloud mirroring; clinic users stay on the edge/LAN. Cloud lag/outage must not turn a locally saved action into failure or block the clinic flow. Frontend integrated proof distinguishes edge save status from Backend/operator delivery evidence; no sync transport, cloud portal or new cloud navigation is added. Existing staff design tokens/screens remain the selected baseline.
 
 The app serves a small clinic with 2 medical doctors, 2 dentists, 2 medical technologists, 1 nursing attendant, and 1 clerk. Staff use 4 Windows 10/11 desktops and a printer connected through the office LAN/Wi-Fi. Design for staff who are not technical: familiar controls, readable text, clear next actions, and feedback that explains what happened.
 

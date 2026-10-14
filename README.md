@@ -3,7 +3,7 @@
 Electron desktop and NestJS server workspace for the clinic application.
 Repository: [aandremillan10/health-ier](https://github.com/aandremillan10/health-ier).
 
-The current implementation is a technical shell: a static desktop window and the existing NestJS `GET /` smoke route. Clinic workflows will follow the reviewed specification in `docs/`. The selected architecture uses the clinic LAN server and PostgreSQL during internet outages; desktop databases and offline synchronization are outside scope.
+The current implementation is a technical shell: a static desktop window and the existing NestJS `GET /` smoke route. Clinic workflows will follow the reviewed specification in `docs/`. The selected architecture uses the clinic LAN server and PostgreSQL during internet outages; independent desktop databases and bidirectional editing remain outside scope. The user requires Backend-owned one-way edge-to-cloud structured-record mirroring for the October 16 demo; edge remains authoritative and clinic work never waits for cloud. See [clinic-demo-v1.1](docs/specs/mirror-amendment.md). The mirror is not implemented or deployed yet.
 
 ## Setup
 

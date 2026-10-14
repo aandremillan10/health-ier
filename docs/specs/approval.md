@@ -1,4 +1,22 @@
-# clinic-demo-v1 approval
+# clinic-demo-v1.1 approval and amendment history
+
+Current version: **clinic-demo-v1.1**, direct scope clarification and accepted architecture on **2026-10-14, Asia/Manila**. Original v1 approval/history remains below and in initial commit e9038df; it did not silently include the new mirror.
+
+Exact current user answers:
+
+> Include mirroring in the October 16 demo
+
+> One-way mirror; edge writes, cloud read-only (recommended)
+
+The earlier broad cloud exclusion applied to both tracks; it was an implicit scope deferral rather than a separately answered cloud requirement. The user's new selection supersedes it. Required Backend-owned mirroring now covers approved structured records and minimum attribution with authoritative edge writes, staff-read-only cloud, durable nonblocking delivery and actual cloud proof. Credentials/sessions/secrets and unapproved attachments are excluded. [mirror-amendment.md](mirror-amendment.md) and [ADR-0002](../adr/0002-one-way-application-mirror.md) are added to the current approved document set; prior staff/API/design requirements remain except this stated supersession.
+
+One additional standalone Backend mirror issue brings the plan to **eleven issues**, six Backend/five Frontend. All ten existing scope boilerplates and #9/#10 verification/dependencies are amended; no original issue is repurposed or renumbered. No cloud UI/portal or Frontend transport ticket is inferred. See [current issue index](issue-index.md).
+
+This authorizes specification/issue amendments. Product feature implementation still requires a separate explicit build instruction; actual hosting/credentials/resource creation/deployment are future authorized build preparation, not work performed here. Real cloud endpoint proof is required for October 16; local container tests alone cannot claim it. Demo remains synthetic and makes no production-readiness claim. Follow-up commit/push is coordinated separately; this worker performs neither.
+
+---
+
+## Original clinic-demo-v1 approval (preserved history)
 
 Status: **approved**. Date: **2026-10-14, Asia/Manila**.
 
