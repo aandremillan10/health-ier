@@ -22,14 +22,16 @@ export class SafeErrorFilter implements ExceptionFilter {
       if (error.type === 'entity.parse.failed') {
         response.status(400).json({
           code: 'VALIDATION',
-          message: 'The request body must contain valid JSON.',
+          message: 'Check the request body.',
+          fieldErrors: { body: 'The request body must contain valid JSON.' },
         });
         return;
       }
       if (error.type === 'entity.too.large') {
-        response.status(413).json({
-          code: 'PAYLOAD_TOO_LARGE',
-          message: 'The request body is too large.',
+        response.status(400).json({
+          code: 'VALIDATION',
+          message: 'Check the request body.',
+          fieldErrors: { body: 'The request body is too large.' },
         });
         return;
       }
@@ -42,7 +44,8 @@ export class SafeErrorFilter implements ExceptionFilter {
       ) {
         response.status(400).json({
           code: 'VALIDATION',
-          message: 'The request body is invalid.',
+          message: 'Check the request body.',
+          fieldErrors: { body: 'The request body must contain valid JSON.' },
         });
         return;
       }

@@ -50,16 +50,18 @@ describe('AppController (e2e)', () => {
       .expect(400)
       .expect({
         code: 'VALIDATION',
-        message: 'The request body is invalid.',
+        message: 'Check the request body.',
+        fieldErrors: { body: 'The request body must contain valid JSON.' },
       }));
   it('oversized bodies are bounded without echoing their content', () =>
     request(app.getHttpServer())
       .post('/auth/login')
       .send({ password: 'x'.repeat(1100000) })
-      .expect(413)
+      .expect(400)
       .expect({
-        code: 'PAYLOAD_TOO_LARGE',
-        message: 'The request body is too large.',
+        code: 'VALIDATION',
+        message: 'Check the request body.',
+        fieldErrors: { body: 'The request body is too large.' },
       }));
   it('unavailable PostgreSQL never reports ready or leaks connection details', () => {
     databaseAvailable = false;
