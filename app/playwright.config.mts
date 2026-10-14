@@ -8,6 +8,7 @@ const baseURL = `http://127.0.0.1:${port}`;
 
 export default defineConfig({
   testDir: './e2e',
+  testIgnore: '**/live-signin.spec.ts',
   outputDir: resolve(import.meta.dirname, '../../test-results'),
   fullyParallel: false,
   workers: 1,

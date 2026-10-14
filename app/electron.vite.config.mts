@@ -25,6 +25,7 @@ export default defineConfig(({ command, mode }) => {
       },
     },
     renderer: {
+      define: { __CLINIC_BROWSER_QA__: false },
       root: resolve(import.meta.dirname, 'src/renderer'),
       resolve: { alias: { '@': resolve(import.meta.dirname, 'src/renderer') } },
       plugins: [
