@@ -385,6 +385,7 @@ try {
   await openPatient();
   await page.getByRole('button', { name: 'Vital signs', exact: true }).click();
   await page
+    .locator('.page-heading')
     .getByRole('button', { name: 'Record vital signs', exact: true })
     .click();
   await page.locator('#systolic').fill('120');
