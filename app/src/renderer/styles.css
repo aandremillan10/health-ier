@@ -1,6 +1,11 @@
 @import 'tailwindcss';
 
-/* Approved staff-tool foundation; see DESIGN.md. */
+/*
+  Approved staff-tool foundation; see DESIGN.md.
+  Neutral shadcn palette plus approved semantic status colors (DESIGN.md table).
+  Spacing/type scale lives in DESIGN.md: 4px base steps (4-8-12-16-24-32-48),
+  type 16px body / 14px labels / 20px section titles / 24px page titles.
+*/
 :root {
   --background: oklch(1 0 0);
   --foreground: oklch(0.145 0 0);
@@ -19,6 +24,19 @@
   --input: oklch(0.922 0 0);
   --ring: oklch(0.205 0 0);
   --radius: 0.625rem;
+  --success: #166534;
+  --success-bg: #f0fdf4;
+  --warning: #92400e;
+  --warning-bg: #fffbeb;
+  --error: #b91c1c;
+  --error-bg: #fef2f2;
+  --border-strong: #8a8a8a;
+  --skeleton: oklch(0.88 0 0);
+  --skeleton-highlight: oklch(0.93 0 0);
+  --surface-recessed: oklch(0.935 0 0);
+  --dur-fast: 120ms;
+  --dur-med: 180ms;
+  --ease-standard: cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 @theme inline {
@@ -39,6 +57,13 @@
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
+  --color-success: var(--success);
+  --color-success-bg: var(--success-bg);
+  --color-warning: var(--warning);
+  --color-warning-bg: var(--warning-bg);
+  --color-error: var(--error);
+  --color-error-bg: var(--error-bg);
+  --color-border-strong: var(--border-strong);
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
@@ -48,6 +73,7 @@
   * {
     @apply border-border;
   }
+
   body {
     @apply m-0 bg-background font-sans text-foreground antialiased;
   }

@@ -6,6 +6,7 @@ import type { InputHTMLAttributes, ReactElement } from 'react';
 export function SearchField({
   value,
   onValueChange,
+  escapeBehavior = 'clear',
   ...props
 }: Omit<
   InputHTMLAttributes<HTMLInputElement>,
@@ -13,6 +14,7 @@ export function SearchField({
 > & {
   value: string;
   onValueChange: (value: string) => void;
+  escapeBehavior?: 'clear' | 'propagate';
 }): ReactElement {
   const input = useRef<HTMLInputElement>(null);
   function clear(): void {
@@ -41,7 +43,7 @@ export function SearchField({
         onChange={(event) => onValueChange(event.target.value)}
         onKeyDown={(event) => {
           props.onKeyDown?.(event);
-          if (event.key === 'Escape' && value) {
+          if (escapeBehavior === 'clear' && event.key === 'Escape' && value) {
             event.preventDefault();
             clear();
           }

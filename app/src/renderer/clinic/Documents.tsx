@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { FormEvent, ReactElement } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -65,9 +65,52 @@ export function Documents({
     'loading' | 'ready' | 'error'
   >('loading');
   const [headerAttempt, setHeaderAttempt] = useState(0);
+  const [copied, setCopied] = useState(false);
+  const copyTimer = useRef(0);
+  const paperShell = useRef<HTMLDivElement>(null);
+  const [fitPreview, setFitPreview] = useState(true);
+  const [paperZoom, setPaperZoom] = useState(1);
+  const zoomRef = useRef(1);
   const { busy, error, conflict, run, clearError } = useOperation(onExpired);
   const title = form.kind === 'prescription' ? 'prescription' : 'certificate';
   useEffect(() => (): void => onDirty(false), [onDirty]);
+  useEffect(
+    () => (): void => {
+      window.clearTimeout(copyTimer.current);
+    },
+    [],
+  );
+  useEffect(() => {
+    const shell = paperShell.current;
+    if (!shell) return;
+    const measure = (): void => {
+      const paper = shell.querySelector<HTMLElement>('.document-paper');
+      if (!paper) return;
+      const natural = paper.offsetWidth / zoomRef.current;
+      const next = Math.min(1, (shell.clientWidth - 32) / natural);
+      zoomRef.current = next;
+      setPaperZoom(next);
+    };
+    const frame = requestAnimationFrame((): void => {
+      if (!fitPreview) {
+        zoomRef.current = 1;
+        setPaperZoom(1);
+        return;
+      }
+      measure();
+    });
+    if (!fitPreview) {
+      return (): void => cancelAnimationFrame(frame);
+    }
+    const observer = new ResizeObserver(measure);
+    observer.observe(shell);
+    const paper = shell.querySelector('.document-paper');
+    if (paper) observer.observe(paper);
+    return (): void => {
+      cancelAnimationFrame(frame);
+      observer.disconnect();
+    };
+  }, [fitPreview, document?.status, form.kind]);
   useEffect(() => {
     if (document?.status !== 'issued') return;
     let active = true;
@@ -183,6 +226,16 @@ export function Documents({
         code: 'UNAVAILABLE',
         message: 'No print job was submitted. Check the printer and retry.',
       });
+  }
+  async function copyId(): Promise<void> {
+    if (!document?.id) return;
+    try {
+      await navigator.clipboard.writeText(document.id);
+      setCopied(true);
+      copyTimer.current = window.setTimeout(() => setCopied(false), 1400);
+    } catch {
+      setCopied(false);
+    }
   }
   return (
     <section>
@@ -366,6 +419,24 @@ export function Documents({
             <>
               <div className="section-heading">
                 <h3>Print preview</h3>
+                <div className="segmented">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    aria-pressed={fitPreview}
+                    onClick={() => setFitPreview(true)}
+                  >
+                    Fit width
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    aria-pressed={!fitPreview}
+                    onClick={() => setFitPreview(false)}
+                  >
+                    100%
+                  </Button>
+                </div>
                 <State status={document.status} />
               </div>
               <div
@@ -373,12 +444,15 @@ export function Documents({
                 tabIndex={0}
                 role="region"
                 aria-label="Document preview"
+                ref={paperShell}
               >
-                <DocumentPaper
-                  key={headerAttempt}
-                  document={document}
-                  onHeaderStatus={setHeaderStatus}
-                />
+                <div style={{ zoom: fitPreview ? paperZoom : 1 }}>
+                  <DocumentPaper
+                    key={headerAttempt}
+                    document={document}
+                    onHeaderStatus={setHeaderStatus}
+                  />
+                </div>
               </div>
               {headerStatus === 'loading' && (
                 <p role="status" className="notice">
@@ -417,6 +491,7 @@ export function Documents({
                     )}
                   <Field name="printer" label="Printer" error={error}>
                     <select
+                      className="clinic-select"
                       disabled={busy}
                       id="printer"
                       value={printerId}
@@ -451,6 +526,45 @@ export function Documents({
                       onClick={() => void reloadPrinters()}
                     >
                       Refresh printers
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      aria-label="Copy document ID"
+                      onClick={() => void copyId()}
+                    >
+                      <span className={`swap-icon ${copied ? 'copied' : ''}`}>
+                        <svg
+                          className="icon-main"
+                          aria-hidden="true"
+                          width="16"
+                          height="16"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="1.75"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        >
+                          <rect x="9" y="9" width="12" height="12" rx="2" />
+                          <path d="M5 15V5a2 2 0 0 1 2-2h10" />
+                        </svg>
+                        <svg
+                          className="icon-alt"
+                          aria-hidden="true"
+                          width="16"
+                          height="16"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2.5"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        >
+                          <path d="m4 12.5 5 5L20 6.5" />
+                        </svg>
+                      </span>
+                      {copied ? 'Copied' : 'Copy ID'}
                     </Button>
                   </div>
                 </section>

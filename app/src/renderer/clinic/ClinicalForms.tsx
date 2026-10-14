@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { FormEvent, ReactElement } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -47,6 +47,8 @@ export function EntryForm({
     plan: content?.plan ?? '',
   });
   const [reason, setReason] = useState('');
+  const [saved, setSaved] = useState(false);
+  const savedTimer = useRef(0);
   const [vitals, setVitals] = useState<Vitals[]>([]);
   const [vitalsError, setVitalsError] = useState<ClinicError | null>(null);
   const [revision, setRevision] = useState(entry?.revision ?? 0);
@@ -79,6 +81,7 @@ export function EntryForm({
     };
   }, [api, patient.id, onExpired]);
   useEffect(() => (): void => onDirty(false), [onDirty]);
+  useEffect(() => (): void => window.clearTimeout(savedTimer.current), []);
   function change<K extends keyof typeof form>(
     key: K,
     value: (typeof form)[K],
@@ -110,7 +113,8 @@ export function EntryForm({
     );
     if (result) {
       onDirty(false);
-      onDone();
+      setSaved(true);
+      savedTimer.current = window.setTimeout(onDone, 700);
     }
   }
   async function review(): Promise<void> {
@@ -270,6 +274,7 @@ export function EntryForm({
             error={error}
           >
             <select
+              className="clinic-select"
               disabled={busy}
               id="vitalsId"
               value={form.vitalsId ?? ''}
@@ -324,8 +329,34 @@ export function EntryForm({
           <Button type="button" variant="outline" onClick={onCancel}>
             Cancel
           </Button>
-          <Button type="submit" disabled={busy || conflict || latest !== null}>
-            {busy ? 'Saving…' : correction ? 'Save correction' : 'Save draft'}
+          <Button
+            type="submit"
+            disabled={busy || saved || conflict || latest !== null}
+          >
+            {saved ? (
+              <span className="saved-check">
+                <svg
+                  aria-hidden="true"
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2.5"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <path d="m4 12.5 5 5L20 6.5" />
+                </svg>
+                {correction ? 'Correction saved' : 'Saved'}
+              </span>
+            ) : busy ? (
+              'Saving…'
+            ) : correction ? (
+              'Save correction'
+            ) : (
+              'Save draft'
+            )}
           </Button>
         </div>
       </form>
@@ -372,11 +403,14 @@ export function VitalsForm({
       : new Date(Date.now() + 8 * 3600000).toISOString().slice(0, 16),
   );
   const [reason, setReason] = useState('');
+  const [saved, setSaved] = useState(false);
+  const savedTimer = useRef(0);
   const [revision, setRevision] = useState(record?.revision ?? 0);
   const [latest, setLatest] = useState<Vitals | null>(null);
   const [reviewError, setReviewError] = useState<ClinicError | null>(null);
   const { busy, error, conflict, run, clearError } = useOperation(onExpired);
   useEffect(() => (): void => onDirty(false), [onDirty]);
+  useEffect(() => (): void => window.clearTimeout(savedTimer.current), []);
   async function save(event: FormEvent): Promise<void> {
     event.preventDefault();
     const input: VitalsInput = {
@@ -409,7 +443,8 @@ export function VitalsForm({
     );
     if (result) {
       onDirty(false);
-      onDone();
+      setSaved(true);
+      savedTimer.current = window.setTimeout(onDone, 700);
     }
   }
   async function review(): Promise<void> {
@@ -543,8 +578,34 @@ export function VitalsForm({
           <Button type="button" variant="outline" onClick={onCancel}>
             Cancel
           </Button>
-          <Button type="submit" disabled={busy || conflict || latest !== null}>
-            {busy ? 'Saving…' : correction ? 'Save correction' : 'Save draft'}
+          <Button
+            type="submit"
+            disabled={busy || saved || conflict || latest !== null}
+          >
+            {saved ? (
+              <span className="saved-check">
+                <svg
+                  aria-hidden="true"
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2.5"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <path d="m4 12.5 5 5L20 6.5" />
+                </svg>
+                {correction ? 'Correction saved' : 'Saved'}
+              </span>
+            ) : busy ? (
+              'Saving…'
+            ) : correction ? (
+              'Save correction'
+            ) : (
+              'Save draft'
+            )}
           </Button>
         </div>
       </form>

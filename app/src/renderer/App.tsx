@@ -16,6 +16,7 @@ import {
   visibleDisciplines,
 } from './clinic/contract';
 import { createDemoClinic, demoStaff } from './clinic/demo';
+import { CommandPalette } from './clinic/CommandPalette';
 import { Registry, PatientForm } from './clinic/Registry';
 import { Chart } from './clinic/Chart';
 import { chartNames } from './clinic/contract';
@@ -55,6 +56,9 @@ export function App(): ReactElement {
   const [selectedStaff, setSelectedStaff] = useState('demo-doctor-1');
   const [sessionNotice, setSessionNotice] = useState('');
   const [signingOut, setSigningOut] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [capsLock, setCapsLock] = useState(false);
+  const panelRef = useRef<HTMLElement>(null);
   const { busy, error, run, clearError } = useOperation();
   const expire = useCallback((): void => {
     setStaff(null);
@@ -64,6 +68,13 @@ export function App(): ReactElement {
     setSession((s) => s + 1);
     setSessionNotice('Your session changed or expired. Sign in again.');
   }, [clearError]);
+  function wobble(): void {
+    const element = panelRef.current;
+    if (!element) return;
+    element.classList.remove('shake');
+    void element.offsetWidth;
+    element.classList.add('shake');
+  }
   useEffect(() => {
     if (demo) return;
     return bridge?.onSessionReset?.((reason) => {
@@ -89,6 +100,9 @@ export function App(): ReactElement {
       setStaff(result);
       setSession((s) => s + 1);
       setSessionNotice('');
+      panelRef.current?.classList.remove('shake');
+    } else {
+      wobble();
     }
   }
   function openDemo(): void {
@@ -140,7 +154,7 @@ export function App(): ReactElement {
         />
       ) : (
         <main id="main-content" className="sign-in">
-          <section className="login-panel">
+          <section className="login-panel" ref={panelRef}>
             <div className="login-identity">
               <img src="./amlig-logo.png" alt="" width="48" height="48" />
               <div>
@@ -167,15 +181,77 @@ export function App(): ReactElement {
                 />
               </Field>
               <Field label="Password" name="password" error={error}>
-                <Input
-                  disabled={busy || signingOut}
-                  id="password"
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  autoComplete="current-password"
-                  required
-                />
+                <div className="pw-field">
+                  <Input
+                    disabled={busy || signingOut}
+                    id="password"
+                    type={showPassword ? 'text' : 'password'}
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    onKeyDown={(e) => {
+                      setCapsLock(e.getModifierState('CapsLock'));
+                    }}
+                    onKeyUp={(e) => {
+                      setCapsLock(e.getModifierState('CapsLock'));
+                    }}
+                    onBlur={() => setCapsLock(false)}
+                    autoComplete="current-password"
+                    required
+                    aria-invalid={Boolean(error?.fieldErrors?.password)}
+                    aria-describedby={
+                      error?.fieldErrors?.password
+                        ? 'password-error'
+                        : undefined
+                    }
+                  />
+                  {capsLock && (
+                    <span className="pw-caps" role="status">
+                      <svg
+                        aria-hidden="true"
+                        width="18"
+                        height="18"
+                        viewBox="0 0 24 24"
+                        fill="currentColor"
+                      >
+                        <title>Caps Lock is on.</title>
+                        <path d="M12 1.2 20.2 7.8H16v8c0 .55-.45 1-1 1H9c-.55 0-1-.45-1-1v-8H3.8L12 1.2Z" />
+                        <rect
+                          x="8.1"
+                          y="19.5"
+                          width="7.8"
+                          height="2.4"
+                          rx="1.2"
+                        />
+                      </svg>
+                      <span className="sr-only">Caps Lock is on.</span>
+                    </span>
+                  )}
+                  <button
+                    type="button"
+                    className="pw-toggle"
+                    aria-label={
+                      showPassword ? 'Hide password' : 'Show password'
+                    }
+                    aria-pressed={showPassword}
+                    onClick={() => setShowPassword((visible) => !visible)}
+                  >
+                    <svg
+                      aria-hidden="true"
+                      width="18"
+                      height="18"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="1.75"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
+                      <path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12Z" />
+                      <circle cx="12" cy="12" r="3" />
+                      {showPassword ? <path d="m3 3 18 18" /> : null}
+                    </svg>
+                  </button>
+                </div>
               </Field>
               <Button type="submit" disabled={busy || signingOut}>
                 {busy ? 'Signing in…' : 'Sign in'}
@@ -191,6 +267,7 @@ export function App(): ReactElement {
               </p>
               <Field label="Demo staff" name="demo-staff">
                 <select
+                  className="clinic-select"
                   id="demo-staff"
                   value={selectedStaff}
                   onChange={(e) => setSelectedStaff(e.target.value)}
@@ -234,6 +311,7 @@ function Workspace({
   onExpired: () => void;
 }): ReactElement {
   const [screen, setScreen] = useState<Screen>({ kind: 'registry' });
+  const [palette, setPalette] = useState(false);
   const [patient, setPatient] = useState<Patient | null>(null);
   const [dirty, setDirty] = useState(false);
   const [available, setAvailable] = useState<boolean | null>(null);
@@ -273,6 +351,45 @@ function Workspace({
     window.addEventListener('beforeunload', guard);
     return (): void => window.removeEventListener('beforeunload', guard);
   }, [dirty]);
+  useEffect(() => {
+    function toggle(event: KeyboardEvent): void {
+      if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'k') {
+        event.preventDefault();
+        setPalette((current) => !current);
+      }
+    }
+    window.addEventListener('keydown', toggle);
+    return (): void => window.removeEventListener('keydown', toggle);
+  }, []);
+  useEffect(() => {
+    const label =
+      screen.kind === 'chart'
+        ? screen.tab === 'details'
+          ? 'Patient details'
+          : screen.tab === 'vitals'
+            ? 'Vital signs'
+            : chartNames[screen.tab]
+        : screen.kind === 'register'
+          ? 'Register patient'
+          : screen.kind === 'editPatient'
+            ? 'Edit patient details'
+            : screen.kind === 'entry'
+              ? screen.correction
+                ? 'Correct medical entry'
+                : 'Medical entry'
+              : screen.kind === 'vitals'
+                ? screen.correction
+                  ? 'Correct vital signs'
+                  : 'Vital signs'
+                : screen.kind === 'document'
+                  ? screen.documentKind === 'certificate'
+                    ? 'Medical certificate'
+                    : 'Prescription'
+                  : 'Patient records';
+    document.title = patient
+      ? `${label} · ${patient.fullName} — AMLIG`
+      : `${label} — AMLIG`;
+  }, [screen, patient]);
   useEffect(() => {
     if (demo) return;
     let active = true;
@@ -351,332 +468,352 @@ function Workspace({
           ? 'medical'
           : 'details';
   return (
-    <div className="workspace">
-      <aside className="sidebar">
-        <div className="brand">
-          <img src="./amlig-logo.png" alt="" width="44" height="44" />
-          <div>
-            <strong>AMLIG</strong>
-            <span>HMO-Clinic · Iloilo</span>
+    <>
+      <div className="workspace">
+        <aside className="sidebar">
+          <div className="brand">
+            <img src="./amlig-logo.png" alt="" width="44" height="44" />
+            <div>
+              <strong>AMLIG</strong>
+              <span>HMO-Clinic · Iloilo</span>
+            </div>
           </div>
-        </div>
-        <nav aria-label="Clinic navigation">
-          <Button
-            className={`nav-item ${screen.kind === 'registry' ? 'selected' : ''}`}
-            aria-current={screen.kind === 'registry' ? 'page' : undefined}
-            variant="ghost"
-            onClick={() => navigate({ kind: 'registry' })}
-          >
-            Patient records
-          </Button>
-          {patient &&
-            screen.kind !== 'registry' &&
-            screen.kind !== 'register' && (
-              <div className="patient-navigation">
-                <span className="nav-label">Selected patient</span>
-                <Button
-                  variant="ghost"
-                  className={`nav-item ${currentTab === 'details' ? 'selected' : ''}`}
-                  aria-current={currentTab === 'details' ? 'page' : undefined}
-                  onClick={() => backToChart('details')}
-                >
-                  Patient details
-                </Button>
-                {canReadVitals(staff) && (
-                  <Button
-                    variant="ghost"
-                    className={`nav-item ${currentTab === 'vitals' ? 'selected' : ''}`}
-                    aria-current={currentTab === 'vitals' ? 'page' : undefined}
-                    onClick={() => backToChart('vitals')}
-                  >
-                    Vital signs
-                  </Button>
-                )}
-                {visibleDisciplines(staff).map((d) => (
-                  <Button
-                    key={d}
-                    variant="ghost"
-                    className={`nav-item ${currentTab === d ? 'selected' : ''}`}
-                    aria-current={currentTab === d ? 'page' : undefined}
-                    onClick={() => backToChart(d)}
-                  >
-                    {chartNames[d]}
-                  </Button>
-                ))}
-              </div>
-            )}
-        </nav>
-        <div className="sidebar-bottom">
-          <div className="connection">
-            <span className={`status-dot ${available ? 'online' : ''}`} />
-            <strong>
-              {available === null
-                ? 'Checking clinic server…'
-                : available
-                  ? demo
-                    ? 'Demo server available'
-                    : 'Clinic server available'
-                  : 'Clinic server unavailable'}
-            </strong>
+          <nav aria-label="Clinic navigation">
             <Button
+              className={`nav-item ${screen.kind === 'registry' ? 'selected' : ''}`}
+              aria-current={screen.kind === 'registry' ? 'page' : undefined}
               variant="ghost"
-              size="sm"
-              disabled={busy || available === null}
-              onClick={() => void refreshHealth()}
+              onClick={() => navigate({ kind: 'registry' })}
             >
-              Check connection
+              Patient records
             </Button>
-          </div>
-          <div className="staff-identity">
-            <strong>{staff.displayName}</strong>
-            <span>
-              {roleNames[staff.role]}
-              {staff.isHead ? ' · Clinic head' : ''}
-            </span>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => {
-                if (
-                  !dirty ||
-                  window.confirm('Discard unsaved changes and sign out?')
-                )
-                  void onLogout();
-              }}
-            >
-              Sign out
-            </Button>
-          </div>
-        </div>
-      </aside>
-      <div className="main-area">
-        <header className="topbar">
-          <nav className="breadcrumb" aria-label="Breadcrumb">
-            {screen.kind === 'registry' ? (
-              <span aria-current="page">Patient records</span>
-            ) : (
-              <>
-                <button
-                  type="button"
-                  onClick={() => navigate({ kind: 'registry' })}
-                >
-                  All patient records
-                </button>
-                <span aria-hidden="true">/</span>
-                <span aria-current="page">
-                  {screen.kind === 'chart'
-                    ? screen.tab === 'details'
-                      ? 'Patient details'
-                      : screen.tab === 'vitals'
-                        ? 'Vital signs'
-                        : chartNames[screen.tab]
-                    : screen.kind === 'register'
-                      ? 'Register patient'
-                      : screen.kind === 'editPatient'
-                        ? 'Edit details'
-                        : screen.kind === 'entry'
-                          ? 'Medical entry'
-                          : screen.kind === 'vitals'
-                            ? 'Vital signs'
-                            : 'Document'}
-                </span>
-              </>
-            )}
-          </nav>
-          <span className="badge">
-            {demo ? 'Frontend demo · Memory only' : 'Clinic LAN'}
-          </span>
-        </header>
-        <main id="main-content" ref={heading} tabIndex={-1}>
-          {available === false && (
-            <p className="notice error" role="alert">
-              Clinic server unavailable. Input remains unsaved until a save
-              succeeds.
-            </p>
-          )}
-          {error && <ErrorNotice error={error} />}
-          {notice && (
-            <p className="notice success" role="status">
-              {notice}
-            </p>
-          )}
-          {dirty && screen.kind === 'register' && (
-            <p className="badge warning">Unsaved changes</p>
-          )}
-          {patient &&
-            screen.kind !== 'registry' &&
-            screen.kind !== 'register' && (
-              <div className="patient-banner">
-                <span className="patient-avatar" aria-hidden="true">
-                  {patient.fullName
-                    .split(' ')
-                    .map((part) => part[0])
-                    .slice(0, 2)
-                    .join('')}
-                </span>
-                <div>
-                  <h1>{patient.fullName}</h1>
-                  <p>
-                    {patient.id} · Birth date: {date(patient.dateOfBirth)}
-                  </p>
+            {patient &&
+              screen.kind !== 'registry' &&
+              screen.kind !== 'register' && (
+                <div className="patient-navigation">
+                  <span className="nav-label">Selected patient</span>
+                  <Button
+                    variant="ghost"
+                    className={`nav-item ${currentTab === 'details' ? 'selected' : ''}`}
+                    aria-current={currentTab === 'details' ? 'page' : undefined}
+                    onClick={() => backToChart('details')}
+                  >
+                    Patient details
+                  </Button>
+                  {canReadVitals(staff) && (
+                    <Button
+                      variant="ghost"
+                      className={`nav-item ${currentTab === 'vitals' ? 'selected' : ''}`}
+                      aria-current={
+                        currentTab === 'vitals' ? 'page' : undefined
+                      }
+                      onClick={() => backToChart('vitals')}
+                    >
+                      Vital signs
+                    </Button>
+                  )}
+                  {visibleDisciplines(staff).map((d) => (
+                    <Button
+                      key={d}
+                      variant="ghost"
+                      className={`nav-item ${currentTab === d ? 'selected' : ''}`}
+                      aria-current={currentTab === d ? 'page' : undefined}
+                      onClick={() => backToChart(d)}
+                    >
+                      {chartNames[d]}
+                    </Button>
+                  ))}
                 </div>
-                {dirty && (
-                  <span className="badge warning">Unsaved changes</span>
-                )}
-              </div>
-            )}
-          {screen.kind === 'registry' && (
-            <Registry
-              api={api}
-              staff={staff}
-              demo={demo}
-              onSelect={(p) => void select(p)}
-              onRegister={() => {
-                setPatient(null);
-                navigate({ kind: 'register' });
-              }}
-              onExpired={onExpired}
-            />
-          )}
-          {(screen.kind === 'register' || screen.kind === 'editPatient') && (
-            <PatientForm
-              api={api}
-              patient={
-                screen.kind === 'editPatient' && patient ? patient : undefined
-              }
-              onSaved={saved}
-              onOpenExisting={(record) => void select(record)}
-              onCancel={() =>
-                navigate(
-                  patient
-                    ? { kind: 'chart', tab: 'details' }
-                    : { kind: 'registry' },
-                )
-              }
-              onDirty={setDirty}
-              onExpired={onExpired}
-            />
-          )}
-          {patient && screen.kind === 'chart' && (
-            <Chart
-              key={`${patient.id}/${screen.tab}`}
-              api={api}
-              staff={staff}
-              patient={patient}
-              tab={screen.tab}
-              demo={demo}
-              onEditPatient={() => navigate({ kind: 'editPatient' })}
-              onEntry={(entry, correction) =>
-                navigate({ kind: 'entry', entry, correction })
-              }
-              onVitals={(record, correction) =>
-                navigate({ kind: 'vitals', record, correction })
-              }
-              onDocument={(entry, document, documentKind) =>
-                navigate({ kind: 'document', entry, document, documentKind })
-              }
-              onExpired={onExpired}
-            />
-          )}
-          {patient && screen.kind === 'entry' && (
-            <EntryForm
-              api={api}
-              patient={patient}
-              entry={screen.entry}
-              correction={screen.correction}
-              onDone={() => done('medical')}
-              onDirty={setDirty}
-              onCancel={() => backToChart('medical')}
-              onExpired={onExpired}
-            />
-          )}
-          {patient && screen.kind === 'vitals' && (
-            <VitalsForm
-              api={api}
-              patient={patient}
-              record={screen.record}
-              correction={screen.correction}
-              onDone={() => done('vitals')}
-              onDirty={setDirty}
-              onCancel={() => backToChart('vitals')}
-              onExpired={onExpired}
-            />
-          )}
-          {patient && screen.kind === 'document' && (
-            <Documents
-              api={api}
-              entry={screen.entry}
-              issued={screen.document}
-              kind={screen.documentKind}
-              demo={demo}
-              onDirty={setDirty}
-              onBack={() => backToChart('medical')}
-              onExpired={onExpired}
-            />
-          )}
-        </main>
-        {demo && (
-          <details className="demo-controls">
-            <summary>Demo controls</summary>
-            <p className="hint">
-              Synthetic frontend states only. No LAN, cloud, or printer
-              integration is tested here.
-            </p>
-            <div className="demo-control-items">
-              <label className="check">
-                <input
-                  type="checkbox"
-                  checked={available === true}
-                  onChange={(e) => {
-                    fixture.setAvailable(e.target.checked);
-                    setAvailable(e.target.checked);
-                  }}
-                />
-                Clinic server available
-              </label>
-              <label className="check">
-                <input
-                  type="checkbox"
-                  checked={wan}
-                  onChange={(e) => setWan(e.target.checked)}
-                />
-                Internet available
-              </label>
+              )}
+          </nav>
+          <div className="sidebar-bottom">
+            <div className="connection">
+              <span className={`status-dot ${available ? 'online' : ''}`} />
+              <strong>
+                {available === null
+                  ? 'Checking clinic server…'
+                  : available
+                    ? demo
+                      ? 'Demo server available'
+                      : 'Clinic server available'
+                    : 'Clinic server unavailable'}
+              </strong>
               <Button
-                variant="outline"
+                variant="ghost"
                 size="sm"
-                onClick={() => {
-                  fixture.conflictNext();
-                  setNotice(
-                    'The next revision-checked write will show a demo conflict.',
-                  );
-                }}
+                disabled={busy || available === null}
+                onClick={() => void refreshHealth()}
               >
-                Simulate next revision conflict
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => {
-                  fixture.failNextPrint();
-                  setNotice(
-                    'The next print request will show a demo printer failure.',
-                  );
-                }}
-              >
-                Simulate next print failure
+                Check connection
               </Button>
             </div>
-            {!wan && (
-              <p className="hint">
-                Demo internet outage. Local operations remain available while
-                the simulated clinic server is available. Cloud mirroring is
-                Backend issue #11.
+            <div className="staff-identity">
+              <strong>{staff.displayName}</strong>
+              <span>
+                {roleNames[staff.role]}
+                {staff.isHead ? ' · Clinic head' : ''}
+              </span>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  if (
+                    !dirty ||
+                    window.confirm('Discard unsaved changes and sign out?')
+                  )
+                    void onLogout();
+                }}
+              >
+                Sign out
+              </Button>
+            </div>
+          </div>
+        </aside>
+        <div className="main-area">
+          <header className="topbar">
+            <nav className="breadcrumb" aria-label="Breadcrumb">
+              {screen.kind === 'registry' ? (
+                <span aria-current="page">Patient records</span>
+              ) : (
+                <>
+                  <button
+                    type="button"
+                    onClick={() => navigate({ kind: 'registry' })}
+                  >
+                    All patient records
+                  </button>
+                  <span aria-hidden="true">/</span>
+                  <span aria-current="page">
+                    {screen.kind === 'chart'
+                      ? screen.tab === 'details'
+                        ? 'Patient details'
+                        : screen.tab === 'vitals'
+                          ? 'Vital signs'
+                          : chartNames[screen.tab]
+                      : screen.kind === 'register'
+                        ? 'Register patient'
+                        : screen.kind === 'editPatient'
+                          ? 'Edit details'
+                          : screen.kind === 'entry'
+                            ? 'Medical entry'
+                            : screen.kind === 'vitals'
+                              ? 'Vital signs'
+                              : 'Document'}
+                  </span>
+                </>
+              )}
+            </nav>
+            <span className="badge">
+              {demo ? 'Frontend demo · Memory only' : 'Clinic LAN'}
+            </span>
+          </header>
+          <main id="main-content" ref={heading} tabIndex={-1}>
+            {available === false && (
+              <p className="notice error" role="alert">
+                Clinic server unavailable. Input remains unsaved until a save
+                succeeds.
               </p>
             )}
-          </details>
-        )}
+            {error && <ErrorNotice error={error} />}
+            {notice && (
+              <p className="notice success" role="status">
+                {notice}
+              </p>
+            )}
+            {dirty && screen.kind === 'register' && (
+              <p className="badge warning">Unsaved changes</p>
+            )}
+            {patient &&
+              screen.kind !== 'registry' &&
+              screen.kind !== 'register' && (
+                <div className="patient-banner">
+                  <span className="patient-avatar" aria-hidden="true">
+                    {patient.fullName
+                      .split(' ')
+                      .map((part) => part[0])
+                      .slice(0, 2)
+                      .join('')}
+                  </span>
+                  <div>
+                    <h1>{patient.fullName}</h1>
+                    <p>
+                      {patient.id} · Birth date: {date(patient.dateOfBirth)}
+                    </p>
+                  </div>
+                  {dirty && (
+                    <span className="badge warning">Unsaved changes</span>
+                  )}
+                </div>
+              )}
+            {screen.kind === 'registry' && (
+              <Registry
+                api={api}
+                staff={staff}
+                demo={demo}
+                onSelect={(p) => void select(p)}
+                onRegister={() => {
+                  setPatient(null);
+                  navigate({ kind: 'register' });
+                }}
+                onExpired={onExpired}
+              />
+            )}
+            {(screen.kind === 'register' || screen.kind === 'editPatient') && (
+              <PatientForm
+                api={api}
+                patient={
+                  screen.kind === 'editPatient' && patient ? patient : undefined
+                }
+                onSaved={saved}
+                onOpenExisting={(record) => void select(record)}
+                onCancel={() =>
+                  navigate(
+                    patient
+                      ? { kind: 'chart', tab: 'details' }
+                      : { kind: 'registry' },
+                  )
+                }
+                onDirty={setDirty}
+                onExpired={onExpired}
+              />
+            )}
+            {patient && screen.kind === 'chart' && (
+              <Chart
+                key={`${patient.id}/${screen.tab}`}
+                api={api}
+                staff={staff}
+                patient={patient}
+                tab={screen.tab}
+                demo={demo}
+                onEditPatient={() => navigate({ kind: 'editPatient' })}
+                onEntry={(entry, correction) =>
+                  navigate({ kind: 'entry', entry, correction })
+                }
+                onVitals={(record, correction) =>
+                  navigate({ kind: 'vitals', record, correction })
+                }
+                onDocument={(entry, document, documentKind) =>
+                  navigate({ kind: 'document', entry, document, documentKind })
+                }
+                onExpired={onExpired}
+              />
+            )}
+            {patient && screen.kind === 'entry' && (
+              <EntryForm
+                api={api}
+                patient={patient}
+                entry={screen.entry}
+                correction={screen.correction}
+                onDone={() => done('medical')}
+                onDirty={setDirty}
+                onCancel={() => backToChart('medical')}
+                onExpired={onExpired}
+              />
+            )}
+            {patient && screen.kind === 'vitals' && (
+              <VitalsForm
+                api={api}
+                patient={patient}
+                record={screen.record}
+                correction={screen.correction}
+                onDone={() => done('vitals')}
+                onDirty={setDirty}
+                onCancel={() => backToChart('vitals')}
+                onExpired={onExpired}
+              />
+            )}
+            {patient && screen.kind === 'document' && (
+              <Documents
+                api={api}
+                entry={screen.entry}
+                issued={screen.document}
+                kind={screen.documentKind}
+                demo={demo}
+                onDirty={setDirty}
+                onBack={() => backToChart('medical')}
+                onExpired={onExpired}
+              />
+            )}
+          </main>
+          {demo && (
+            <details className="demo-controls">
+              <summary>Demo controls</summary>
+              <p className="hint">
+                Synthetic frontend states only. No LAN, cloud, or printer
+                integration is tested here.
+              </p>
+              <div className="demo-control-items">
+                <label className="check">
+                  <input
+                    type="checkbox"
+                    checked={available === true}
+                    onChange={(e) => {
+                      fixture.setAvailable(e.target.checked);
+                      setAvailable(e.target.checked);
+                    }}
+                  />
+                  Clinic server available
+                </label>
+                <label className="check">
+                  <input
+                    type="checkbox"
+                    checked={wan}
+                    onChange={(e) => setWan(e.target.checked)}
+                  />
+                  Internet available
+                </label>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    fixture.conflictNext();
+                    setNotice(
+                      'The next revision-checked write will show a demo conflict.',
+                    );
+                  }}
+                >
+                  Simulate next revision conflict
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    fixture.failNextPrint();
+                    setNotice(
+                      'The next print request will show a demo printer failure.',
+                    );
+                  }}
+                >
+                  Simulate next print failure
+                </Button>
+              </div>
+              {!wan && (
+                <p className="hint">
+                  Demo internet outage. Local operations remain available while
+                  the simulated clinic server is available. Cloud mirroring is
+                  Backend issue #11.
+                </p>
+              )}
+            </details>
+          )}
+        </div>
       </div>
-    </div>
+      <CommandPalette
+        key={palette ? 'open' : 'closed'}
+        api={api}
+        staff={staff}
+        open={palette}
+        onDismiss={() => setPalette(false)}
+        onSelect={(record) => {
+          setPalette(false);
+          void select(record);
+        }}
+        onRegister={() => {
+          setPalette(false);
+          setPatient(null);
+          navigate({ kind: 'register' });
+        }}
+      />
+    </>
   );
 }

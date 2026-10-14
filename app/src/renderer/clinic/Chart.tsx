@@ -14,7 +14,7 @@ import type {
   Vitals,
 } from './contract';
 import { canEditRegistry, canWriteEntry } from './contract';
-import { Confirm, Empty, ErrorNotice, Field, State } from './ui';
+import { Confirm, Empty, ErrorNotice, Field, Loading, State } from './ui';
 import { useOperation } from './use-operation';
 import { date, timestamp } from './format';
 
@@ -266,12 +266,16 @@ export function Chart({
         (!error &&
           !loadError &&
           (tab === 'vitals' ? vitals === null : entries === null))) && (
-        <p role="status" className="loading-lines">
-          Loading {tab === 'vitals' ? 'vital signs' : 'chart'}…
-        </p>
+        <Loading>Loading {tab === 'vitals' ? 'vital signs' : 'chart'}…</Loading>
       )}
       {tab === 'vitals' && vitals && vitals.length === 0 && (
-        <Empty>
+        <Empty
+          action={
+            staff.role === 'attendant' ? (
+              <Button onClick={() => onVitals()}>Record vital signs</Button>
+            ) : undefined
+          }
+        >
           No vital signs recorded. Measurements can be recorded without a
           consultation.
         </Empty>
@@ -320,7 +324,13 @@ export function Chart({
           </article>
         ))}
       {tab !== 'vitals' && entries && entries.length === 0 && (
-        <Empty>
+        <Empty
+          action={
+            tab === 'medical' && canWriteEntry(staff, tab) ? (
+              <Button onClick={() => onEntry()}>New medical entry</Button>
+            ) : undefined
+          }
+        >
           No entries in this chart.
           {tab === 'medical' && canWriteEntry(staff, tab)
             ? ' Select New medical entry to record a consultation.'

@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input';
 import { SearchField } from '@/components/ui/search-field';
 import type { ClinicApi, ClinicError, Patient, Principal } from './contract';
 import { canEditRegistry } from './contract';
-import { Empty, ErrorNotice, Field } from './ui';
+import { Empty, ErrorNotice, Field, Loading } from './ui';
 import { useOperation } from './use-operation';
 import { date, today } from './format';
 
@@ -92,17 +92,17 @@ export function Registry({
             </Button>
           </div>
         </Field>
+        <p className="hint search-hint">
+          Press <kbd className="kbd">Ctrl</kbd>
+          <kbd className="kbd">K</kbd> to search from any screen.
+        </p>
       </form>
       <ErrorNotice error={displayError}>
         <Button variant="outline" onClick={() => void search()}>
           Try again
         </Button>
       </ErrorNotice>
-      {loading && (
-        <div className="loading-lines" role="status">
-          Finding patient records…
-        </div>
-      )}
+      {loading && <Loading>Finding patient records…</Loading>}
       {!loading && !displayError && patients === null && (
         <Empty>
           Enter a patient {demo ? 'name or number' : 'name'} to find their
@@ -110,7 +110,13 @@ export function Registry({
         </Empty>
       )}
       {patients && patients.length === 0 && (
-        <Empty>
+        <Empty
+          action={
+            canEditRegistry(staff) && (
+              <Button onClick={onRegister}>Register patient</Button>
+            )
+          }
+        >
           No records for “{lastQuery}”. Try a shorter name or check the
           spelling.
         </Empty>
@@ -211,12 +217,15 @@ export function PatientForm({
     employeeIdentifier: patient?.employeeIdentifier ?? '',
   });
   const [revision, setRevision] = useState(patient?.revision ?? 0);
+  const [saved, setSaved] = useState(false);
+  const savedTimer = useRef(0);
   const [matches, setMatches] = useState<Patient[] | null>(null);
   const [confirmed, setConfirmed] = useState(false);
   const [latest, setLatest] = useState<Patient | null>(null);
   const checkId = useRef(0);
   const { busy, error, conflict, run, clearError } = useOperation(onExpired);
   useEffect(() => (): void => onDirty(false), [onDirty]);
+  useEffect(() => (): void => window.clearTimeout(savedTimer.current), []);
   function change(name: keyof typeof form, value: string): void {
     setForm({ ...form, [name]: value });
     onDirty(true);
@@ -247,7 +256,8 @@ export function PatientForm({
     );
     if (result) {
       onDirty(false);
-      onSaved(result);
+      setSaved(true);
+      savedTimer.current = window.setTimeout(() => onSaved(result), 700);
     }
   }
   async function reviewLatest(): Promise<void> {
@@ -346,6 +356,7 @@ export function PatientForm({
           </Field>
           <Field label="Sex" name="sex" error={error}>
             <select
+              className="clinic-select"
               disabled={busy}
               id="sex"
               value={form.sex}
@@ -359,6 +370,7 @@ export function PatientForm({
           </Field>
           <Field label="Category" name="patientCategory" error={error}>
             <select
+              className="clinic-select"
               disabled={busy}
               id="patientCategory"
               value={form.patientCategory}
@@ -445,13 +457,35 @@ export function PatientForm({
             type="submit"
             disabled={
               busy ||
+              saved ||
               conflict ||
               latest !== null ||
               (!patient &&
                 (matches === null || (matches.length > 0 && !confirmed)))
             }
           >
-            {busy ? 'Saving…' : 'Save patient'}
+            {saved ? (
+              <span className="saved-check">
+                <svg
+                  aria-hidden="true"
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2.5"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <path d="m4 12.5 5 5L20 6.5" />
+                </svg>
+                Patient saved
+              </span>
+            ) : busy ? (
+              'Saving…'
+            ) : (
+              'Save patient'
+            )}
           </Button>
         </div>
       </form>

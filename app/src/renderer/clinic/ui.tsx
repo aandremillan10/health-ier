@@ -140,16 +140,32 @@ export function State({
     </span>
   );
 }
+export function Loading({ children }: { children: ReactNode }): ReactElement {
+  return (
+    <div className="loading-lines" role="status">
+      <p>{children}</p>
+      <div aria-hidden="true">
+        <span className="skeleton-row" />
+        <span className="skeleton-row" />
+        <span className="skeleton-row" />
+        <span className="skeleton-row" />
+      </div>
+    </div>
+  );
+}
 export function Empty({
   children,
   onRetry,
+  action,
 }: {
   children: ReactNode;
   onRetry?: () => void;
+  action?: ReactNode;
 }): ReactElement {
   return (
     <div className="empty">
       <p>{children}</p>
+      {action}
       {onRetry && (
         <Button variant="outline" onClick={onRetry}>
           Try again
