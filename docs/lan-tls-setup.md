@@ -129,31 +129,46 @@ Test-NetConnection 192.168.1.95 -Port 55432
 
 Expect the wrong-identity HTTPS connection to fail before an HTTP success, plaintext port 3000 to be unreachable, and both PostgreSQL ports to be unreachable. A TLS handshake error is an expected wrong-identity outcome; it must not produce health success. If any private/plaintext service is reachable, fix binding/firewall exposure before authenticated testing.
 
-Check out the same repository version on the laptop. Before transferring the **synthetic demo accounts file privately** to its ignored `.private\demo-credentials.json`, prepare the directory in ordinary PowerShell from the laptop checkout root. Use a newly created directory; if it already contains private material, inspect/preserve its existing ACL instead of changing it blindly:
+Check out the same repository version on the laptop. On **each machine**, prepare a fresh ignored proof directory from its checkout root. Use the same newly chosen run identifier on both machines; the directory must not already exist. Keep original account/evidence files and the existing `.private` directory's ACL unchanged:
 
 ```powershell
-New-Item -ItemType Directory -Path .private
+$lanProofRun = Read-Host 'New shared run identifier (letters, numbers, dashes or underscores)'
+if ($lanProofRun -notmatch '^[A-Za-z0-9][A-Za-z0-9_-]{0,79}$') { throw 'Invalid proof run identifier.' }
+$lanProofDirectory = Join-Path (Get-Location) ".private/lan-proof-$lanProofRun"
+if (Test-Path -LiteralPath $lanProofDirectory) { throw 'Proof directory exists; choose a fresh run identifier.' }
+New-Item -ItemType Directory -Path $lanProofDirectory | Out-Null
 $clinicUserSid = [Security.Principal.WindowsIdentity]::GetCurrent().User.Value
-icacls.exe .private /inheritance:r /grant:r "*${clinicUserSid}:(OI)(CI)F" '*S-1-5-18:(OI)(CI)F'
+icacls.exe $lanProofDirectory /inheritance:r /grant:r "*${clinicUserSid}:(OI)(CI)F" '*S-1-5-18:(OI)(CI)F'
+if ($LASTEXITCODE -ne 0) { throw 'Could not restrict the new proof directory.' }
+$lanProofCredentials = Join-Path $lanProofDirectory 'credentials.json'
+$sourceCredentials = Read-Host 'Existing synthetic account file path (desktop original or trusted transferred copy)'
+if (-not (Test-Path -LiteralPath $sourceCredentials -PathType Leaf)) { throw 'Source account file not found.' }
+if (Test-Path -LiteralPath $lanProofCredentials) { throw 'Proof account target already exists.' }
+Copy-Item -LiteralPath $sourceCredentials -Destination $lanProofCredentials
 ```
 
-Transfer by USB or verified SSH. This file is needed only for the scripted proof; never commit it, upload it, paste its contents into chat or screenshot it. The normal Electron client has no need for a database or mirror environment file.
+Use a **private copy of the existing synthetic accounts**, transferred by USB or verified SSH for the laptop; never reseed or overwrite the originals. The copy is needed only for this scripted proof. Never commit/upload it, paste its contents into chat or screenshot it. The normal Electron client has no need for a database or mirror environment file. Applying ACLs above touches only the newly created proof folder, not the existing `.private` root or source credentials.
 
 From the laptop checkout root, run the existing Windows proof against the desktop HTTPS origin:
 
 ```powershell
-powershell -NoProfile -ExecutionPolicy Bypass -File server/scripts/verify-live.ps1 -BaseUrl https://192.168.1.95 -CredentialsFile .private/demo-credentials.json
+powershell -NoProfile -ExecutionPolicy Bypass -File server/scripts/verify-live.ps1 -BaseUrl https://192.168.1.95 -CredentialsFile $lanProofCredentials
 ```
 
-The script obtains tokens in memory, exercises all eight synthetic accounts, creates records/documents, checks permissions and revisions, and writes only synthetic IDs into ignored `.private\api-evidence.json`. It does not reset the database. Keep the same database/fixtures and avoid concurrent test mutations until this proof finishes.
+The script obtains tokens in memory, exercises all eight synthetic accounts, creates records/documents, checks permissions and revisions, and writes only synthetic IDs into this run's `api-evidence.json` beside its copied credentials. It does not reset the database. Different databases/runs must use separate proof directories because the script uses that fixed evidence filename. Keep the same database/fixtures and avoid concurrent test mutations until this proof finishes.
 
-To establish two physical clients, privately copy the laptop's ID-only `api-evidence.json` beside the desktop's existing synthetic credentials file, then run on the **desktop checkout**:
+To establish two physical clients, transfer the laptop's ID-only `api-evidence.json` into the **new desktop proof directory** beside its private account copy. Never copy it over an original evidence file. On the desktop, with the variables from its preparation block still available:
 
 ```powershell
-powershell -NoProfile -ExecutionPolicy Bypass -File server/scripts/verify-persistence.ps1 -BaseUrl https://192.168.1.95 -CredentialsFile .private/demo-credentials.json
+$receivedEvidence = Read-Host 'Path to the laptop run ID-only api-evidence.json from trusted transfer'
+$lanProofEvidence = Join-Path $lanProofDirectory 'api-evidence.json'
+if (-not (Test-Path -LiteralPath $receivedEvidence -PathType Leaf)) { throw 'Transferred ID evidence not found.' }
+if (Test-Path -LiteralPath $lanProofEvidence) { throw 'Proof evidence target already exists.' }
+Copy-Item -LiteralPath $receivedEvidence -Destination $lanProofEvidence
+powershell -NoProfile -ExecutionPolicy Bypass -File server/scripts/verify-persistence.ps1 -BaseUrl https://192.168.1.95 -CredentialsFile $lanProofCredentials
 ```
 
-That fresh desktop login must read the laptop-created issued IDs and finalized source. Stop/restart only this application's NestJS process after confirming nobody is using it, then repeat the persistence command from both machines with those same IDs. Do not reseed/reset or stop PostgreSQL. While NestJS is deliberately stopped, laptop HTTPS health must fail (the live proxy can return 502); no save is confirmed. Once restarted, health and fresh authorized reads must recover. [API examples](../server/API.md) and [backend verification](backend-verification.md) explain the assertions and safe failure semantics.
+That fresh desktop login must read the laptop-created issued IDs and finalized source. Stop/restart only this application's NestJS process after confirming nobody is using it, then repeat the persistence command from both machines with the credentials in **each machine's own new proof directory** and those same IDs. Do not reseed/reset or stop PostgreSQL. While NestJS is deliberately stopped, laptop HTTPS health must fail (the live proxy can return 502); no save is confirmed. Once restarted, health and fresh authorized reads must recover. [API examples](../server/API.md) and [backend verification](backend-verification.md) explain the assertions and safe failure semantics.
 
 ## 6. Configure and verify the laptop Electron client
 
@@ -197,6 +212,8 @@ On the desktop as your ordinary user, create a new dedicated key only if that fi
 New-Item -ItemType Directory -Path "$env:USERPROFILE\.ssh" -Force | Out-Null
 ssh-keygen.exe -t ed25519 -f "$env:USERPROFILE\.ssh\healthier_laptop" -C 'healthier-laptop-control'
 ```
+
+The passphrase-encrypted key requires **the user's local unlock**: load it into a running Windows `ssh-agent` with `ssh-add.exe`, or enter its passphrase during an initial local interactive SSH login. Unattended commands cannot silently enter or recover that passphrase. Never place it in chat, scripts, environment files or evidence; automation may use only an already authorized/unlocked session or agent-loaded key.
 
 Transfer only `healthier_laptop.pub` to the laptop, for example by USB into Downloads. On the laptop:
 

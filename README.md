@@ -11,6 +11,8 @@ The Electron renderer remains the teammate's clinic-screen work. Privileged main
 
 Use Node.js 24.13 or a later Node.js 24 release and pnpm 10.30.1. For the copy-and-paste teammate setup, including all three environment files and the development Compose password, use [local development](docs/development.md).
 
+For a later second-machine test, use the [Windows laptop LAN/TLS and optional SSH guide](docs/lan-tls-setup.md). It records a future procedure; no certificate, firewall or SSH configuration was changed.
+
 ```sh
 corepack enable
 corepack prepare pnpm@10.30.1 --activate

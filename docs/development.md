@@ -93,4 +93,4 @@ docker compose -f compose.dev.yaml down
 docker compose -p health-ier-fresh-dev -f compose.dev.yaml down
 ```
 
-Do not add `--volumes` to normal stop/restart commands. Production Compose still requires a private database password and explicit clinic ID and probes `/health`; the shared development password is not a production default. Clinic LAN/TLS and physical printer validation remain separate setup/QA work.
+Do not add `--volumes` to normal stop/restart commands. Production Compose still requires a private database password and explicit clinic ID and probes `/health`; the shared development password is not a production default. [The later laptop LAN/TLS guide](lan-tls-setup.md) explains the separate trusted HTTPS proof and optional SSH control; no network/certificate/firewall setup has been performed. Physical printer validation remains separate QA work.
