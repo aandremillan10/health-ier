@@ -1,0 +1,16 @@
+.git
+.agents
+docs
+**/node_modules
+**/dist
+**/out
+**/coverage
+**/.env
+**/.env.*
+**/src/generated
+**/.agents
+**/.claude
+**/.windsurf
+app/src
+*.log
+*.tsbuildinfo
