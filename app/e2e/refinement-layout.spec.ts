@@ -55,7 +55,9 @@ test('draft completion and patient identity remain reachable at desktop sizes an
     ]) {
       await page.getByLabel(label, { exact: true }).focus();
       const bounds = await page.evaluate(() => {
-        const input = document.activeElement!.getBoundingClientRect();
+        const input = document
+          .activeElement!.closest('.field')!
+          .getBoundingClientRect();
         const banner = document
           .querySelector('.patient-banner')!
           .getBoundingClientRect();

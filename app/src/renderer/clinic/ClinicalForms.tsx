@@ -7,7 +7,8 @@ import { Textarea } from '@/components/ui/textarea';
 function revealFocusedField(event: FocusEvent<HTMLFormElement>): void {
   const field = event.target;
   if (!field.matches('input, textarea, select')) return;
-  const bounds = field.getBoundingClientRect();
+  const region = field.closest('.field') ?? field;
+  const bounds = region.getBoundingClientRect();
   const identity = document
     .querySelector('.patient-banner')
     ?.getBoundingClientRect();
@@ -18,8 +19,8 @@ function revealFocusedField(event: FocusEvent<HTMLFormElement>): void {
     bounds.top < (identity?.bottom ?? 0) ||
     bounds.bottom > (actions?.top ?? innerHeight)
   ) {
-    field.scrollIntoView({ block: 'center', behavior: 'instant' });
-    const visible = field.getBoundingClientRect();
+    region.scrollIntoView({ block: 'center', behavior: 'instant' });
+    const visible = region.getBoundingClientRect();
     const top =
       document.querySelector('.patient-banner')?.getBoundingClientRect()
         .bottom ?? 0;
