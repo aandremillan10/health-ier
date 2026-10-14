@@ -80,6 +80,7 @@ function lifecycle(record: { status: string }, status: string): void {
 export type RegistryDto =
   | Patient
   | Pick<Patient, 'id' | 'revision' | 'fullName' | 'sex' | 'dateOfBirth'>;
+type Attributed<T> = T & { authorName: string };
 function registry(staff: Principal, patient: Patient): RegistryDto {
   return staff.role === 'medtech'
     ? {
@@ -95,6 +96,16 @@ function registry(staff: Principal, patient: Patient): RegistryDto {
 @Injectable()
 export class ClinicService {
   constructor(private readonly db: DatabaseService) {}
+  private async attributed<T extends { authorId: string }>(
+    tx: Prisma.TransactionClient,
+    record: T,
+  ): Promise<Attributed<T>> {
+    const author = await tx.staff.findUniqueOrThrow({
+      where: { id: record.authorId },
+      select: { displayName: true },
+    });
+    return { ...record, authorName: author.displayName };
+  }
   private async patient(
     tx: Prisma.TransactionClient,
     id: string,
@@ -107,11 +118,35 @@ export class ClinicService {
     const term =
       search === undefined ? '' : (text(search, 'search', false, 200) ?? '');
     const patients = await this.db.patient.findMany({
-      where: { fullName: { contains: term, mode: 'insensitive' } },
+      where:
+        /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
+          term,
+        )
+          ? {
+              OR: [
+                { id: term.toLowerCase() },
+                { fullName: { contains: term, mode: 'insensitive' } },
+              ],
+            }
+          : { fullName: { contains: term, mode: 'insensitive' } },
       take: 100,
       orderBy: { fullName: 'asc' },
     });
     return patients.map((patient) => registry(staff, patient));
+  }
+  async readPatient(staff: Principal, id: string): Promise<RegistryDto> {
+    return registry(staff, await this.patient(this.db, id));
+  }
+  async listDocuments(
+    staff: Principal,
+    patientId: string,
+  ): Promise<Document[]> {
+    readArea(staff, 'medical');
+    await this.patient(this.db, patientId);
+    return this.db.document.findMany({
+      where: { patientId },
+      orderBy: [{ createdAt: 'desc' }, { id: 'asc' }],
+    });
   }
   async createPatient(staff: Principal, input: unknown): Promise<RegistryDto> {
     if (staff.role !== 'clerk' && staff.role !== 'attendant') deny();
@@ -157,7 +192,9 @@ export class ClinicService {
   async listVitals(
     staff: Principal,
     patientId: string,
-  ): Promise<(Vitals & { corrections: Correction[] })[]> {
+  ): Promise<
+    (Attributed<Vitals> & { corrections: Attributed<Correction>[] })[]
+  > {
     if (!['attendant', 'doctor', 'dentist'].includes(staff.role)) deny();
     await this.patient(this.db, patientId);
     const vitals = await this.db.vitals.findMany({
@@ -166,11 +203,15 @@ export class ClinicService {
     });
     return Promise.all(
       vitals.map(async (record) => ({
-        ...record,
-        corrections: await this.db.correction.findMany({
-          where: { originalType: 'vitals', originalEntryId: record.id },
-          orderBy: { createdAt: 'asc' },
-        }),
+        ...(await this.attributed(this.db, record)),
+        corrections: await Promise.all(
+          (
+            await this.db.correction.findMany({
+              where: { originalType: 'vitals', originalEntryId: record.id },
+              orderBy: { createdAt: 'asc' },
+            })
+          ).map((correction) => this.attributed(this.db, correction)),
+        ),
       })),
     );
   }
@@ -178,7 +219,7 @@ export class ClinicService {
     staff: Principal,
     patientId: string,
     input: unknown,
-  ): Promise<Vitals> {
+  ): Promise<Attributed<Vitals>> {
     if (staff.role !== 'attendant') deny();
     const body = object(input, vitalFields);
     const data = fields(body, vitalFields, vitalValue) as Omit<
@@ -191,21 +232,25 @@ export class ClinicService {
         data: { ...data, patientId, authorId: staff.id },
       });
       await enqueue(tx, 'vitals', record);
-      return record;
+      return this.attributed(tx, record);
     });
   }
   async listEntries(
     staff: Principal,
     patientId: string,
     areaInput: string,
-  ): Promise<Entry[]> {
+  ): Promise<Attributed<Entry>[]> {
     const area = discipline(areaInput);
     readArea(staff, area);
     await this.patient(this.db, patientId);
-    return this.db.entry.findMany({
-      where: { patientId, discipline: area },
-      orderBy: { createdAt: 'desc' },
-    });
+    return Promise.all(
+      (
+        await this.db.entry.findMany({
+          where: { patientId, discipline: area },
+          orderBy: { createdAt: 'desc' },
+        })
+      ).map((record) => this.attributed(this.db, record)),
+    );
   }
   private async selectedVitals(
     tx: Prisma.TransactionClient,
@@ -226,7 +271,7 @@ export class ClinicService {
     patientId: string,
     areaInput: string,
     input: unknown,
-  ): Promise<Entry> {
+  ): Promise<Attributed<Entry>> {
     const area = discipline(areaInput);
     authorArea(staff, area);
     const keys = area === 'medical' ? medicalFields : ['text'];
@@ -245,7 +290,7 @@ export class ClinicService {
         data: { ...data, patientId, authorId: staff.id, discipline: area },
       });
       await enqueue(tx, 'entry', record);
-      return record;
+      return this.attributed(tx, record);
     });
   }
   private async owned(
@@ -276,7 +321,7 @@ export class ClinicService {
     id: string,
     input: unknown,
     finalize = false,
-  ): Promise<Entry | Vitals> {
+  ): Promise<Attributed<Entry | Vitals>> {
     return this.db.$transaction(async (tx) => {
       const previous = await this.owned(tx, staff, type, id);
       const keys = finalize
@@ -308,7 +353,7 @@ export class ClinicService {
           },
         });
         await enqueue(tx, 'entry', record);
-        return record;
+        return this.attributed(tx, record);
       }
       const record = await tx.vitals.update({
         where: { id },
@@ -319,7 +364,7 @@ export class ClinicService {
         },
       });
       await enqueue(tx, 'vitals', record);
-      return record;
+      return this.attributed(tx, record);
     });
   }
   async correct(
@@ -327,7 +372,10 @@ export class ClinicService {
     type: 'entry' | 'vitals',
     id: string,
     input: unknown,
-  ): Promise<{ correction: Correction; original: Entry | Vitals }> {
+  ): Promise<{
+    correction: Attributed<Correction>;
+    original: Attributed<Entry | Vitals>;
+  }> {
     const body = object(input, [
       'expectedRevision',
       'reason',
@@ -382,17 +430,27 @@ export class ClinicService {
             });
       await enqueue(tx, type, original);
       await enqueue(tx, 'correction', correction);
-      return { correction, original };
+      return {
+        correction: await this.attributed(tx, correction),
+        original: await this.attributed(tx, original),
+      };
     });
   }
-  async corrections(staff: Principal, id: string): Promise<Correction[]> {
+  async corrections(
+    staff: Principal,
+    id: string,
+  ): Promise<Attributed<Correction>[]> {
     const record = await this.db.entry.findUnique({ where: { id: uuid(id) } });
     if (!record || !canRead(staff, record.discipline as Discipline))
       fail(404, 'NOT_FOUND', 'Record not found.');
-    return this.db.correction.findMany({
-      where: { originalType: 'entry', originalEntryId: id },
-      orderBy: { createdAt: 'asc' },
-    });
+    return Promise.all(
+      (
+        await this.db.correction.findMany({
+          where: { originalType: 'entry', originalEntryId: id },
+          orderBy: { createdAt: 'asc' },
+        })
+      ).map((record) => this.attributed(this.db, record)),
+    );
   }
   async document(
     staff: Principal,

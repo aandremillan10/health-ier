@@ -40,6 +40,20 @@ powershell -NoProfile -ExecutionPolicy Bypass -File scripts/verify-persistence.p
 | POST `/documents`                              | Same prescription body, or `{kind:"medical_certificate",consultationId,expectedRevision:4,body:"Synthetic certificate wording",purpose:"Synthetic presentation",remarks:"Synthetic remarks",restriction:"Synthetic restriction"}` | 201 immutable issued ID/snapshot; trusted issuer from session                                        |
 | GET `/documents/:id`                           | Bearer token                                                                                                                                                                                                                      | 200 exact persisted ID/snapshot for medical chart readers; same response used for authorized reprint |
 
+Patient numbers in the current registry are patient UUIDs. `GET /patients?search=<exact UUID>` resolves that number as well as matching names. `GET /patients/:id` reads the current identity directly after rename and from a fresh client. Both return the same role-filtered registry DTO; medtech gets only ID/revision/name/sex/birth date. `GET /patients/:id/documents` returns persisted issued snapshots for that patient, newest first, under medical chart read permission (doctors including head). Clerk, attendant, dentist and medtech receive 403 before any history is returned. Missing authorized patient returns 404; invalid UUID returns 400; missing session returns 401. An empty authorized history is `[]`; failures never become empty success.
+
+The live script above executes authenticated allowed and denied examples for these reads, selecting `$syntheticPatientId` returned by registration:
+
+```powershell
+# Call-Api obtains private tokens during script login; no token is printed.
+Call-Api GET "/patients?search=$syntheticPatientId" $null 'demo.doctor' 200
+Call-Api GET "/patients/$syntheticPatientId" $null 'demo.medtech.one' 200
+Call-Api GET "/patients/$syntheticPatientId/documents" $null 'demo.doctor.head' 200
+Call-Api GET "/patients/$syntheticPatientId/documents" $null 'demo.clerk' 403
+```
+
+Authored entries, vitals and corrections include `authorName` from a selected staff display-name field, alongside existing author ID, revision, source revision and timestamp. No staff credential or login metadata is joined into a DTO. Read/reprint uses the same immutable issued ID and snapshot after account changes or client restart.
+
 Dates are date-only where stated, timestamps ISO, unknown values explicit null. Sex accepts `female`, `male`, `other`, `unknown`; category accepts `employee`, `dependent`, `other`, `unknown`, or null. Category/reference remain informational with no eligibility/unique-person enforcement.
 
 All bodies reject unknown fields, including caller author/head/issuer/status authority. Errors are `{code,message,fieldErrors?,currentRevision?}` with 400 validation, 401 authentication, 403 known denied operation, concealed 404 inaccessible records, 409 revision/lifecycle, and 503 dependency failure. Conflict revision appears only after authorized access. Bodies expose no credentials or unauthorized clinical context.

@@ -29,6 +29,13 @@ const clinic = Object.freeze({
     input: Requests['searchPatients'],
   ): Promise<Result<Responses['searchPatients']>> =>
     invoke('searchPatients', input),
+  readPatient: (
+    input: Requests['readPatient'],
+  ): Promise<Result<Responses['readPatient']>> => invoke('readPatient', input),
+  readDocuments: (
+    input: Requests['readDocuments'],
+  ): Promise<Result<Responses['readDocuments']>> =>
+    invoke('readDocuments', input),
   createPatient: (
     input: Requests['createPatient'],
   ): Promise<Result<Responses['createPatient']>> =>
