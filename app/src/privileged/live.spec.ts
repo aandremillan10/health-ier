@@ -54,10 +54,12 @@ describe('real synthetic EDGE broker integration', () => {
           (candidate) => candidate.username === username,
         );
         if (!account) throw new Error('Missing named synthetic account');
-        const staff = await call('login', {
+        const session = await call('login', {
           username,
           password: text(1024, 1)(account.password),
         });
+        const staff = session.staff;
+        expect(Number.isSafeInteger(session.generation)).toBe(true);
         expect(Object.keys(staff).sort()).toEqual([
           'displayName',
           'id',

@@ -67,7 +67,7 @@ function installDesktop(data: {
   const clinic: Wire.ClinicApi = {
     login: async () => {
       listener?.({ generation: 1, reason: 'account-switch' });
-      return ok(data.staff);
+      return ok({ staff: data.staff, generation: 1 });
     },
     currentStaff: () => ok(data.staff),
     logout: () => ok({ loggedOut: true, serverRevoked: true }),

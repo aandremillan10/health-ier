@@ -181,7 +181,7 @@ export interface Requests {
   printDocument: PrintInput;
 }
 export interface Responses {
-  login: Staff;
+  login: { staff: Staff; generation: number };
   currentStaff: Staff;
   logout: { loggedOut: true; serverRevoked: boolean };
   health: { status: 'ok'; mode: 'EDGE' | 'CLOUD' };

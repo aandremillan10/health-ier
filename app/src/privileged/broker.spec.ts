@@ -71,7 +71,7 @@ async function login(broker: ClinicBroker): Promise<void> {
       { username: 'doctor', password: 'synthetic' },
       sender,
     ),
-  ).toEqual({ ok: true, data: principal });
+  ).toEqual({ ok: true, data: { staff: principal, generation: 1 } });
 }
 function expectCode(result: unknown, code: string): void {
   expect(result).toMatchObject({ ok: false, error: { code } });
