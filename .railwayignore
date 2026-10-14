@@ -1,4 +1,8 @@
 .git
+.private
+**/.private
+*.private
+**/*.private
 .agents
 docs
 **/node_modules

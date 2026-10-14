@@ -1,4 +1,8 @@
 .git
+.private
+**/.private
+*.private
+**/*.private
 .husky
 **/node_modules
 **/dist
