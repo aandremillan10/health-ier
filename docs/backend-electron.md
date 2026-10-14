@@ -4,6 +4,8 @@ The Electron main process owns the staff session, fixed clinic-server requests, 
 
 ## Server configuration
 
+For local development, copy `app/.env.example` to `app/.env` as part of [the complete teammate setup](development.md), then run `pnpm dev:app` from repository root. The electron-vite serve configuration loads only `HEALTH_IER_SERVER_URL` and `HEALTH_IER_ALLOW_SYNTHETIC_HTTP` into main-process environment; explicit shell values take precedence. These settings are not projected into renderer variables or embedded during builds. Packaged launches still require their trusted HTTPS origin through process/launcher configuration.
+
 Set `HEALTH_IER_SERVER_URL` to the exact trusted clinic **HTTPS origin**, for example `https://clinic.example:3000`. The default is `https://localhost:3000`; it requires a trusted certificate. Paths, credentials, query strings, fragments, HTTP redirects, and alternate response origins are rejected. Electron uses normal certificate validation; no trust bypass is installed.
 
 For this synthetic local demo only, an **unpackaged** client may explicitly use loopback HTTP:

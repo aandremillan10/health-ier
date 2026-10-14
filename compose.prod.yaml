@@ -8,6 +8,8 @@ services:
     environment:
       NODE_ENV: production
       PORT: 3000
+      SERVER_MODE: ${SERVER_MODE:-EDGE}
+      CLINIC_ID: ${CLINIC_ID:?Set CLINIC_ID for this clinic}
       DATABASE_URL: ${DATABASE_URL:?Set DATABASE_URL for the postgres service}
     ports:
       - '127.0.0.1:${SERVER_PORT:-3000}:3000'
@@ -21,7 +23,7 @@ services:
           'CMD',
           'node',
           '-e',
-          "fetch('http://127.0.0.1:3000/').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))",
+          "fetch('http://127.0.0.1:3000/health').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))",
         ]
       interval: 10s
       timeout: 5s
