@@ -25,11 +25,14 @@ import { ReferralsService } from './referrals/referrals.service';
 import { HistoricalDocumentsController } from './historical-documents/historical-documents.controller';
 import { HistoricalDocumentsService } from './historical-documents/historical-documents.service';
 import { HistoricalStorage } from './historical-documents/historical-storage';
+import { QueueDisplayController } from './queue-display/queue-display.controller';
+import { QueueDisplayService } from './queue-display/queue-display.service';
 
 @Module({
   imports: [DatabaseModule, MirrorModule],
   controllers: [
     AppController,
+    QueueDisplayController,
     AuthController,
     ClinicController,
     AuditController,
@@ -49,6 +52,7 @@ import { HistoricalStorage } from './historical-documents/historical-storage';
     ClinicalSummaryService,
     ReportsService,
     AppointmentsService,
+    QueueDisplayService,
     LaboratoryService,
     MembershipService,
     ReferralsService,

@@ -64,9 +64,10 @@ function install(fixture: ReturnType<typeof createDemoClinic>): void {
         scheduledAt: '2026-10-15T00:30:00Z',
       },
     ] as const
-  ).map((record) => ({
+  ).map((record, index) => ({
     ...record,
     patientDateOfBirth: null,
+    queueNumber: index + 1,
     clinicId: 'Synthetic clinic',
     revision: 1,
     statusChangedAt: '2026-10-15T01:00:00Z',

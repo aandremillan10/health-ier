@@ -295,6 +295,8 @@ model Appointment {
   clinicId        String
   discipline      String
   scheduledAt     DateTime
+  queueDay        String
+  queueNumber     Int
   status          String             @default("scheduled")
   revision        Int                @default(1)
   statusChangedAt DateTime           @default(now())
@@ -308,6 +310,7 @@ model Appointment {
   history         AppointmentEvent[]
 
   @@index([clinicId, scheduledAt, discipline])
+  @@unique([clinicId, discipline, queueDay, queueNumber])
   @@index([patientId])
 }
 

@@ -1,0 +1,290 @@
+:root {
+  font-family: system-ui, 'Segoe UI', sans-serif;
+  color: #292b28;
+  background: #fbfbf9;
+  font-synthesis: none;
+  --canvas: #fbfbf9;
+  --ink: #292b28;
+  --muted: #64665f;
+  --primary: #30332f;
+  --on-primary: #fcfdf9;
+  --boundary: #d7d8d1;
+}
+
+* {
+  box-sizing: border-box;
+}
+[hidden] {
+  display: none !important;
+}
+body {
+  margin: 0;
+}
+h1,
+h2,
+h3,
+p {
+  margin: 0;
+}
+::selection {
+  background: var(--primary);
+  color: var(--on-primary);
+}
+
+.display {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  padding: 24px 32px 16px;
+}
+.display-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 24px;
+  padding-bottom: 24px;
+}
+h1 {
+  font-size: 2rem;
+  line-height: 1.2;
+  font-weight: 600;
+}
+.display-header p {
+  font-size: 1.25rem;
+  line-height: 1.5;
+  margin-top: 8px;
+}
+.clinic-date {
+  text-align: right;
+}
+main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+.departments {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  flex: 1;
+}
+.department {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+.department + .department {
+  border-left: 1px solid var(--boundary);
+}
+.department > h2 {
+  padding: 0 20px 16px;
+  font-size: 2rem;
+  line-height: 1.2;
+  font-weight: 600;
+}
+.serving {
+  flex: 1;
+  min-height: 240px;
+  padding: 20px;
+  background: var(--primary);
+  color: var(--on-primary);
+}
+h3 {
+  font-size: 1.25rem;
+  font-weight: 500;
+  line-height: 1.5;
+}
+.serving-numbers,
+.waiting-numbers {
+  padding: 0;
+  margin: 16px 0 0;
+  list-style: none;
+  font-variant-numeric: tabular-nums;
+}
+.serving-numbers {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 24px;
+}
+.serving-numbers li {
+  font-size: 5.25rem;
+  font-weight: 600;
+  line-height: 1.1;
+  letter-spacing: -0.03em;
+  overflow-wrap: anywhere;
+  max-width: 100%;
+}
+.serving-numbers[data-dense='true'] li {
+  font-size: 3.5rem;
+}
+.serving-empty {
+  font-size: 1.75rem;
+  line-height: 1.35;
+  margin-top: 32px;
+  max-width: 12ch;
+}
+.waiting {
+  min-height: 196px;
+  padding: 20px;
+}
+.waiting-numbers {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 24px;
+}
+.waiting-numbers li {
+  font-size: 1.5rem;
+  font-weight: 500;
+  line-height: 1.3;
+  overflow-wrap: anywhere;
+  max-width: 100%;
+}
+.waiting-empty,
+.waiting-more {
+  font-size: 1.125rem;
+  line-height: 1.5;
+  color: var(--muted);
+  margin-top: 12px;
+}
+.display-footer {
+  display: flex;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px 24px;
+  padding-top: 24px;
+  border-top: 1px solid var(--boundary);
+  font-size: 1rem;
+  line-height: 1.5;
+  color: var(--muted);
+}
+.connection-message {
+  margin: auto 0;
+  padding: 48px 24px;
+}
+.connection-message h2 {
+  font-size: 2.5rem;
+  line-height: 1.2;
+  max-width: 22ch;
+}
+.connection-message p {
+  margin-top: 16px;
+  font-size: 1.5rem;
+  line-height: 1.5;
+  max-width: 50ch;
+}
+button {
+  margin-top: 24px;
+  min-height: 44px;
+  padding: 12px 20px;
+  background: var(--primary);
+  color: var(--on-primary);
+  border: 0;
+  border-radius: 6px;
+  font: inherit;
+  font-weight: 500;
+  cursor: pointer;
+}
+button:focus-visible {
+  outline: 3px solid var(--primary);
+  outline-offset: 3px;
+}
+button:active {
+  background: var(--ink);
+}
+button:disabled {
+  cursor: wait;
+  opacity: 0.65;
+}
+.noscript {
+  padding: 24px;
+  font-size: 1.5rem;
+}
+@media (hover: hover) {
+  button:hover:not(:disabled) {
+    background: var(--ink);
+  }
+}
+@media (min-width: 1600px) {
+  .display {
+    padding: 48px 64px 32px;
+  }
+  .display-header {
+    padding-bottom: 48px;
+  }
+  h1 {
+    font-size: 3rem;
+  }
+  .display-header p,
+  h3 {
+    font-size: 1.5rem;
+  }
+  .department > h2 {
+    font-size: 2.5rem;
+    padding: 0 32px 32px;
+  }
+  .serving,
+  .waiting {
+    padding: 32px;
+  }
+  .serving-numbers li {
+    font-size: 8rem;
+  }
+  .serving-numbers[data-dense='true'] li {
+    font-size: 4.5rem;
+  }
+  .waiting {
+    min-height: 264px;
+  }
+  .waiting-numbers li {
+    font-size: 2.25rem;
+  }
+  .waiting-empty,
+  .waiting-more,
+  .display-footer {
+    font-size: 1.25rem;
+  }
+}
+@media (max-width: 900px) {
+  .display {
+    padding: 24px 16px;
+  }
+  .display-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+  .clinic-date {
+    text-align: left;
+  }
+  .departments {
+    grid-template-columns: 1fr;
+    gap: 32px;
+  }
+  .department + .department {
+    border-left: 0;
+  }
+  .department > h2 {
+    padding: 0 8px 16px;
+  }
+  .serving {
+    min-height: 210px;
+  }
+  .serving-numbers li {
+    font-size: 5rem;
+  }
+  .waiting {
+    min-height: 0;
+    padding-bottom: 0;
+  }
+  .display-footer {
+    margin-top: 32px;
+  }
+  .connection-message {
+    padding: 24px 8px;
+  }
+  .connection-message h2 {
+    font-size: 2rem;
+  }
+  .connection-message p {
+    font-size: 1.25rem;
+  }
+}

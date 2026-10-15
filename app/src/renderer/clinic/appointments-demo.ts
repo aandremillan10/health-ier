@@ -187,6 +187,19 @@ export function createDemoAppointments({
         clinicId: 'synthetic-clinic',
         discipline: input.discipline,
         scheduledAt: new Date(input.scheduledAt).toISOString(),
+        queueNumber:
+          Math.max(
+            0,
+            ...records
+              .filter(
+                (item) =>
+                  item.discipline === input.discipline &&
+                  new Date(Date.parse(item.scheduledAt) + 28800000)
+                    .toISOString()
+                    .slice(0, 10) === local.slice(0, 10),
+              )
+              .map((item) => item.queueNumber),
+          ) + 1,
         status: 'scheduled',
         revision: 1,
         statusChangedAt: now,

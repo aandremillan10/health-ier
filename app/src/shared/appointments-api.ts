@@ -27,6 +27,7 @@ export interface Appointment {
   clinicId: string;
   discipline: Discipline;
   scheduledAt: string;
+  queueNumber: number;
   status: AppointmentStatus;
   revision: number;
   statusChangedAt: string;
