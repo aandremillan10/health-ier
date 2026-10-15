@@ -9,22 +9,39 @@ datasource db {
 }
 
 model Staff {
-  id           String       @id @default(uuid()) @db.Uuid
-  username     String       @unique
-  passwordHash String
-  displayName  String
-  role         String
-  isHead       Boolean      @default(false)
-  licenseText  String?
-  ptrText      String?
-  revision     Int          @default(1)
-  createdAt    DateTime     @default(now())
-  updatedAt    DateTime     @updatedAt
-  sessions     Session[]
-  vitals       Vitals[]
-  entries      Entry[]
-  corrections  Correction[]
-  documents    Document[]
+  id                       String                    @id @default(uuid()) @db.Uuid
+  username                 String                    @unique
+  passwordHash             String
+  displayName              String
+  role                     String
+  isHead                   Boolean                   @default(false)
+  licenseText              String?
+  ptrText                  String?
+  revision                 Int                       @default(1)
+  createdAt                DateTime                  @default(now())
+  updatedAt                DateTime                  @updatedAt
+  sessions                 Session[]
+  vitals                   Vitals[]
+  entries                  Entry[]
+  corrections              Correction[]
+  documents                Document[]
+  clinicalSummaryItems     ClinicalSummaryItem[]
+  clinicalSummaryRevisions ClinicalSummaryRevision[]
+  appointmentsCreated      Appointment[]             @relation("AppointmentCreator")
+  appointmentsUpdated      Appointment[]             @relation("AppointmentUpdater")
+  appointmentEvents        AppointmentEvent[]
+  labOrders                LabOrder[]                @relation("OrderingProvider")
+  labReviews               LabOrder[]                @relation("ReviewingProvider")
+  labResults               LabResult[]
+  memberships              Membership[]
+  dependentLinks           DependentLink[]
+  membershipRevisions      MembershipRevision[]
+  dependentLinkRevisions   DependentLinkRevision[]
+  sentReferrals            Referral[]                @relation("ReferralOrigin")
+  acceptedReferrals        Referral[]                @relation("ReferralAcceptance")
+  startedReferrals         Referral[]                @relation("ReferralStart")
+  completedReferrals       Referral[]                @relation("ReferralCompletion")
+  closedReferrals          Referral[]                @relation("ReferralClosure")
 }
 
 model Session {
@@ -37,19 +54,25 @@ model Session {
 }
 
 model Patient {
-  id                 String     @id @default(uuid()) @db.Uuid
-  revision           Int        @default(1)
-  fullName           String
-  sex                String?
-  address            String?
-  patientCategory    String?
-  employeeIdentifier String?
-  dateOfBirth        String?
-  createdAt          DateTime   @default(now())
-  updatedAt          DateTime   @updatedAt
-  vitals             Vitals[]
-  entries            Entry[]
-  documents          Document[]
+  id                   String                @id @default(uuid()) @db.Uuid
+  revision             Int                   @default(1)
+  fullName             String
+  sex                  String?
+  address              String?
+  patientCategory      String?
+  employeeIdentifier   String?
+  dateOfBirth          String?
+  createdAt            DateTime              @default(now())
+  updatedAt            DateTime              @updatedAt
+  vitals               Vitals[]
+  entries              Entry[]
+  documents            Document[]
+  clinicalSummaryItems ClinicalSummaryItem[]
+  appointments         Appointment[]
+  labOrders            LabOrder[]
+  memberships          Membership[]
+  dependentLinks       DependentLink[]
+  referrals            Referral[]
 }
 
 model Vitals {
@@ -189,4 +212,253 @@ model MirrorState {
   bootstrapCompletedAt DateTime?
   lastAcknowledgedAt   DateTime?
   lastError            String?
+}
+
+model AuditEvent {
+  id           String   @id @default(uuid()) @db.Uuid
+  actorId      String   @db.Uuid
+  actorName    String
+  actorRole    String
+  action       String
+  patientId    String?  @db.Uuid
+  resourceType String
+  resourceId   String?  @db.Uuid
+  outcome      String
+  source       String   @default("clinic-api")
+  workstation  String?
+  createdAt    DateTime @default(now())
+
+  @@index([createdAt, id])
+  @@index([patientId, createdAt])
+  @@index([actorId, createdAt])
+}
+
+model ClinicalSummaryItem {
+  id        String                    @id @default(uuid()) @db.Uuid
+  patientId String                    @db.Uuid
+  authorId  String                    @db.Uuid
+  kind      String
+  status    String                    @default("active")
+  content   Json
+  source    String
+  notes     String?
+  revision  Int                       @default(1)
+  createdAt DateTime                  @default(now())
+  updatedAt DateTime                  @updatedAt
+  patient   Patient                   @relation(fields: [patientId], references: [id])
+  author    Staff                     @relation(fields: [authorId], references: [id])
+  history   ClinicalSummaryRevision[]
+
+  @@index([patientId, kind, status])
+}
+
+model ClinicalSummaryRevision {
+  id        String              @id @default(uuid()) @db.Uuid
+  itemId    String              @db.Uuid
+  authorId  String              @db.Uuid
+  revision  Int
+  action    String
+  reason    String?
+  snapshot  Json
+  createdAt DateTime            @default(now())
+  item      ClinicalSummaryItem @relation(fields: [itemId], references: [id])
+  author    Staff               @relation(fields: [authorId], references: [id])
+
+  @@unique([itemId, revision])
+}
+
+model Appointment {
+  id              String             @id @default(uuid()) @db.Uuid
+  patientId       String             @db.Uuid
+  clinicId        String
+  discipline      String
+  scheduledAt     DateTime
+  status          String             @default("scheduled")
+  revision        Int                @default(1)
+  statusChangedAt DateTime           @default(now())
+  createdById     String             @db.Uuid
+  updatedById     String             @db.Uuid
+  createdAt       DateTime           @default(now())
+  updatedAt       DateTime           @updatedAt
+  patient         Patient            @relation(fields: [patientId], references: [id])
+  createdBy       Staff              @relation("AppointmentCreator", fields: [createdById], references: [id])
+  updatedBy       Staff              @relation("AppointmentUpdater", fields: [updatedById], references: [id])
+  history         AppointmentEvent[]
+
+  @@index([clinicId, scheduledAt, discipline])
+  @@index([patientId])
+}
+
+model AppointmentEvent {
+  id            String      @id @default(uuid()) @db.Uuid
+  appointmentId String      @db.Uuid
+  revision      Int
+  kind          String
+  fromStatus    String?
+  toStatus      String
+  actorId       String      @db.Uuid
+  occurredAt    DateTime    @default(now())
+  reason        String?
+  appointment   Appointment @relation(fields: [appointmentId], references: [id])
+  actor         Staff       @relation(fields: [actorId], references: [id])
+
+  @@unique([appointmentId, revision])
+}
+
+model LabOrder {
+  id                 String      @id @default(uuid()) @db.Uuid
+  patientId          String      @db.Uuid
+  orderingProviderId String      @db.Uuid
+  discipline         String
+  requestedTests     String[]
+  clinicalContext    String?
+  priority           String      @default("routine")
+  requestedFor       String
+  status             String      @default("ordered")
+  revision           Int         @default(1)
+  startedAt          DateTime?
+  finalizedAt        DateTime?
+  reviewedAt         DateTime?
+  reviewedById       String?     @db.Uuid
+  closedAt           DateTime?
+  closeReason        String?
+  createdAt          DateTime    @default(now())
+  updatedAt          DateTime    @updatedAt
+  patient            Patient     @relation(fields: [patientId], references: [id])
+  orderingProvider   Staff       @relation("OrderingProvider", fields: [orderingProviderId], references: [id])
+  reviewedBy         Staff?      @relation("ReviewingProvider", fields: [reviewedById], references: [id])
+  results            LabResult[]
+  referrals          Referral[]
+
+  @@index([patientId, discipline, createdAt])
+  @@index([status, requestedFor, priority])
+}
+
+model LabResult {
+  id               String     @id @default(uuid()) @db.Uuid
+  orderId          String     @db.Uuid
+  authorId         String     @db.Uuid
+  status           String     @default("draft")
+  revision         Int        @default(1)
+  values           Json
+  notes            String?
+  correctionOfId   String?    @unique @db.Uuid
+  correctionReason String?
+  sourceRevision   Int?
+  finalizedAt      DateTime?
+  createdAt        DateTime   @default(now())
+  updatedAt        DateTime   @updatedAt
+  order            LabOrder   @relation(fields: [orderId], references: [id])
+  author           Staff      @relation(fields: [authorId], references: [id])
+  correctionOf     LabResult? @relation("LabResultCorrection", fields: [correctionOfId], references: [id])
+  correction       LabResult? @relation("LabResultCorrection")
+  referrals        Referral[]
+
+  @@index([orderId, createdAt])
+}
+
+model Membership {
+  id             String               @id @default(uuid()) @db.Uuid
+  patientId      String               @unique @db.Uuid
+  memberNumber   String               @unique
+  state          String               @default("active")
+  effectiveStart String
+  effectiveEnd   String?
+  revision       Int                  @default(1)
+  authorId       String               @db.Uuid
+  createdAt      DateTime             @default(now())
+  updatedAt      DateTime             @updatedAt
+  patient        Patient              @relation(fields: [patientId], references: [id])
+  author         Staff                @relation(fields: [authorId], references: [id])
+  dependents     DependentLink[]
+  history        MembershipRevision[]
+}
+
+model DependentLink {
+  id                 String                  @id @default(uuid()) @db.Uuid
+  membershipId       String                  @db.Uuid
+  dependentPatientId String                  @db.Uuid
+  relationship       String
+  state              String                  @default("active")
+  effectiveStart     String
+  effectiveEnd       String?
+  revision           Int                     @default(1)
+  authorId           String                  @db.Uuid
+  createdAt          DateTime                @default(now())
+  updatedAt          DateTime                @updatedAt
+  membership         Membership              @relation(fields: [membershipId], references: [id])
+  dependent          Patient                 @relation(fields: [dependentPatientId], references: [id])
+  author             Staff                   @relation(fields: [authorId], references: [id])
+  history            DependentLinkRevision[]
+
+  @@index([membershipId, state])
+  @@index([dependentPatientId, state])
+}
+
+model MembershipRevision {
+  id           String     @id @default(uuid()) @db.Uuid
+  membershipId String     @db.Uuid
+  authorId     String     @db.Uuid
+  revision     Int
+  action       String
+  reason       String?
+  snapshot     Json
+  createdAt    DateTime   @default(now())
+  membership   Membership @relation(fields: [membershipId], references: [id])
+  author       Staff      @relation(fields: [authorId], references: [id])
+
+  @@unique([membershipId, revision])
+}
+
+model DependentLinkRevision {
+  id        String        @id @default(uuid()) @db.Uuid
+  linkId    String        @db.Uuid
+  authorId  String        @db.Uuid
+  revision  Int
+  action    String
+  reason    String?
+  snapshot  Json
+  createdAt DateTime      @default(now())
+  link      DependentLink @relation(fields: [linkId], references: [id])
+  author    Staff         @relation(fields: [authorId], references: [id])
+
+  @@unique([linkId, revision])
+}
+
+model Referral {
+  id                  String     @id @default(uuid()) @db.Uuid
+  patientId           String     @db.Uuid
+  originStaffId       String     @db.Uuid
+  originDiscipline    String
+  receivingDiscipline String
+  reason              String
+  status              String     @default("pending")
+  revision            Int        @default(1)
+  acceptedAt          DateTime?
+  acceptedById        String?    @db.Uuid
+  startedAt           DateTime?
+  startedById         String?    @db.Uuid
+  completedAt         DateTime?
+  completedById       String?    @db.Uuid
+  completionNote      String?
+  completionReference String?
+  closedAt            DateTime?
+  closedById          String?    @db.Uuid
+  closeReason         String?
+  labOrderId          String?    @db.Uuid
+  labResultId         String?    @db.Uuid
+  createdAt           DateTime   @default(now())
+  updatedAt           DateTime   @updatedAt
+  patient             Patient    @relation(fields: [patientId], references: [id])
+  originStaff         Staff      @relation("ReferralOrigin", fields: [originStaffId], references: [id])
+  acceptedBy          Staff?     @relation("ReferralAcceptance", fields: [acceptedById], references: [id])
+  startedBy           Staff?     @relation("ReferralStart", fields: [startedById], references: [id])
+  completedBy         Staff?     @relation("ReferralCompletion", fields: [completedById], references: [id])
+  closedBy            Staff?     @relation("ReferralClosure", fields: [closedById], references: [id])
+  labOrder            LabOrder?  @relation(fields: [labOrderId], references: [id])
+  labResult           LabResult? @relation(fields: [labResultId], references: [id])
+
+  @@index([patientId, createdAt])
+  @@index([originStaffId, status, createdAt])
+  @@index([receivingDiscipline, status, createdAt])
 }

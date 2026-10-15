@@ -1,0 +1,67 @@
+.clinical-summary {
+  min-width: 0;
+}
+.clinical-summary > .hint {
+  margin-block: 8px 16px;
+}
+.summary-sections {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 24rem), 1fr));
+  gap: 24px;
+}
+.summary-section {
+  min-width: 0;
+}
+.summary-section > .section-heading {
+  margin-block-end: 12px;
+}
+.summary-items {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.summary-item + .summary-item {
+  border-block-start: 1px solid var(--border);
+  margin-block-start: 16px;
+  padding-block-start: 16px;
+}
+.summary-item h4,
+.summary-details dd,
+.summary-item p {
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}
+.summary-details {
+  margin-block: 12px;
+}
+.summary-editor {
+  margin-block: 16px 24px;
+  padding: 16px;
+  background: var(--muted);
+  border-radius: var(--radius-md);
+}
+.summary-fieldset {
+  border: 0;
+  margin: 16px 0 0;
+  padding: 0;
+  min-width: 0;
+  display: grid;
+  gap: 16px;
+}
+.summary-history {
+  margin-block-start: 12px;
+}
+.summary-history > summary {
+  min-height: 40px;
+  padding-block: 8px;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  overflow-wrap: anywhere;
+}
+.summary-history ol {
+  padding-inline-start: 24px;
+  margin-block: 8px 0;
+}
+.summary-history li + li {
+  margin-block-start: 16px;
+}

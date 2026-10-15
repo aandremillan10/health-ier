@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { DatabaseService } from './database/database.service';
 import { enqueue } from './database/outbox';
+import { recordAudit } from './audit/audit.service';
 import { fail } from './errors';
 import type {
   Correction,
@@ -160,6 +161,12 @@ export class ClinicService {
     return this.db.$transaction(async (tx) => {
       const patient = await tx.patient.create({ data });
       await enqueue(tx, 'patient', patient);
+      await recordAudit(tx, staff, {
+        action: 'create',
+        resourceType: 'patient',
+        resourceId: patient.id,
+        patientId: patient.id,
+      });
       return registry(staff, patient);
     });
   }
@@ -186,6 +193,12 @@ export class ClinicService {
         data: { ...data, revision: { increment: 1 } },
       });
       await enqueue(tx, 'patient', patient);
+      await recordAudit(tx, staff, {
+        action: 'change',
+        resourceType: 'patient',
+        resourceId: patient.id,
+        patientId: patient.id,
+      });
       return registry(staff, patient);
     });
   }
@@ -232,6 +245,12 @@ export class ClinicService {
         data: { ...data, patientId, authorId: staff.id },
       });
       await enqueue(tx, 'vitals', record);
+      await recordAudit(tx, staff, {
+        action: 'create',
+        resourceType: 'vitals',
+        resourceId: record.id,
+        patientId: record.patientId,
+      });
       return this.attributed(tx, record);
     });
   }
@@ -290,6 +309,12 @@ export class ClinicService {
         data: { ...data, patientId, authorId: staff.id, discipline: area },
       });
       await enqueue(tx, 'entry', record);
+      await recordAudit(tx, staff, {
+        action: 'create',
+        resourceType: 'entry',
+        resourceId: record.id,
+        patientId: record.patientId,
+      });
       return this.attributed(tx, record);
     });
   }
@@ -353,6 +378,12 @@ export class ClinicService {
           },
         });
         await enqueue(tx, 'entry', record);
+        await recordAudit(tx, staff, {
+          action: finalize ? 'finalize' : 'change',
+          resourceType: 'entry',
+          resourceId: record.id,
+          patientId: record.patientId,
+        });
         return this.attributed(tx, record);
       }
       const record = await tx.vitals.update({
@@ -364,6 +395,12 @@ export class ClinicService {
         },
       });
       await enqueue(tx, 'vitals', record);
+      await recordAudit(tx, staff, {
+        action: finalize ? 'finalize' : 'change',
+        resourceType: 'vitals',
+        resourceId: record.id,
+        patientId: record.patientId,
+      });
       return this.attributed(tx, record);
     });
   }
@@ -430,6 +467,12 @@ export class ClinicService {
             });
       await enqueue(tx, type, original);
       await enqueue(tx, 'correction', correction);
+      await recordAudit(tx, staff, {
+        action: 'correction',
+        resourceType: type,
+        resourceId: id,
+        patientId: original.patientId,
+      });
       return {
         correction: await this.attributed(tx, correction),
         original: await this.attributed(tx, original),
@@ -547,6 +590,12 @@ export class ClinicService {
         return { ...data, snapshot: snapshot as unknown as Prisma.JsonObject };
       const document = await tx.document.create({ data });
       await enqueue(tx, 'document', document);
+      await recordAudit(tx, staff, {
+        action: 'create',
+        resourceType: 'document',
+        resourceId: document.id,
+        patientId: document.patientId,
+      });
       return document;
     });
   }

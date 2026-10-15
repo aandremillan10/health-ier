@@ -1,0 +1,124 @@
+.reports-view {
+  display: grid;
+  gap: 16px;
+  min-width: 0;
+}
+.reports-view > .panel,
+.report-trend {
+  margin-block-end: 0;
+}
+.report-controls {
+  display: flex;
+  align-items: end;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+.report-controls .field {
+  flex: 1 1 180px;
+  min-width: 0;
+}
+.report-range-help {
+  flex-basis: 100%;
+}
+.report-applied,
+.report-number,
+.report-metrics dd {
+  font-variant-numeric: tabular-nums;
+}
+.report-snapshot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+.report-snapshot p {
+  max-width: 65ch;
+}
+.report-metrics {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr));
+  gap: 16px;
+  margin-block: 16px 0;
+}
+.report-metrics > div {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
+.report-metrics dt {
+  font-weight: 500;
+}
+.report-metrics dd {
+  margin: 0;
+  font-size: 1.5rem;
+  font-weight: 600;
+  line-height: 1.3;
+  overflow-wrap: anywhere;
+}
+.report-metrics dd.hint {
+  font-size: 0.875rem;
+  font-weight: 400;
+  line-height: 1.5;
+}
+.report-trends {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 420px), 1fr));
+  gap: 24px;
+  align-items: start;
+  min-width: 0;
+}
+.report-trend {
+  min-width: 0;
+}
+.report-trend > .hint {
+  margin-block: 12px;
+  max-width: 65ch;
+}
+.report-scroll {
+  max-height: 28rem;
+}
+.report-scroll thead {
+  position: sticky;
+  inset-block-start: 0;
+  z-index: 1;
+}
+.report-trend .table-scroll th {
+  white-space: normal;
+}
+.report-trend .table-scroll tbody th {
+  font-weight: 400;
+  color: var(--foreground);
+  background: var(--card);
+}
+.report-trend .table-scroll th,
+.report-trend .table-scroll td {
+  padding: 12px;
+}
+.report-trend .table-scroll td:nth-child(2) {
+  width: 45%;
+  min-width: 100px;
+}
+.report-bar-track {
+  min-height: 16px;
+  background: var(--muted);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+}
+.report-bar {
+  height: 16px;
+  background: var(--primary);
+  border-radius: inherit;
+}
+.report-number {
+  text-align: end;
+}
+@media (forced-colors: active) {
+  .report-bar {
+    background: CanvasText;
+  }
+}

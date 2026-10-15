@@ -28,9 +28,29 @@ import { ErrorNotice, Field } from './clinic/ui';
 import { useOperation } from './clinic/use-operation';
 import { date } from './clinic/format';
 import { createDesktopClient } from './clinic/desktop-client';
+import { ClinicalSummary } from './clinic/ClinicalSummary';
+import { canReadClinicalSummary } from '../shared/clinical-summary';
+import { AuditViewer } from './clinic/AuditViewer';
+import { Appointments } from './clinic/Appointments';
+import { Laboratory } from './clinic/Laboratory';
+import { Reports } from './clinic/Reports';
+import { PatientFamily } from './clinic/PatientFamily';
+import { Referrals } from './clinic/Referrals';
+import './clinic/operations.css';
 
 type Screen =
-  | { kind: 'registry' | 'register' | 'editPatient' }
+  | {
+      kind:
+        | 'registry'
+        | 'register'
+        | 'editPatient'
+        | 'audit'
+        | 'appointments'
+        | 'laboratory'
+        | 'reports'
+        | 'family'
+        | 'referrals';
+    }
   | { kind: 'chart'; tab: ChartTab }
   | { kind: 'entry'; entry?: Entry; correction?: boolean }
   | { kind: 'vitals'; record?: Vitals; correction?: boolean }
@@ -40,6 +60,15 @@ type Screen =
       document?: ClinicDocument;
       documentKind?: 'prescription' | 'certificate';
     };
+
+const toolNames: Partial<Record<Screen['kind'], string>> = {
+  audit: 'Audit trail',
+  appointments: 'Clinic flow',
+  laboratory: 'Laboratory orders',
+  reports: 'Reports',
+  family: 'Family and eligibility',
+  referrals: 'Referrals',
+};
 
 export function App(): ReactElement {
   const [fixture] = useState(() =>
@@ -417,7 +446,8 @@ function Workspace({
   }, []);
   useEffect(() => {
     const label =
-      screen.kind === 'chart'
+      toolNames[screen.kind] ??
+      (screen.kind === 'chart'
         ? screen.tab === 'details'
           ? 'Patient details'
           : screen.tab === 'vitals'
@@ -439,7 +469,7 @@ function Workspace({
                   ? screen.documentKind === 'certificate'
                     ? 'Medical certificate'
                     : 'Prescription'
-                  : 'Patient records';
+                  : 'Patient records');
     document.title = patient
       ? `${label} · ${patient.fullName} — AMLIG`
       : `${label} — AMLIG`;
@@ -499,7 +529,7 @@ function Workspace({
       next.kind === 'registry' || next.kind === 'register' ? null : nextPatient,
     );
   }
-  async function select(record: Patient): Promise<void> {
+  async function select(record: Pick<Patient, 'id'>): Promise<void> {
     const request = ++selection.current;
     setBusy(true);
     setError(null);
@@ -547,8 +577,9 @@ function Workspace({
   function backToChart(tab: ChartTab): void {
     navigate({ kind: 'chart', tab });
   }
-  const currentTab =
-    screen.kind === 'chart'
+  const currentTab = toolNames[screen.kind]
+    ? null
+    : screen.kind === 'chart'
       ? screen.tab
       : screen.kind === 'vitals'
         ? 'vitals'
@@ -575,11 +606,71 @@ function Workspace({
             >
               Patient records
             </Button>
+            <Button
+              className={`nav-item ${screen.kind === 'appointments' ? 'selected' : ''}`}
+              variant="ghost"
+              aria-current={screen.kind === 'appointments' ? 'page' : undefined}
+              onClick={() => navigate({ kind: 'appointments' })}
+            >
+              Clinic flow
+            </Button>
+            {['doctor', 'dentist', 'medtech'].includes(staff.role) && (
+              <Button
+                className={`nav-item ${screen.kind === 'referrals' ? 'selected' : ''}`}
+                variant="ghost"
+                aria-current={screen.kind === 'referrals' ? 'page' : undefined}
+                onClick={() => navigate({ kind: 'referrals' })}
+              >
+                Referrals
+              </Button>
+            )}
+            {['doctor', 'dentist', 'medtech'].includes(staff.role) && (
+              <Button
+                className={`nav-item ${screen.kind === 'laboratory' ? 'selected' : ''}`}
+                variant="ghost"
+                aria-current={screen.kind === 'laboratory' ? 'page' : undefined}
+                onClick={() => navigate({ kind: 'laboratory' })}
+              >
+                Laboratory orders
+              </Button>
+            )}
+            {(staff.isHead || ['clerk', 'attendant'].includes(staff.role)) && (
+              <Button
+                className={`nav-item ${screen.kind === 'reports' ? 'selected' : ''}`}
+                variant="ghost"
+                aria-current={screen.kind === 'reports' ? 'page' : undefined}
+                onClick={() => navigate({ kind: 'reports' })}
+              >
+                Reports
+              </Button>
+            )}
+            {staff.isHead && (
+              <Button
+                className={`nav-item ${screen.kind === 'audit' ? 'selected' : ''}`}
+                variant="ghost"
+                aria-current={screen.kind === 'audit' ? 'page' : undefined}
+                onClick={() => navigate({ kind: 'audit' })}
+              >
+                Audit trail
+              </Button>
+            )}
             {patient &&
               screen.kind !== 'registry' &&
               screen.kind !== 'register' && (
                 <div className="patient-navigation">
                   <span className="nav-label">Selected patient</span>
+                  {(staff.role !== 'medtech' || staff.isHead) && (
+                    <Button
+                      variant="ghost"
+                      className={`nav-item ${screen.kind === 'family' ? 'selected' : ''}`}
+                      aria-current={
+                        screen.kind === 'family' ? 'page' : undefined
+                      }
+                      onClick={() => navigate({ kind: 'family' })}
+                    >
+                      Family and eligibility
+                    </Button>
+                  )}
                   <Button
                     variant="ghost"
                     className={`nav-item ${currentTab === 'details' ? 'selected' : ''}`}
@@ -674,21 +765,22 @@ function Workspace({
                   </button>
                   <span aria-hidden="true">/</span>
                   <span aria-current="page">
-                    {screen.kind === 'chart'
-                      ? screen.tab === 'details'
-                        ? 'Patient details'
-                        : screen.tab === 'vitals'
-                          ? 'Vital signs'
-                          : chartNames[screen.tab]
-                      : screen.kind === 'register'
-                        ? 'Register patient'
-                        : screen.kind === 'editPatient'
-                          ? 'Edit details'
-                          : screen.kind === 'entry'
-                            ? 'Medical entry'
-                            : screen.kind === 'vitals'
-                              ? 'Vital signs'
-                              : 'Document'}
+                    {toolNames[screen.kind] ??
+                      (screen.kind === 'chart'
+                        ? screen.tab === 'details'
+                          ? 'Patient details'
+                          : screen.tab === 'vitals'
+                            ? 'Vital signs'
+                            : chartNames[screen.tab]
+                        : screen.kind === 'register'
+                          ? 'Register patient'
+                          : screen.kind === 'editPatient'
+                            ? 'Edit details'
+                            : screen.kind === 'entry'
+                              ? 'Medical entry'
+                              : screen.kind === 'vitals'
+                                ? 'Vital signs'
+                                : 'Document')}
                   </span>
                 </>
               )}
@@ -752,6 +844,96 @@ function Workspace({
                 onExpired={onExpired}
               />
             )}
+            {screen.kind === 'audit' && (
+              <AuditViewer api={api} onExpired={onExpired} />
+            )}
+            {screen.kind === 'appointments' && (
+              <Appointments
+                api={api}
+                staff={staff}
+                patient={patient}
+                onExpired={onExpired}
+                onDirty={markDirty}
+                onOpenPatient={(id) => void select({ id })}
+              />
+            )}
+            {screen.kind === 'laboratory' && (
+              <Laboratory
+                key={`${staff.id}/${patient?.id ?? 'queue'}`}
+                api={api}
+                staff={staff}
+                patient={patient ?? undefined}
+                demo={demo}
+                onExpired={onExpired}
+                onDirty={markDirty}
+              />
+            )}
+            {screen.kind === 'reports' && (
+              <Reports api={api} onExpired={onExpired} demo={demo} />
+            )}
+            {screen.kind === 'referrals' && (
+              <Referrals
+                key={`${staff.id}/${patient?.id ?? 'inbox'}`}
+                api={api}
+                staff={staff}
+                patient={patient ?? undefined}
+                demo={demo}
+                onExpired={onExpired}
+                onDirty={markDirty}
+              />
+            )}
+            {screen.kind === 'family' && patient && (
+              <PatientFamily
+                key={`${staff.id}/${patient.id}`}
+                api={api}
+                staff={staff}
+                patientId={patient.id}
+                patientName={patient.fullName}
+                demo={demo}
+                onExpired={onExpired}
+                onDirty={markDirty}
+                onOpenPatient={(id) => void select({ id })}
+                searchPatients={async (search) => {
+                  const result = await api.findPatients({ search });
+                  return result.ok
+                    ? {
+                        ok: true,
+                        data: result.data.map((record) => ({
+                          id: record.id,
+                          revision: record.revision,
+                          fullName: record.fullName,
+                          sex: record.sex || null,
+                          dateOfBirth: record.dateOfBirth,
+                        })),
+                      }
+                    : {
+                        ok: false,
+                        error: {
+                          code:
+                            result.error.code === 'DENIED'
+                              ? 'FORBIDDEN'
+                              : result.error.code,
+                          message: result.error.message,
+                        },
+                      };
+                }}
+              />
+            )}
+            {patient &&
+              screen.kind === 'chart' &&
+              screen.tab === 'details' &&
+              canReadClinicalSummary(staff) && (
+                <ClinicalSummary
+                  key={patient.id}
+                  api={api}
+                  staff={staff}
+                  patientId={patient.id}
+                  patientName={patient.fullName}
+                  onExpired={onExpired}
+                  onDirty={markDirty}
+                  demo={demo}
+                />
+              )}
             {(screen.kind === 'register' || screen.kind === 'editPatient') && (
               <PatientForm
                 key={generation}

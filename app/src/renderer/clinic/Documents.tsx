@@ -216,7 +216,9 @@ export function Documents({
       setNotice(
         demo
           ? 'Demo print submission simulated. No print job was sent.'
-          : 'Sent to printer. Check the printer for the paper output.',
+          : result.auditRecorded === false
+            ? 'Sent to printer. Audit recording failed; tell the clinic head. Check the paper output before retrying.'
+            : 'Sent to printer. Check the printer for the paper output.',
       );
     else if (result)
       setPrintError({

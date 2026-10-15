@@ -624,7 +624,13 @@ describe('Electron clinic broker boundary', () => {
   it('authorizes reprint by immutable document ID, lists installed printers, and reports submission distinctly', async () => {
     const { broker, fetcher, printer } = setup();
     await login(broker);
-    fetcher.mockImplementation(async (): Promise<Response> => json(document));
+    fetcher.mockImplementation(async (url): Promise<Response> =>
+      json(
+        String(url).endsWith('/audit-events/print')
+          ? { recorded: true }
+          : document,
+      ),
+    );
     const options = {
       documentId: ids.document,
       printerName: 'Office',
@@ -635,9 +641,16 @@ describe('Electron clinic broker boundary', () => {
       ok: true,
       data: { documentId: ids.document, submitted: true },
     });
-    expect(fetcher).toHaveBeenLastCalledWith(
+    expect(fetcher).toHaveBeenCalledWith(
       `https://clinic.example:3000/documents/${ids.document}`,
       expect.objectContaining({ method: 'GET' }),
+    );
+    expect(fetcher).toHaveBeenLastCalledWith(
+      'https://clinic.example:3000/audit-events/print',
+      expect.objectContaining({
+        method: 'POST',
+        body: JSON.stringify({ documentId: ids.document, outcome: 'success' }),
+      }),
     );
     expect(printer.print).toHaveBeenCalledWith(
       document,

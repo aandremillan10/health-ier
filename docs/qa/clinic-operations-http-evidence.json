@@ -1,0 +1,127 @@
+{
+  "runId": "47218b15-5323-413d-89bc-a34b3d89c561",
+  "origin": "http://127.0.0.1:3188",
+  "database": "healthier_demo_ops_20261015_0858",
+  "date": "2026-10-15",
+  "startedAt": "2026-10-15T01:26:08.620Z",
+  "status": "passed",
+  "checks": [
+    {
+      "name": "Owned loopback EDGE health",
+      "status": "passed"
+    },
+    {
+      "name": "Five actual authenticated role sessions",
+      "status": "passed"
+    },
+    {
+      "name": "#14 summary create/change/inactivate/history, invalid severity and clerk denial",
+      "status": "passed",
+      "revisions": 3
+    },
+    {
+      "name": "#18 membership, spouse/child/parent, self-link denial and current family",
+      "status": "passed",
+      "dependents": 3
+    },
+    {
+      "name": "#15 scheduled/arrived/waiting/provider/completed with stale denial",
+      "status": "passed",
+      "historyEvents": 5
+    },
+    {
+      "name": "#16 actual laboratory order/result/finalization/review and clerk denial",
+      "status": "passed"
+    },
+    {
+      "name": "#20 laboratory referral acceptance/start/completion, origin tracking and wrong-unit denial",
+      "status": "passed"
+    },
+    {
+      "name": "#21 baseline/new metrics, matching CSV and stale-fingerprint rejection",
+      "status": "passed",
+      "csvRows": 14
+    },
+    {
+      "name": "#19 head-only audit, workflow/export metadata and secret/content exclusions",
+      "status": "passed",
+      "observedEvents": 121
+    },
+    {
+      "name": "Review fixes: strict severity/print outcome, correct draft and denial audit metadata, and write/export workstation",
+      "status": "passed",
+      "auditedWritesWithWorkstation": 21
+    }
+  ],
+  "ids": {
+    "patients": [
+      "e1cd4fad-6f61-4645-b88f-6b92fde678b6",
+      "5609c072-37a3-4e2c-a871-61a665f68bf3",
+      "0d29f205-2be7-44a0-98e1-687502e08504",
+      "521bbedd-672e-4bb8-8e1b-8aba68bb2ad6"
+    ],
+    "summaryItem": "fc42ce4e-092e-4d63-82ac-02cc3a8c0d9d",
+    "membership": "339ca209-b5ab-45f6-9c24-98d2f1c960b6",
+    "dependentLinks": [
+      "db7150ab-b73b-4619-be4e-9e60851372cc",
+      "ef17819f-754b-44fc-bfe4-af48cb642903",
+      "5b558233-0a76-478d-b3b3-a9147ad64691"
+    ],
+    "appointment": "43831920-9c1b-482c-8859-95ecc5239d8a",
+    "labOrder": "dc522791-bd52-4a61-b0ea-52a469dbfee9",
+    "referral": "163aff90-8eb1-427c-be59-6060f406f894",
+    "labResult": "0e6f2113-02e4-469f-b606-2eb3f6ba3f1a"
+  },
+  "metrics": {
+    "before": {
+      "visits": 2,
+      "noShows": 0,
+      "pendingLabs": 0,
+      "averageLabMinutes": 0,
+      "newPatients": 8,
+      "employees": 2,
+      "dependents": 6
+    },
+    "pending": {
+      "visits": 3,
+      "noShows": 0,
+      "pendingLabs": 1,
+      "averageLabMinutes": 0,
+      "newPatients": 12,
+      "employees": 3,
+      "dependents": 9
+    },
+    "after": {
+      "visits": 3,
+      "noShows": 0,
+      "pendingLabs": 0,
+      "averageLabMinutes": 0,
+      "newPatients": 12,
+      "employees": 3,
+      "dependents": 9
+    },
+    "deltas": {
+      "visits": 1,
+      "noShows": 0,
+      "pendingLabs": 0,
+      "newPatients": 4,
+      "employees": 1,
+      "dependents": 3
+    },
+    "fingerprint": "2ead3fdb4eb7485453a59fc680641a3331de4985bd53d1c0d2e345f5b0d44dae"
+  },
+  "counts": {
+    "requests": 55,
+    "csvRows": 14,
+    "auditEvents": 121,
+    "ownAuditEvents": 25,
+    "ownAuditedWrites": 21
+  },
+  "unverified": [
+    "Desktop IPC and rendered UI",
+    "Physical printing",
+    "Legacy document import #17",
+    "LAN hardware and mirror/cloud behavior"
+  ],
+  "finishedAt": "2026-10-15T01:26:10.172Z"
+}

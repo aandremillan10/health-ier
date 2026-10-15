@@ -1,3 +1,13 @@
+import type { OperationsRequests, OperationsResponses } from './operations-api';
+import type { SummaryRequests, SummaryResponses } from './clinical-summary';
+import type {
+  AppointmentRequests,
+  AppointmentResponses,
+} from './appointments-api';
+import type { LaboratoryRequests, LaboratoryResponses } from './laboratory-api';
+import type { MembershipRequests, MembershipResponses } from './membership';
+import type { ReferralsRequests, ReferralsResponses } from './referrals-api';
+
 export type StaffRole =
   'doctor' | 'dentist' | 'medtech' | 'attendant' | 'clerk';
 export interface Staff {
@@ -145,7 +155,14 @@ export interface PrintInput {
 }
 type IdInput = { id: string };
 type RevisionInput = IdInput & { expectedRevision: number };
-export interface Requests {
+export interface Requests
+  extends
+    OperationsRequests,
+    SummaryRequests,
+    AppointmentRequests,
+    LaboratoryRequests,
+    MembershipRequests,
+    ReferralsRequests {
   login: { username: string; password: string };
   currentStaff: undefined;
   logout: undefined;
@@ -180,7 +197,14 @@ export interface Requests {
   listPrinters: undefined;
   printDocument: PrintInput;
 }
-export interface Responses {
+export interface Responses
+  extends
+    OperationsResponses,
+    SummaryResponses,
+    AppointmentResponses,
+    LaboratoryResponses,
+    MembershipResponses,
+    ReferralsResponses {
   login: { staff: Staff; generation: number };
   currentStaff: Staff;
   logout: { loggedOut: true; serverRevoked: boolean };
@@ -205,7 +229,7 @@ export interface Responses {
   issueDocument: IssuedDocument;
   readDocument: IssuedDocument;
   listPrinters: Printer[];
-  printDocument: { documentId: string; submitted: true };
+  printDocument: { documentId: string; submitted: true; auditRecorded?: false };
 }
 export type ErrorCode =
   | 'VALIDATION'

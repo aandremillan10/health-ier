@@ -1,3 +1,12 @@
+import type {
+  OperationsRequests,
+  OperationsResponses,
+} from '../../shared/operations-api';
+import type { ClinicalSummaryApi } from '../../shared/clinical-summary';
+import type { AppointmentApi } from './appointments-api';
+import type { LaboratoryApi } from './laboratory-contract';
+import type { MembershipApi } from '../../shared/membership';
+import type { ReferralsApi } from './referrals-contract';
 // Renderer view model, shared by the explicit demo and the typed desktop bridge adapter.
 export type Role = 'doctor' | 'dentist' | 'medtech' | 'attendant' | 'clerk';
 export type Discipline = 'medical' | 'dental' | 'laboratory';
@@ -106,7 +115,19 @@ export type ClinicDocument = {
 };
 export type Printer = { id: string; name: string; isDefault: boolean };
 export type Revision = { id: string; expectedRevision: number };
-export interface ClinicApi {
+type OperationsApi = {
+  [K in keyof OperationsRequests]: OperationsRequests[K] extends undefined
+    ? () => Promise<Result<OperationsResponses[K]>>
+    : (input: OperationsRequests[K]) => Promise<Result<OperationsResponses[K]>>;
+};
+export interface ClinicApi
+  extends
+    OperationsApi,
+    ClinicalSummaryApi,
+    AppointmentApi,
+    LaboratoryApi,
+    MembershipApi,
+    ReferralsApi {
   onSessionReset?: (listener: (reason: string) => void) => () => void;
   login(input: {
     username: string;
@@ -157,7 +178,7 @@ export interface ClinicApi {
   printDocument(input: {
     documentId: string;
     printerId: string;
-  }): Promise<Result<{ submitted: boolean }>>;
+  }): Promise<Result<{ submitted: boolean; auditRecorded?: false }>>;
 }
 
 declare global {
