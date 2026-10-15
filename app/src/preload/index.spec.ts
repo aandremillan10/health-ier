@@ -38,6 +38,20 @@ describe('sandbox preload surface', () => {
       expect(api).not.toHaveProperty(name);
       expect(api.clinic).not.toHaveProperty(name);
     }
+    for (const name of [
+      'readPatientFamily',
+      'createMembership',
+      'updateMembership',
+      'correctMembership',
+      'linkDependent',
+      'updateDependent',
+      'correctDependent',
+      'unlinkDependent',
+      'readMembershipHistory',
+      'readDependentHistory',
+    ]) {
+      expect(api.clinic).not.toHaveProperty(name);
+    }
     electron.invoke.mockResolvedValue({ ok: true, data: {} });
     await api.clinic.readDocument({ id: 'synthetic-id' });
     expect(electron.invoke).toHaveBeenCalledWith('clinic:readDocument', {

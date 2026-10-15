@@ -47,8 +47,6 @@ export interface ClinicReport {
     pendingLabs: number;
     averageLabMinutes: number | null;
     newPatients: number;
-    employees: number;
-    dependents: number;
   };
   daily: { date: string; visits: number }[];
   departments: {

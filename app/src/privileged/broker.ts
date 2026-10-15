@@ -23,11 +23,6 @@ import type { SummaryRequests } from '../shared/clinical-summary';
 import { appointmentRoute } from './appointments-contracts';
 import type { AppointmentRequests } from '../shared/appointments-api';
 import { laboratoryRoute } from './laboratory-contracts';
-import {
-  membershipRoute,
-  membershipRequestGuards,
-} from './membership-contracts';
-import type { MembershipRequests } from '../shared/membership';
 import { referralsRoute } from './referrals-contracts';
 import {
   historicalRoute,
@@ -163,11 +158,6 @@ function route<K extends keyof Requests>(name: K, input: Requests[K]): Route {
   if (historical) return historical;
   const referral = referralsRoute(name, input);
   if (referral) return referral;
-  if (Object.hasOwn(membershipRequestGuards, name))
-    return membershipRoute(
-      name as keyof MembershipRequests,
-      input as MembershipRequests[keyof MembershipRequests],
-    );
   const laboratory = laboratoryRoute(name, input);
   if (laboratory) return laboratory;
   const value = input as unknown as Record<string, unknown> | undefined;
@@ -690,11 +680,6 @@ export class ClinicBroker {
             'inactivateSummaryItem',
             'transitionAppointment',
             'correctAppointment',
-            'updateMembership',
-            'correctMembership',
-            'updateDependent',
-            'correctDependent',
-            'unlinkDependent',
             'startLabOrder',
             'cancelLabOrder',
             'rejectLabOrder',

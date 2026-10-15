@@ -5,7 +5,6 @@ import type {
 import type { ClinicalSummaryApi } from '../../shared/clinical-summary';
 import type { AppointmentApi } from './appointments-api';
 import type { LaboratoryApi } from './laboratory-contract';
-import type { MembershipApi } from '../../shared/membership';
 import type { ReferralsApi } from './referrals-contract';
 import type {
   HistoricalDocumentsRequests,
@@ -68,6 +67,7 @@ export type VitalsInput = {
   respiratoryRate: number | null;
   oxygenSaturation: number | null;
   weight: number | null;
+  height: number | null;
 };
 export type Vitals = VitalsInput & {
   id: string;
@@ -135,7 +135,6 @@ export interface ClinicApi
     ClinicalSummaryApi,
     AppointmentApi,
     LaboratoryApi,
-    MembershipApi,
     ReferralsApi {
   selectHistoricalFile: HistoricalApi['selectHistoricalFile'];
   discardHistoricalFile: HistoricalApi['discardHistoricalFile'];
@@ -250,6 +249,7 @@ export const measures = {
   respiratoryRate: 'Respiratory rate · /min',
   oxygenSaturation: 'Oxygen saturation · %',
   weight: 'Weight · kg',
+  height: 'Height · cm',
 };
 
 // Start a new correction from the last accepted content; originals stay unchanged.

@@ -375,7 +375,7 @@ test('vitals handoff keeps untaken values null and allows finalized selection', 
   const measurements = page.getByTestId('vitals').filter({ hasText: '142' });
   await expect(
     measurements.getByText('Not taken', { exact: true }),
-  ).toHaveCount(5);
+  ).toHaveCount(6);
   await measurements.getByRole('button', { name: 'Finalize entry' }).click();
   await page.getByRole('button', { name: 'Confirm finalization' }).click();
   await expect(

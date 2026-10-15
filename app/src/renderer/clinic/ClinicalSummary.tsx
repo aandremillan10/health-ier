@@ -15,7 +15,7 @@ import type {
 } from '../../shared/clinical-summary';
 import { canReadClinicalSummary } from '../../shared/clinical-summary';
 import { Field, Loading } from './ui';
-import { date, timestamp } from './format';
+import { timestamp } from './format';
 import './clinical-summary.css';
 
 type Failure = Extract<Result<unknown>, { ok: false }>['error'];
@@ -28,7 +28,6 @@ type Edit = {
 type ContentField = {
   key: string;
   label: string;
-  type?: 'date';
   required?: boolean;
   max?: number;
 };
@@ -58,44 +57,15 @@ const sections: {
     singular: 'condition',
     empty: 'No chronic conditions or problems recorded.',
   },
-  {
-    kind: 'immunization',
-    title: 'Immunizations',
-    singular: 'immunization',
-    empty:
-      'No immunizations recorded. Confirm the patient’s vaccination record.',
-  },
 ];
 const contentFields: Record<Kind, ContentField[]> = {
-  allergy: [
-    { key: 'substance', label: 'Substance', required: true, max: 200 },
-    { key: 'reaction', label: 'Reaction', max: 2000 },
-    { key: 'onsetDate', label: 'Onset date', type: 'date' },
-  ],
+  allergy: [{ key: 'substance', label: 'Substance', required: true, max: 200 }],
   medication: [
     { key: 'name', label: 'Medication', required: true, max: 200 },
-    { key: 'dose', label: 'Dose', max: 200 },
-    { key: 'route', label: 'Route', max: 200 },
-    { key: 'frequency', label: 'Frequency', max: 500 },
-    { key: 'startDate', label: 'Start date', type: 'date' },
-    { key: 'endDate', label: 'End date', type: 'date' },
+    { key: 'dose', label: 'Dose and unit', max: 200 },
   ],
   condition: [
     { key: 'name', label: 'Condition / problem', required: true, max: 200 },
-    { key: 'code', label: 'Code (if known)', max: 100 },
-    { key: 'onsetDate', label: 'Onset date', type: 'date' },
-    { key: 'resolvedDate', label: 'Resolved date', type: 'date' },
-  ],
-  immunization: [
-    { key: 'name', label: 'Vaccine', required: true, max: 200 },
-    {
-      key: 'administeredOn',
-      label: 'Date administered',
-      type: 'date',
-      required: true,
-    },
-    { key: 'lotNumber', label: 'Lot number', max: 200 },
-    { key: 'nextDueOn', label: 'Next due date', type: 'date' },
   ],
 };
 function contentName(content: SummaryContent): string {
@@ -109,38 +79,17 @@ function contentFromForm(kind: Kind, data: FormData): SummaryContent {
       return {
         kind,
         substance: required('substance'),
-        reaction: value('reaction'),
-        severity: required('severity') as Extract<
-          SummaryContent,
-          { kind: 'allergy' }
-        >['severity'],
-        onsetDate: value('onsetDate'),
       };
     case 'medication':
       return {
         kind,
         name: required('name'),
         dose: value('dose'),
-        route: value('route'),
-        frequency: value('frequency'),
-        startDate: value('startDate'),
-        endDate: value('endDate'),
       };
     case 'condition':
       return {
         kind,
         name: required('name'),
-        code: value('code'),
-        onsetDate: value('onsetDate'),
-        resolvedDate: value('resolvedDate'),
-      };
-    case 'immunization':
-      return {
-        kind,
-        name: required('name'),
-        administeredOn: required('administeredOn'),
-        lotNumber: value('lotNumber'),
-        nextDueOn: value('nextDueOn'),
       };
   }
 }
@@ -159,21 +108,9 @@ function ContentDetails({ fields }: { fields: SummaryFields }): ReactElement {
         .map((field) => (
           <div key={field.key}>
             <dt>{field.label}</dt>
-            <dd>
-              {field.type === 'date'
-                ? date(values[field.key]!)
-                : values[field.key]}
-            </dd>
+            <dd>{values[field.key]}</dd>
           </div>
         ))}
-      {content.kind === 'allergy' && (
-        <div>
-          <dt>Severity</dt>
-          <dd>
-            {content.severity === 'unknown' ? 'Not recorded' : content.severity}
-          </dd>
-        </div>
-      )}
       <div>
         <dt>Source</dt>
         <dd>{fields.source}</dd>
@@ -394,7 +331,7 @@ function ClinicalSummaryPanel({
         </Button>
       </div>
       <p className="hint">
-        {patientName} · Allergies, medicines, conditions, and immunizations
+        {patientName} · Allergies, medicines, and conditions
       </p>
       <p role="status" className={notice ? 'notice success' : undefined}>
         {notice}
@@ -450,7 +387,6 @@ function ClinicalSummaryPanel({
                       <Input
                         id={`summary-${field.key}`}
                         name={field.key}
-                        type={field.type ?? 'text'}
                         required={field.required}
                         maxLength={field.max}
                         defaultValue={currentFields?.[field.key] ?? ''}
@@ -458,28 +394,13 @@ function ClinicalSummaryPanel({
                       />
                     </Field>
                   ))}
-                  {edit.kind === 'allergy' && (
-                    <Field label="Severity" name="summary-severity">
-                      <select
-                        id="summary-severity"
-                        className="clinic-select"
-                        name="severity"
-                        defaultValue={currentFields?.severity ?? 'unknown'}
-                      >
-                        <option value="unknown">Not recorded</option>
-                        <option value="mild">Mild</option>
-                        <option value="moderate">Moderate</option>
-                        <option value="severe">Severe</option>
-                      </select>
-                    </Field>
-                  )}
                 </div>
                 <Field
                   label="Source"
                   name="summary-source"
                   error={fieldError}
                   errorName="source"
-                  hint="For example: patient report, prior clinic record, or vaccine card."
+                  hint="For example: patient report or prior clinic record."
                 >
                   <Input
                     id="summary-source"

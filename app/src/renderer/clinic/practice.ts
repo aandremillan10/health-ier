@@ -7,7 +7,6 @@ import { canReadClinicalSummary } from '../../shared/clinical-summary';
 export type PracticeTopic =
   | 'session'
   | 'registry'
-  | 'family'
   | 'appointments'
   | 'vitals'
   | 'medical'
@@ -23,7 +22,6 @@ export type PracticeScreen =
   | {
       kind:
         | 'registry'
-        | 'family'
         | 'appointments'
         | 'laboratory'
         | 'referrals'
@@ -61,7 +59,6 @@ export interface PracticeSession {
 export const topicNames: Record<PracticeTopic, string> = {
   session: 'Sign-in and session',
   registry: 'Patient records',
-  family: 'Family and eligibility',
   appointments: 'Clinic flow',
   vitals: 'Vital signs',
   medical: 'Medical chart',
@@ -79,8 +76,6 @@ export const topicHelp: Record<PracticeTopic, string> = {
     'Check your name and role before working. Sign out when leaving this workstation. If your session expires, sign in again before opening private records.',
   registry:
     'Search by name or patient number. Compare birth date and number before opening a record. Check existing records before registering someone new.',
-  family:
-    'Check eligibility for the date of care. Membership and dependent dates determine eligibility; the registry category alone does not. The clerk maintains these records.',
   appointments:
     'Choose the clinic date, then update the visit as care progresses. Queue changes do not save consultation findings or laboratory results.',
   vitals:
@@ -94,7 +89,7 @@ export const topicHelp: Record<PracticeTopic, string> = {
   referrals:
     'Read the requested task and receiving unit. Receiving staff accept, start, and complete the task with a note or linked result. Sending a referral does not itself complete clinical care.',
   summary:
-    'Review allergies, medicines, conditions, and immunizations. An empty section does not confirm absence. Record the information source; only the original author changes an item, with history preserved.',
+    'Review allergies, medicines, and conditions. An empty section does not confirm absence. Record the information source; only the original author changes an item, with history preserved.',
   documents:
     'Use your own finalized medical consultation. Preview and review the entire document before issuing. Editing invalidates review. Issued copies keep their identity and content when reopened.',
   reports:
@@ -108,7 +103,6 @@ export function availableTopics(staff: Principal): PracticeTopic[] {
   return [
     'session',
     'registry',
-    ...(staff.role !== 'medtech' || staff.isHead ? (['family'] as const) : []),
     'appointments',
     ...(canReadVitals(staff) ? (['vitals'] as const) : []),
     ...(visibleDisciplines(staff).includes('medical')
@@ -208,40 +202,6 @@ export function practiceSteps(
                 '.patient-banner',
               ),
             ]),
-      ];
-    case 'family':
-      return [
-        read(
-          'Read the membership',
-          'This local example includes a member and a dependent. Registry category alone is not eligibility.',
-          '.patient-family',
-        ),
-        action(
-          'Check the date of care',
-          'Choose a date and select Check eligibility. Compare the result with the effective start and end dates.',
-          'readPatientFamily',
-          '#family-as-of',
-        ),
-        ...(staff.role === 'clerk'
-          ? [
-              click(
-                'Maintain the member',
-                'Select Update eligibility. Enter a reason and save the change; earlier values remain in history.',
-                'Update eligibility',
-              ),
-              action(
-                'Save the membership',
-                'Use only fictional values, include the reason, then save.',
-                'updateMembership',
-                '.family-editor',
-              ),
-            ]
-          : []),
-        read(
-          'Use the eligibility result',
-          'If the membership or link is inactive or out of date, ask the clerk to review it. Do not infer eligibility from an employee reference.',
-          '.patient-family',
-        ),
       ];
     case 'appointments':
       return [
@@ -676,22 +636,6 @@ export async function createPractice(
   if (!identity || !availableTopics(identity).includes(topic))
     throw new Error('This practice guide is unavailable for your role.');
   fixture.selectStaff('demo-clerk');
-  const membership = await fixture.api.createMembership({
-    patientId: 'DEMO-0001',
-    memberNumber: 'PRACTICE-MEMBER',
-    state: 'active',
-    effectiveStart: '2020-01-01',
-    effectiveEnd: null,
-  });
-  if (membership.ok)
-    await fixture.api.linkDependent({
-      membershipId: membership.data.id,
-      dependentPatientId: 'DEMO-0003',
-      relationship: 'child',
-      state: 'active',
-      effectiveStart: '2020-01-01',
-      effectiveEnd: null,
-    });
   const discipline =
     role.role === 'dentist'
       ? 'dental'

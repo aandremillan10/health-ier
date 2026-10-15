@@ -117,6 +117,7 @@ describe('real synthetic EDGE broker integration', () => {
         respiratoryRate: 18,
         oxygenSaturation: 98,
         weight: null,
+        height: null,
       });
       const editedVitals = await call('updateVitals', {
         id: vitals.id,

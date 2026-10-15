@@ -119,6 +119,7 @@ describe('Electron clinic broker boundary', () => {
         respiratoryRate: null,
         oxygenSaturation: null,
         weight: null,
+        height: null,
         corrections: [
           {
             ...correction,
@@ -704,6 +705,7 @@ describe('Electron clinic broker boundary', () => {
       respiratoryRate: null,
       oxygenSaturation: null,
       weight: null,
+      height: null,
     };
     const medical = {
       consultationDate: '2026-10-14',

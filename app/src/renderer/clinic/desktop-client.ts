@@ -1,6 +1,5 @@
 import type * as Wire from '../../shared/clinic-api';
 import { createAppointmentDesktopClient } from './appointments-api';
-import { createMembershipDesktopClient } from './membership-client';
 import { createReferralsClient } from './referrals-client';
 import type {
   ClinicApi,
@@ -235,7 +234,6 @@ export function createDesktopClient(wire: Wire.ClinicApi): ClinicApi {
     readHistoricalDocumentContent: (input) =>
       result(wire.readHistoricalDocumentContent(input), (data) => data),
     ...createReferralsClient(wire),
-    ...createMembershipDesktopClient(wire),
     listLabOrders: (input) => result(wire.listLabOrders(input), (data) => data),
     listLabQueue: (input) => result(wire.listLabQueue(input), (data) => data),
     createLabOrder: (input) =>

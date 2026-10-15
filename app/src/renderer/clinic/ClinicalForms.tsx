@@ -378,15 +378,19 @@ export function EntryForm({
   );
 }
 
-const vitalFields = [
+const bloodPressureFields = [
   ['systolic', 'Systolic pressure (mmHg)'],
   ['diastolic', 'Diastolic pressure (mmHg)'],
+] as const;
+const vitalFields = [
   ['temperature', 'Temperature (°C)'],
   ['pulse', 'Pulse (/min)'],
   ['respiratoryRate', 'Respiratory rate (/min)'],
   ['oxygenSaturation', 'Oxygen saturation (%)'],
   ['weight', 'Weight (kg)'],
+  ['height', 'Height (cm)'],
 ] as const;
+const measurementFields = [...bloodPressureFields, ...vitalFields] as const;
 export function VitalsForm({
   api,
   patient,
@@ -399,7 +403,7 @@ export function VitalsForm({
 }: FormProps & { record?: Vitals; correction?: boolean }): ReactElement {
   const content = record && correction ? currentContent(record) : record;
   const [values, setValues] = useState<
-    Record<(typeof vitalFields)[number][0], string>
+    Record<(typeof measurementFields)[number][0], string>
   >({
     systolic: String(content?.systolic ?? ''),
     diastolic: String(content?.diastolic ?? ''),
@@ -408,6 +412,7 @@ export function VitalsForm({
     respiratoryRate: String(content?.respiratoryRate ?? ''),
     oxygenSaturation: String(content?.oxygenSaturation ?? ''),
     weight: String(content?.weight ?? ''),
+    height: String(content?.height ?? ''),
   });
   const [recordedAt, setRecordedAt] = useState(() =>
     content?.recordedAt
@@ -435,6 +440,7 @@ export function VitalsForm({
       oxygenSaturation:
         values.oxygenSaturation === '' ? null : Number(values.oxygenSaturation),
       weight: values.weight === '' ? null : Number(values.weight),
+      height: values.height === '' ? null : Number(values.height),
     };
     const result = await run(() =>
       correction && record
@@ -499,7 +505,7 @@ export function VitalsForm({
             </h3>
             <p>{timestamp(latest.recordedAt)}</p>
             <dl className="measurements">
-              {vitalFields.map(([key, label]) => (
+              {measurementFields.map(([key, label]) => (
                 <div key={key}>
                   <dt>{label}</dt>
                   <dd>{latest[key] ?? 'Not taken'}</dd>
@@ -560,6 +566,50 @@ export function VitalsForm({
         <p className="hint">
           Leave untaken measurements blank. Blank values are saved as Not taken.
         </p>
+        <fieldset className="blood-pressure-group">
+          <legend>Blood pressure (mmHg)</legend>
+          <div className="blood-pressure-inputs">
+            <Field
+              label="Systolic pressure (mmHg)"
+              name="systolic"
+              error={error}
+            >
+              <Input
+                disabled={busy}
+                id="systolic"
+                type="number"
+                min="0"
+                step="any"
+                value={values.systolic}
+                onChange={(e) => {
+                  setValues({ ...values, systolic: e.target.value });
+                  onDirty(true);
+                }}
+              />
+            </Field>
+            <span className="blood-pressure-divider" aria-hidden="true">
+              /
+            </span>
+            <Field
+              label="Diastolic pressure (mmHg)"
+              name="diastolic"
+              error={error}
+            >
+              <Input
+                disabled={busy}
+                id="diastolic"
+                type="number"
+                min="0"
+                step="any"
+                value={values.diastolic}
+                onChange={(e) => {
+                  setValues({ ...values, diastolic: e.target.value });
+                  onDirty(true);
+                }}
+              />
+            </Field>
+          </div>
+        </fieldset>
         <div className="form-grid">
           {vitalFields.map(([key, label]) => (
             <Field key={key} label={label} name={key} error={error}>
@@ -575,10 +625,6 @@ export function VitalsForm({
                   setValues({ ...values, [key]: e.target.value });
                   onDirty(true);
                 }}
-                aria-invalid={Boolean(error?.fieldErrors?.[key])}
-                aria-describedby={
-                  error?.fieldErrors?.[key] ? `${key}-error` : undefined
-                }
               />
             </Field>
           ))}
