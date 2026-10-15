@@ -1,34 +1,7 @@
 export type SummaryContent =
-  | {
-      kind: 'allergy';
-      substance: string;
-      reaction: string | null;
-      severity: 'unknown' | 'mild' | 'moderate' | 'severe';
-      onsetDate: string | null;
-    }
-  | {
-      kind: 'medication';
-      name: string;
-      dose: string | null;
-      route: string | null;
-      frequency: string | null;
-      startDate: string | null;
-      endDate: string | null;
-    }
-  | {
-      kind: 'condition';
-      name: string;
-      code: string | null;
-      onsetDate: string | null;
-      resolvedDate: string | null;
-    }
-  | {
-      kind: 'immunization';
-      name: string;
-      administeredOn: string;
-      lotNumber: string | null;
-      nextDueOn: string | null;
-    };
+  | { kind: 'allergy'; substance: string }
+  | { kind: 'medication'; name: string; dose: string | null }
+  | { kind: 'condition'; name: string };
 export interface SummaryFields {
   content: SummaryContent;
   source: string;

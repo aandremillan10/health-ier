@@ -6,7 +6,10 @@ import { fail } from '../errors';
 import type { ClinicalSummaryItem, Prisma } from '../generated/prisma/client';
 import type { Principal } from '../mirror-contract';
 import { invalid, object, revision, text, uuid } from '../validation';
-import { summaryContent, summaryFields } from './clinical-summary.validation';
+import {
+  projectSummaryContent,
+  summaryFields,
+} from './clinical-summary.validation';
 import type {
   SummaryFields,
   SummaryHistory,
@@ -26,14 +29,25 @@ function authorize(staff: Principal, write = false): void {
       'Clinical summaries are available to clinicians and clinic head oversight.',
     );
 }
+const summaryKinds = ['allergy', 'medication', 'condition'] as const;
+function supportedKind(kind: string): boolean {
+  return summaryKinds.includes(kind as (typeof summaryKinds)[number]);
+}
 type AttributedItem = ClinicalSummaryItem & { author: { displayName: string } };
+function unavailable(): never {
+  return fail(
+    404,
+    'NOT_FOUND',
+    'The summary item is unavailable. Reload the patient record.',
+  );
+}
 function itemDto(staff: Principal, item: AttributedItem): SummaryItem {
   return {
     id: item.id,
     patientId: item.patientId,
     authorId: item.authorId,
     authorName: item.author.displayName,
-    content: summaryContent(item.content),
+    content: projectSummaryContent(item.content),
     source: item.source,
     notes: item.notes,
     status: item.status as SummaryItem['status'],
@@ -54,7 +68,7 @@ export class ClinicalSummaryService {
     authorize(staff);
     await this.patient(this.db, patientId);
     const items = await this.db.clinicalSummaryItem.findMany({
-      where: { patientId },
+      where: { patientId, kind: { in: [...summaryKinds] } },
       include: { author: { select: { displayName: true } } },
       orderBy: [
         { status: 'asc' },
@@ -122,12 +136,7 @@ export class ClinicalSummaryService {
       const original = await tx.clinicalSummaryItem.findUnique({
         where: { id },
       });
-      if (!original)
-        fail(
-          404,
-          'NOT_FOUND',
-          'The summary item is unavailable. Reload the patient record.',
-        );
+      if (!original || !supportedKind(original.kind)) unavailable();
       if (original.authorId !== staff.id)
         fail(
           403,
@@ -176,14 +185,9 @@ export class ClinicalSummaryService {
     authorize(staff);
     const original = await this.db.clinicalSummaryItem.findUnique({
       where: { id: uuid(id) },
-      select: { id: true },
+      select: { id: true, kind: true },
     });
-    if (!original)
-      fail(
-        404,
-        'NOT_FOUND',
-        'The summary item is unavailable. Reload the patient record.',
-      );
+    if (!original || !supportedKind(original.kind)) unavailable();
     const history = await this.db.clinicalSummaryRevision.findMany({
       where: { itemId: id },
       include: { author: { select: { displayName: true } } },
@@ -205,7 +209,11 @@ export class ClinicalSummaryService {
         action: event.action as SummaryHistory['action'],
         reason: event.reason,
         snapshot: {
-          ...summaryFields(snapshot),
+          ...summaryFields({
+            content: projectSummaryContent(snapshot.content),
+            source: snapshot.source,
+            notes: snapshot.notes,
+          }),
           status: snapshot.status as SummaryItem['status'],
         },
         createdAt: event.createdAt.toISOString(),
@@ -251,7 +259,7 @@ export class ClinicalSummaryService {
         action,
         reason,
         snapshot: {
-          content: item.content,
+          content: projectSummaryContent(item.content),
           source: item.source,
           notes: item.notes,
           status: item.status,
