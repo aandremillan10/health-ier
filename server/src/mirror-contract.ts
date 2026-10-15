@@ -6,6 +6,7 @@ export const entityTypes = [
   'entry',
   'correction',
   'document',
+  'historicalDocument',
 ] as const;
 export type EntityType = (typeof entityTypes)[number];
 export type Role = 'doctor' | 'dentist' | 'medtech' | 'attendant' | 'clerk';
@@ -58,6 +59,24 @@ export interface MirrorEvent {
 }
 // A single explicit whitelist governs EDGE snapshots and CLOUD validation.
 export const payloadKeys = {
+  historicalDocument: [
+    'id',
+    'patientId',
+    'discipline',
+    'documentType',
+    'documentDate',
+    'description',
+    'filename',
+    'mimeType',
+    'byteLength',
+    'sha256',
+    'uploaderId',
+    'uploaderName',
+    'createdAt',
+    'replacesId',
+    'replacementReason',
+    'revision',
+  ],
   staff: [
     'id',
     'revision',

@@ -2,7 +2,7 @@ import 'dotenv/config';
 import { readFileSync } from 'node:fs';
 import { DatabaseService } from '../database/database.service';
 import { MirrorService } from './mirror.service';
-import { httpsTransport } from './mirror.worker';
+import { httpsTransport, httpsHistoricalTransport } from './mirror.worker';
 import { object, parseBatch, digest } from './validation';
 async function main(): Promise<void> {
   const db = new DatabaseService();
@@ -14,7 +14,7 @@ async function main(): Promise<void> {
       for (let iteration = 0; iteration < 100; iteration++) {
         const status = await mirror.status();
         if (!status.pending) break;
-        await mirror.deliver(httpsTransport);
+        await mirror.deliver(httpsTransport, httpsHistoricalTransport);
         if ((await mirror.status()).lastError === 'DELIVERY_UNAVAILABLE')
           throw new Error('DELIVERY_UNAVAILABLE');
       }

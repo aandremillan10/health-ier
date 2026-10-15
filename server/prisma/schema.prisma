@@ -233,6 +233,28 @@ model AuditEvent {
   @@index([actorId, createdAt])
 }
 
+model HistoricalDocument {
+  id                String   @id @db.Uuid
+  patientId         String   @db.Uuid
+  discipline        String
+  documentType      String
+  documentDate      String
+  description       String
+  filename          String
+  mimeType          String
+  byteLength        Int
+  sha256            String
+  objectKey         String   @unique
+  uploaderId        String   @db.Uuid
+  uploaderName      String
+  createdAt         DateTime @default(now())
+  replacesId        String?  @unique @db.Uuid
+  replacementReason String?
+  revision          Int      @default(1)
+
+  @@index([patientId, discipline, createdAt, id])
+}
+
 model ClinicalSummaryItem {
   id        String                    @id @default(uuid()) @db.Uuid
   patientId String                    @db.Uuid

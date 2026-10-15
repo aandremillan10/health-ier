@@ -7,6 +7,10 @@ import type {
 import type { LaboratoryRequests, LaboratoryResponses } from './laboratory-api';
 import type { MembershipRequests, MembershipResponses } from './membership';
 import type { ReferralsRequests, ReferralsResponses } from './referrals-api';
+import type {
+  HistoricalDocumentsRequests,
+  HistoricalDocumentsResponses,
+} from './historical-documents-api';
 
 export type StaffRole =
   'doctor' | 'dentist' | 'medtech' | 'attendant' | 'clerk';
@@ -162,7 +166,8 @@ export interface Requests
     AppointmentRequests,
     LaboratoryRequests,
     MembershipRequests,
-    ReferralsRequests {
+    ReferralsRequests,
+    HistoricalDocumentsRequests {
   login: { username: string; password: string };
   currentStaff: undefined;
   logout: undefined;
@@ -204,7 +209,8 @@ export interface Responses
     AppointmentResponses,
     LaboratoryResponses,
     MembershipResponses,
-    ReferralsResponses {
+    ReferralsResponses,
+    HistoricalDocumentsResponses {
   login: { staff: Staff; generation: number };
   currentStaff: Staff;
   logout: { loggedOut: true; serverRevoked: boolean };

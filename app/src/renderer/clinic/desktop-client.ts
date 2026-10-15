@@ -222,6 +222,18 @@ export function createDesktopClient(wire: Wire.ClinicApi): ClinicApi {
     return mapped;
   }
   const client: ClinicApi = {
+    selectHistoricalFile: (input) =>
+      result(wire.selectHistoricalFile(input), (data) => data),
+    discardHistoricalFile: (input) =>
+      result(wire.discardHistoricalFile(input), (data) => data),
+    importHistoricalDocument: (input) =>
+      result(wire.importHistoricalDocument(input), (data) => data),
+    listHistoricalDocuments: (input) =>
+      result(wire.listHistoricalDocuments(input), (data) => data),
+    readHistoricalDocument: (input) =>
+      result(wire.readHistoricalDocument(input), (data) => data),
+    readHistoricalDocumentContent: (input) =>
+      result(wire.readHistoricalDocumentContent(input), (data) => data),
     ...createReferralsClient(wire),
     ...createMembershipDesktopClient(wire),
     listLabOrders: (input) => result(wire.listLabOrders(input), (data) => data),

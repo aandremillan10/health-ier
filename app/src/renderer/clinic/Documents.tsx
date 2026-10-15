@@ -24,6 +24,7 @@ export function Documents({
   issued,
   kind = 'prescription',
   demo,
+  practice = false,
   onDirty,
   onBack,
   onExpired,
@@ -33,6 +34,7 @@ export function Documents({
   issued?: ClinicDocument;
   kind?: DocumentInput['kind'];
   demo: boolean;
+  practice?: boolean;
   onDirty: (dirty: boolean) => void;
   onBack: () => void;
   onExpired: () => void;
@@ -221,6 +223,12 @@ export function Documents({
   }
   async function copyId(): Promise<void> {
     if (!document?.id) return;
+    if (practice) {
+      setNotice(
+        'Practice only. In clinic work, Copy ID copies the issued document number. Your clipboard is unchanged.',
+      );
+      return;
+    }
     setCopyError(false);
     try {
       await navigator.clipboard.writeText(document.id);
@@ -457,6 +465,7 @@ export function Documents({
                   <DocumentPaper
                     key={headerAttempt}
                     document={document}
+                    practice={practice}
                     onHeaderStatus={setHeaderStatus}
                   />
                 </div>
@@ -595,27 +604,42 @@ export function Documents({
 export function DocumentPaper({
   document,
   onHeaderStatus,
+  practice = false,
 }: {
   document: ClinicDocument;
   onHeaderStatus: (status: 'ready' | 'error') => void;
+  practice?: boolean;
 }): ReactElement {
   const { patient, entry, input, issuer } = document;
+  useEffect(() => {
+    if (practice) onHeaderStatus('ready');
+  }, [practice, onHeaderStatus]);
   return (
     <article
       className={`document-paper ${input.kind}`}
       data-testid="document-paper"
     >
-      <img
-        src={headerUrl}
-        alt="Supplied Iloilo HMO clinic document header"
-        onLoad={(event) => {
-          void event.currentTarget
-            .decode()
-            .then(() => onHeaderStatus('ready'))
-            .catch(() => onHeaderStatus('error'));
-        }}
-        onError={() => onHeaderStatus('error')}
-      />
+      {practice ? (
+        <div className="practice-paper-header">
+          <strong>AMLIG · FICTIONAL PRACTICE COPY</strong>
+          <p>
+            Document layout practice only. No valid certificate or prescription
+            is issued.
+          </p>
+        </div>
+      ) : (
+        <img
+          src={headerUrl}
+          alt="Supplied Iloilo HMO clinic document header"
+          onLoad={(event) => {
+            void event.currentTarget
+              .decode()
+              .then(() => onHeaderStatus('ready'))
+              .catch(() => onHeaderStatus('error'));
+          }}
+          onError={() => onHeaderStatus('error')}
+        />
+      )}
       {document.status === 'preview' && (
         <p className="draft-mark">DRAFT · FOR CLINICIAN REVIEW</p>
       )}

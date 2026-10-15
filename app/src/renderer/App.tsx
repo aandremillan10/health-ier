@@ -1,5 +1,12 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+} from 'react';
 import type { FormEvent, ReactElement } from 'react';
+import { createPortal } from 'react-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import type {
@@ -37,6 +44,10 @@ import { Reports } from './clinic/Reports';
 import { PatientFamily } from './clinic/PatientFamily';
 import { Referrals } from './clinic/Referrals';
 import './clinic/operations.css';
+import { ContextHelp, PracticeGuide } from './clinic/Guidance';
+import { createPractice } from './clinic/practice';
+import type { PracticeSession, PracticeTopic } from './clinic/practice';
+import { HistoricalDocuments } from './clinic/HistoricalDocuments';
 
 type Screen =
   | {
@@ -49,7 +60,8 @@ type Screen =
         | 'laboratory'
         | 'reports'
         | 'family'
-        | 'referrals';
+        | 'referrals'
+        | 'historical';
     }
   | { kind: 'chart'; tab: ChartTab }
   | { kind: 'entry'; entry?: Entry; correction?: boolean }
@@ -68,6 +80,7 @@ const toolNames: Partial<Record<Screen['kind'], string>> = {
   reports: 'Reports',
   family: 'Family and eligibility',
   referrals: 'Referrals',
+  historical: 'Historical documents',
 };
 
 export function App(): ReactElement {
@@ -190,7 +203,7 @@ export function App(): ReactElement {
         Skip to content
       </a>
       {staff && api ? (
-        <Workspace
+        <PracticeBoundary
           key={session}
           api={api}
           staff={staff}
@@ -348,6 +361,176 @@ export function App(): ReactElement {
   );
 }
 
+type WorkspaceProps = {
+  api: ClinicApi;
+  staff: Principal;
+  demo: boolean;
+  fixture: ReturnType<typeof createDemoClinic> | null;
+  onLogout: () => Promise<void>;
+  onExpired: () => void;
+};
+
+function PracticeBoundary(props: WorkspaceProps): ReactElement {
+  const [container] = useState(() => document.createElement('div'));
+  const mount = useRef<HTMLDivElement>(null);
+  const practiceRoot = useRef<HTMLDivElement>(null);
+  const [practice, setPractice] = useState<PracticeSession | null>(null);
+  const [practiceGeneration, setPracticeGeneration] = useState(0);
+  const currentPractice = useRef<PracticeSession | null>(null);
+  const [pending, setPending] = useState(false);
+  const [error, setError] = useState('');
+  const request = useRef(0);
+  const origin = useRef<{
+    element: HTMLElement | null;
+    title: string;
+    scroll: number;
+  } | null>(null);
+  const [simulatedSignedOut, setSimulatedSignedOut] = useState(false);
+  useLayoutEffect(() => {
+    // Detach the live DOM, retaining React state without duplicate form IDs or focus targets.
+    if (practice) container.remove();
+    else mount.current?.append(container);
+    return (): void => container.remove();
+  }, [container, practice]);
+  useEffect(
+    () => (): void => {
+      request.current++;
+      currentPractice.current?.dispose();
+      container.remove();
+    },
+    [container],
+  );
+  const exit = useCallback((): void => {
+    request.current++;
+    currentPractice.current?.dispose();
+    currentPractice.current = null;
+    setPractice(null);
+    setPending(false);
+  }, []);
+  useLayoutEffect(() => {
+    if (!practice && origin.current) {
+      const previous = origin.current;
+      origin.current = null;
+      document.title = previous.title;
+      window.scrollTo({ top: previous.scroll, behavior: 'instant' });
+      if (previous.element?.isConnected)
+        previous.element.focus({ preventScroll: true });
+    }
+  }, [practice]);
+  async function start(topic: PracticeTopic): Promise<void> {
+    const attempt = ++request.current;
+    if (!practice)
+      origin.current = {
+        element:
+          document.activeElement instanceof HTMLElement
+            ? document.activeElement
+            : null,
+        title: document.title,
+        scroll: window.scrollY,
+      };
+    setPending(true);
+    setError('');
+    try {
+      const next = await createPractice(
+        { role: props.staff.role, isHead: props.staff.isHead },
+        topic,
+      );
+      if (request.current !== attempt) {
+        next.dispose();
+        return;
+      }
+      currentPractice.current?.dispose();
+      currentPractice.current = next;
+      setPracticeGeneration((value) => value + 1);
+      setPractice(next);
+      setSimulatedSignedOut(false);
+      window.scrollTo({ top: 0, behavior: 'instant' });
+    } catch {
+      if (request.current === attempt)
+        setError(
+          'Practice could not start. Your clinic work is unchanged. Try the guide again.',
+        );
+    } finally {
+      if (request.current === attempt) setPending(false);
+    }
+  }
+  return (
+    <>
+      {error && (
+        <p className="notice error" role="alert">
+          {error}
+        </p>
+      )}
+      <div ref={mount} />
+      {createPortal(
+        <Workspace
+          {...props}
+          suspended={Boolean(practice)}
+          onPractice={(topic) => void start(topic)}
+          practicePending={pending}
+        />,
+        container,
+      )}
+      {practice && (
+        <div
+          className="practice-layout"
+          data-testid="practice-workspace"
+          ref={practiceRoot}
+        >
+          <div>
+            <header className="practice-banner">
+              <h1>Practice · fictional records</h1>
+              <p>
+                All actions are simulated in memory. No clinic records,
+                printers, files, or clipboard are changed. Exit to return to
+                your work.
+              </p>
+            </header>
+            {practice.topic === 'session' && (
+              <section
+                className="panel practice-session"
+                aria-label="Simulated session"
+              >
+                <p role="status">
+                  {simulatedSignedOut
+                    ? 'Practice session signed out. Your real session remains active.'
+                    : 'Practice session signed in. Your real account is unchanged.'}
+                </p>
+                <Button
+                  onClick={() => setSimulatedSignedOut((value) => !value)}
+                >
+                  {simulatedSignedOut
+                    ? 'Simulate sign-in'
+                    : 'Simulate sign-out'}
+                </Button>
+              </section>
+            )}
+            <Workspace
+              key={practiceGeneration}
+              api={practice.api}
+              staff={practice.staff}
+              demo={true}
+              fixture={null}
+              onLogout={async () => {
+                setSimulatedSignedOut(true);
+              }}
+              onExpired={exit}
+              practice={practice}
+            />
+          </div>
+          <PracticeGuide
+            key={practiceGeneration}
+            session={practice}
+            root={practiceRoot}
+            onExit={exit}
+            onRestart={() => void start(practice.topic)}
+          />
+        </div>
+      )}
+    </>
+  );
+}
+
 function Workspace({
   api,
   staff,
@@ -355,19 +538,25 @@ function Workspace({
   fixture,
   onLogout,
   onExpired,
-}: {
-  api: ClinicApi;
-  staff: Principal;
-  demo: boolean;
-  fixture: ReturnType<typeof createDemoClinic> | null;
-  onLogout: () => Promise<void>;
-  onExpired: () => void;
+  practice,
+  suspended = false,
+  onPractice,
+  practicePending = false,
+}: WorkspaceProps & {
+  practice?: PracticeSession;
+  suspended?: boolean;
+  onPractice?: (topic: PracticeTopic) => void;
+  practicePending?: boolean;
 }): ReactElement {
   const [context, setContext] = useState<{
     screen: Screen;
     patient: Patient | null;
     generation: number;
-  }>({ screen: { kind: 'registry' }, patient: null, generation: 0 });
+  }>({
+    screen: practice?.screen ?? { kind: 'registry' },
+    patient: practice?.patient ?? null,
+    generation: 0,
+  });
   const { screen, patient, generation } = context;
   const [palette, setPalette] = useState(false);
   const paletteOrigin = useRef<HTMLElement | null>(null);
@@ -430,6 +619,7 @@ function Workspace({
     return (): void => window.removeEventListener('beforeunload', guard);
   }, [dirty]);
   useEffect(() => {
+    if (suspended) return;
     function toggle(event: KeyboardEvent): void {
       if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'k') {
         event.preventDefault();
@@ -443,8 +633,9 @@ function Workspace({
     }
     window.addEventListener('keydown', toggle);
     return (): void => window.removeEventListener('keydown', toggle);
-  }, []);
+  }, [suspended]);
   useEffect(() => {
+    if (suspended) return;
     const label =
       toolNames[screen.kind] ??
       (screen.kind === 'chart'
@@ -473,7 +664,7 @@ function Workspace({
     document.title = patient
       ? `${label} · ${patient.fullName} — AMLIG`
       : `${label} — AMLIG`;
-  }, [screen, patient]);
+  }, [screen, patient, suspended]);
   useEffect(() => {
     if (demo) return;
     let active = true;
@@ -586,6 +777,18 @@ function Workspace({
         : screen.kind === 'entry' || screen.kind === 'document'
           ? 'medical'
           : 'details';
+  const helpTopic: PracticeTopic =
+    screen.kind === 'chart'
+      ? screen.tab === 'details'
+        ? 'registry'
+        : screen.tab
+      : screen.kind === 'register' || screen.kind === 'editPatient'
+        ? 'registry'
+        : screen.kind === 'entry'
+          ? 'medical'
+          : screen.kind === 'document'
+            ? 'documents'
+            : screen.kind;
   return (
     <>
       <div className="workspace">
@@ -702,6 +905,18 @@ function Workspace({
                       {chartNames[d]}
                     </Button>
                   ))}
+                  {visibleDisciplines(staff).length > 0 && (
+                    <Button
+                      variant="ghost"
+                      className={`nav-item ${screen.kind === 'historical' ? 'selected' : ''}`}
+                      aria-current={
+                        screen.kind === 'historical' ? 'page' : undefined
+                      }
+                      onClick={() => navigate({ kind: 'historical' })}
+                    >
+                      Historical documents
+                    </Button>
+                  )}
                 </div>
               )}
           </nav>
@@ -734,21 +949,29 @@ function Workspace({
                 {roleNames[staff.role]}
                 {staff.isHead ? ' · Clinic head' : ''}
               </span>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => {
-                  if (
-                    !dirtyRef.current ||
-                    window.confirm('Discard unsaved changes and sign out?')
-                  ) {
-                    selection.current++;
-                    void onLogout();
-                  }
-                }}
-              >
-                Sign out
-              </Button>
+              {!practice && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    if (
+                      !dirtyRef.current ||
+                      window.confirm('Discard unsaved changes and sign out?')
+                    ) {
+                      selection.current++;
+                      void onLogout();
+                    }
+                  }}
+                >
+                  Sign out
+                </Button>
+              )}
+              {practice && (
+                <p className="hint">
+                  Your real session stays active. Exit practice to return to
+                  clinic work.
+                </p>
+              )}
             </div>
           </div>
         </aside>
@@ -788,10 +1011,27 @@ function Workspace({
               )}
             </nav>
             <span className="badge">
-              {demo ? 'Frontend demo · Memory only' : 'Clinic LAN'}
+              {practice
+                ? 'Practice · Memory only'
+                : demo
+                  ? 'Frontend demo · Memory only'
+                  : 'Clinic LAN'}
             </span>
           </header>
           <main id="main-content" ref={heading} tabIndex={-1}>
+            {!practice && onPractice && (
+              <ContextHelp
+                topic={helpTopic}
+                staff={staff}
+                pending={practicePending}
+                onPractice={(topic) => {
+                  setPalette(false);
+                  selection.current++;
+                  setBusy(false);
+                  onPractice(topic);
+                }}
+              />
+            )}
             {available === false && (
               <p className="notice error" role="alert">
                 Clinic server unavailable. Input remains unsaved until a save
@@ -838,7 +1078,7 @@ function Workspace({
               <Registry
                 api={api}
                 staff={staff}
-                demo={demo}
+                demo={demo && !practice}
                 onSelect={(p) => void select(p)}
                 onRegister={() => {
                   navigate({ kind: 'register' });
@@ -848,6 +1088,17 @@ function Workspace({
             )}
             {screen.kind === 'audit' && (
               <AuditViewer api={api} onExpired={onExpired} />
+            )}
+            {screen.kind === 'historical' && patient && (
+              <HistoricalDocuments
+                key={`${staff.id}/${patient.id}`}
+                api={api}
+                staff={staff}
+                patient={patient}
+                practice={Boolean(practice) || demo}
+                onExpired={onExpired}
+                onDirty={markDirty}
+              />
             )}
             {screen.kind === 'appointments' && (
               <Appointments
@@ -871,7 +1122,12 @@ function Workspace({
               />
             )}
             {screen.kind === 'reports' && (
-              <Reports api={api} onExpired={onExpired} demo={demo} />
+              <Reports
+                api={api}
+                onExpired={onExpired}
+                demo={demo}
+                practice={Boolean(practice)}
+              />
             )}
             {screen.kind === 'referrals' && (
               <Referrals
@@ -1011,6 +1267,7 @@ function Workspace({
                 issued={screen.document}
                 kind={screen.documentKind}
                 demo={demo}
+                practice={Boolean(practice)}
                 onDirty={markDirty}
                 onBack={() => backToChart('medical')}
                 onExpired={onExpired}

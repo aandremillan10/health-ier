@@ -7,6 +7,15 @@ import type { AppointmentApi } from './appointments-api';
 import type { LaboratoryApi } from './laboratory-contract';
 import type { MembershipApi } from '../../shared/membership';
 import type { ReferralsApi } from './referrals-contract';
+import type {
+  HistoricalDocumentsRequests,
+  HistoricalDocumentsResponses,
+} from '../../shared/historical-documents-api';
+export type HistoricalApi = {
+  [K in keyof HistoricalDocumentsRequests]: (
+    input: HistoricalDocumentsRequests[K],
+  ) => Promise<Result<HistoricalDocumentsResponses[K]>>;
+};
 // Renderer view model, shared by the explicit demo and the typed desktop bridge adapter.
 export type Role = 'doctor' | 'dentist' | 'medtech' | 'attendant' | 'clerk';
 export type Discipline = 'medical' | 'dental' | 'laboratory';
@@ -128,6 +137,12 @@ export interface ClinicApi
     LaboratoryApi,
     MembershipApi,
     ReferralsApi {
+  selectHistoricalFile: HistoricalApi['selectHistoricalFile'];
+  discardHistoricalFile: HistoricalApi['discardHistoricalFile'];
+  importHistoricalDocument: HistoricalApi['importHistoricalDocument'];
+  listHistoricalDocuments: HistoricalApi['listHistoricalDocuments'];
+  readHistoricalDocument: HistoricalApi['readHistoricalDocument'];
+  readHistoricalDocumentContent: HistoricalApi['readHistoricalDocumentContent'];
   onSessionReset?: (listener: (reason: string) => void) => () => void;
   login(input: {
     username: string;

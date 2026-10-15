@@ -185,6 +185,12 @@ function installDesktop(data: {
         },
       }),
     issueDocument: unavailable,
+    selectHistoricalFile: unavailable,
+    discardHistoricalFile: unavailable,
+    importHistoricalDocument: unavailable,
+    listHistoricalDocuments: unavailable,
+    readHistoricalDocument: unavailable,
+    readHistoricalDocumentContent: unavailable,
     readDocument: () =>
       ok({
         ...data.document,

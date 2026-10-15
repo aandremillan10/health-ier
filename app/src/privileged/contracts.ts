@@ -56,6 +56,10 @@ import {
   timestamp,
   uuid,
 } from './validation';
+import {
+  historicalRequestGuards,
+  historicalResponseGuards,
+} from './historical-contracts';
 
 export const staff = object<Staff>({
   id: uuid,
@@ -256,6 +260,7 @@ function edit<T>(
   };
 }
 export const requestGuards = {
+  ...historicalRequestGuards,
   ...operationsRequestGuards,
   ...summaryRequestGuards,
   ...appointmentRequestGuards,
@@ -315,6 +320,7 @@ export const requestGuards = {
 } satisfies { [K in keyof Requests]: Guard<Requests[K]> };
 export const operationNames = Object.keys(requestGuards) as (keyof Requests)[];
 export const responseGuards = {
+  ...historicalResponseGuards,
   ...operationsResponseGuards,
   ...summaryResponseGuards,
   ...appointmentResponseGuards,
