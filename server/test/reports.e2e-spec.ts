@@ -71,35 +71,6 @@ it('returns operational totals and exports the same snapshot without clinical ro
         },
       ],
     },
-    membership: {
-      findMany: async (): Promise<unknown[]> => [
-        {
-          id: 'm1',
-          patientId: 'employee',
-          state: 'active',
-          effectiveStart: '2026-01-01',
-          effectiveEnd: null,
-        },
-        {
-          id: 'm2',
-          patientId: 'expired',
-          state: 'active',
-          effectiveStart: '2026-01-01',
-          effectiveEnd: '2026-10-01',
-        },
-      ],
-    },
-    dependentLink: {
-      findMany: async (): Promise<unknown[]> => [
-        {
-          membershipId: 'm1',
-          dependentPatientId: 'dependent',
-          state: 'active',
-          effectiveStart: '2026-01-01',
-          effectiveEnd: null,
-        },
-      ],
-    },
     patient: { count: async (): Promise<number> => 3 },
     auditEvent: {
       create: async (value: unknown): Promise<object> => {
@@ -157,9 +128,9 @@ it('returns operational totals and exports the same snapshot without clinical ro
       pendingLabs: 2,
       averageLabMinutes: 90,
       newPatients: 3,
-      employees: 1,
-      dependents: 1,
     });
+    expect(read.body.totals).not.toHaveProperty('employees');
+    expect(read.body.totals).not.toHaveProperty('dependents');
     expect(read.body.daily).toEqual([
       { date: '2026-10-14', visits: 2 },
       { date: '2026-10-15', visits: 1 },
@@ -183,6 +154,8 @@ it('returns operational totals and exports the same snapshot without clinical ro
     expect(exported.body.csv).toContain(
       'summary,Average laboratory turnaround,90,minutes',
     );
+    expect(exported.body.csv).not.toContain('Eligible employees');
+    expect(exported.body.csv).not.toContain('Eligible dependents');
     expect(events).toHaveLength(1);
     await request(app.getHttpServer())
       .post('/reports/export')

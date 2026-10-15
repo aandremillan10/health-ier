@@ -2,6 +2,7 @@ param([string]$BaseUrl = 'http://127.0.0.1:3000', [string]$CredentialsFile = '..
 $ErrorActionPreference = 'Stop'
 $accounts = (Get-Content -LiteralPath $CredentialsFile -Raw | ConvertFrom-Json).accounts
 $tokens = @{}
+$staffIds = @{}
 $count = 0
 function Assert-True($Condition, [string]$Name) { if (-not $Condition) { throw "Assertion failed: $Name" } }
 function Call-Api([string]$Method, [string]$Path, [object]$Body, [string]$User, [int]$Status) {
@@ -29,6 +30,7 @@ Call-Api POST /auth/login @{username='demo.clerk';password='wrong';role='doctor'
 foreach ($account in $accounts) {
   $login = Call-Api POST /auth/login @{username=$account.username;password=$account.password} '' 200
   $tokens[$account.username] = $login.token
+  $staffIds[$account.username] = $login.staff.id
   Assert-True ($login.staff.role -eq $account.role -and $login.staff.isHead -eq $account.isHead) 'trusted principal'
   Assert-True (-not ($login.staff.PSObject.Properties.Name -contains 'passwordHash')) 'principal excludes hashes'
   Call-Api GET /auth/me $null $account.username 200 | Out-Null
@@ -60,8 +62,8 @@ Call-Api GET "/patients/$syntheticPatientId/charts/medical/entries" $null $atten
 Call-Api GET "/patients/$syntheticPatientId/vitals" $null $medtech 403 | Out-Null
 Call-Api POST "/patients/$syntheticPatientId/vitals" @{systolic=120} $doctor 403 | Out-Null
 Call-Api POST "/patients/$syntheticPatientId/vitals" @{oxygenSaturation=101} $attendant 400 | Out-Null
-$vitals = Call-Api POST "/patients/$syntheticPatientId/vitals" @{recordedAt='2026-10-14T10:00:00Z';systolic=240;diastolic=100;temperature=38.5;pulse=90;respiratoryRate=20;oxygenSaturation=97;weight=$null} $attendant 201
-Assert-True ($null -eq $vitals.weight -and $vitals.systolic -eq 240) 'null and abnormal measurements'
+$vitals = Call-Api POST "/patients/$syntheticPatientId/vitals" @{recordedAt='2026-10-14T10:00:00Z';systolic=240;diastolic=100;temperature=38.5;pulse=90;respiratoryRate=20;oxygenSaturation=97;height=165;weight=$null} $attendant 201
+Assert-True ($null -eq $vitals.weight -and $vitals.systolic -eq 240 -and $vitals.height -eq 165) 'nullable and abnormal measurements with height'
 $entryBody = @{consultationDate='2026-10-14';ageAtConsultation=36;cs=$null;vitalsId=$vitals.id;reason='Synthetic symptoms';findings='Synthetic findings';clinicalImpression='Synthetic impression';plan='Synthetic plan'}
 Call-Api POST "/patients/$syntheticPatientId/charts/medical/entries" $entryBody $doctor 400 | Out-Null
 $vitals = Call-Api PATCH "/vitals/$($vitals.id)" @{expectedRevision=1;pulse=91} $attendant 200
@@ -70,8 +72,16 @@ $vitals = Call-Api POST "/vitals/$($vitals.id)/finalize" @{expectedRevision=2} $
 Call-Api PATCH "/vitals/$($vitals.id)" @{expectedRevision=3;pulse=92} $attendant 409 | Out-Null
 $vitalCorrection = Call-Api POST "/vitals/$($vitals.id)/corrections" @{expectedRevision=3;reason='Synthetic correction';correctedContent=@{pulse=92}} $attendant 201
 Assert-True ($vitalCorrection.original.pulse -eq 91 -and $vitalCorrection.original.revision -eq 4 -and $vitalCorrection.correction.sourceRevision -eq 3) 'vitals preserved correction'
+$headVitalCorrection = Call-Api POST "/vitals/$($vitals.id)/corrections" @{expectedRevision=4;reason='Head correction of synthetic transcription';correctedContent=@{height=166}} $head 201
+Assert-True ($headVitalCorrection.original.height -eq 165 -and $headVitalCorrection.original.revision -eq 5 -and $headVitalCorrection.correction.authorId -eq $staffIds[$head] -and $headVitalCorrection.correction.sourceRevision -eq 4) 'head correction preserves and attributes finalized vitals'
+Call-Api POST "/vitals/$($vitals.id)/corrections" @{expectedRevision=5;reason='Non-head attempt';correctedContent=@{height=167}} $doctor 403 | Out-Null
+Call-Api POST "/vitals/$($vitals.id)/corrections" @{expectedRevision=4;reason='Stale head attempt';correctedContent=@{height=167}} $head 409 | Out-Null
 $listedVitals = @(Call-Api GET "/patients/$syntheticPatientId/vitals" $null $doctor 200)
-Assert-True ($listedVitals[0].corrections.Count -eq 1) 'vitals correction history'
+$listedVitalsRecord = $listedVitals | Where-Object id -eq $vitals.id
+Assert-True ($listedVitalsRecord.corrections.Count -eq 2 -and $listedVitalsRecord.height -eq 165) 'vitals and correction history'
+$draftVitals = Call-Api POST "/patients/$syntheticPatientId/vitals" @{recordedAt='2026-10-14T11:00:00Z';height=$null} $attendant 201
+Assert-True ($null -eq $draftVitals.height) 'unknown height remains null'
+Call-Api PATCH "/vitals/$($draftVitals.id)" @{expectedRevision=1;height=170} $head 403 | Out-Null
 $second = Call-Api POST /patients @{fullName='Synthetic Other Patient'} $clerk 201
 Call-Api POST "/patients/$($second.id)/charts/medical/entries" $entryBody $doctor 400 | Out-Null
 $entry = Call-Api POST "/patients/$syntheticPatientId/charts/medical/entries" $entryBody $doctor 201
@@ -125,13 +135,29 @@ $fixture = '20000000-0000-4000-8000-000000000001'
 foreach ($role in @('demo.medtech.one','demo.medtech.two',$head)) { Call-Api GET "/patients/$fixture/charts/laboratory/entries" $null $role 200 | Out-Null }
 foreach ($role in @($doctor,$dentist,$clerk,$attendant)) { Call-Api GET "/patients/$fixture/charts/laboratory/entries" $null $role 403 | Out-Null }
 foreach ($role in @('demo.dentist.one','demo.dentist.two',$head)) { Call-Api GET "/patients/$fixture/charts/dental/entries" $null $role 200 | Out-Null }
+$removedHmoRoutes = 0
+foreach ($route in @(
+  @('GET', "/patients/$syntheticPatientId/family?asOf=2026-10-14"),
+  @('POST', "/patients/$syntheticPatientId/membership"),
+  @('PATCH', '/memberships/28000000-0000-4000-8000-000000000001'),
+  @('POST', '/memberships/28000000-0000-4000-8000-000000000001/corrections'),
+  @('POST', '/memberships/28000000-0000-4000-8000-000000000001/dependents'),
+  @('PATCH', '/dependent-links/38000000-0000-4000-8000-000000000001'),
+  @('POST', '/dependent-links/38000000-0000-4000-8000-000000000001/corrections'),
+  @('POST', '/dependent-links/38000000-0000-4000-8000-000000000001/unlink'),
+  @('GET', '/memberships/28000000-0000-4000-8000-000000000001/history'),
+  @('GET', '/dependent-links/38000000-0000-4000-8000-000000000001/history')
+)) {
+  Call-Api $route[0] $route[1] $null $clerk 404 | Out-Null
+  $removedHmoRoutes++
+}
 Call-Api PATCH /entries/30000000-0000-4000-8000-000000000001 @{expectedRevision=1;text='colleague attempt'} 'demo.dentist.two' 403 | Out-Null
 Call-Api PATCH /entries/30000000-0000-4000-8000-000000000002 @{expectedRevision=1;text='colleague attempt'} 'demo.medtech.two' 403 | Out-Null
 Call-Api GET "/patients/$syntheticPatientId/charts/medical/entries" $null $head 200 | Out-Null
 Call-Api POST /auth/logout @{} $doctor 200 | Out-Null
 Call-Api GET /auth/me $null $doctor 401 | Out-Null
 Call-Api GET "/documents/$($document.id)" $null $doctor 401 | Out-Null
-$evidence = @{requestAssertions=$count;patientId=$syntheticPatientId;vitalsId=$vitals.id;entryId=$eid;documentId=$document.id;certificateId=$certificate.id;expectedEntryRevision=4;generatedAt=[DateTime]::UtcNow.ToString('o')}
+$evidence = @{requestAssertions=$count;patientId=$syntheticPatientId;vitalsId=$vitals.id;vitalsHeightCm=$vitals.height;headVitalCorrectionId=$headVitalCorrection.correction.id;headVitalCorrectionSourceRevision=$headVitalCorrection.correction.sourceRevision;entryId=$eid;documentId=$document.id;certificateId=$certificate.id;removedHmoRoutes=$removedHmoRoutes;expectedEntryRevision=4;generatedAt=[DateTime]::UtcNow.ToString('o')}
 $privateDirectory = Split-Path -Parent $CredentialsFile
 $evidence | ConvertTo-Json | Set-Content -LiteralPath (Join-Path $privateDirectory 'api-evidence.json')
 Write-Output "Live curl.exe assertions passed: $count. Evidence contains only synthetic IDs; tokens/passwords not logged."

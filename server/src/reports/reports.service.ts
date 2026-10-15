@@ -21,28 +21,12 @@ interface Report {
     pendingLabs: number;
     averageLabMinutes: number | null;
     newPatients: number;
-    employees: number;
-    dependents: number;
   };
   daily: { date: string; visits: number }[];
   departments: {
     discipline: 'medical' | 'dental' | 'laboratory';
     patients: number;
   }[];
-}
-function eligible(
-  record: {
-    state: string;
-    effectiveStart: string;
-    effectiveEnd: string | null;
-  },
-  day: string,
-): boolean {
-  return (
-    record.state === 'active' &&
-    record.effectiveStart <= day &&
-    (!record.effectiveEnd || record.effectiveEnd >= day)
-  );
 }
 export function reportCsv(report: Report): string {
   const rows: (string | number | null)[][] = [
@@ -64,8 +48,6 @@ export function reportCsv(report: Report): string {
       report.totals.newPatients,
       'count',
     ],
-    ['summary', 'Eligible employees', report.totals.employees, 'count'],
-    ['summary', 'Eligible dependents', report.totals.dependents, 'count'],
     ...report.daily.map((row) => ['daily', row.date, row.visits, 'visits']),
     ...report.departments.map((row) => [
       'department',
@@ -105,55 +87,36 @@ export class ReportsService {
     tx: Prisma.TransactionClient,
     range: ReturnType<typeof clinicRange>,
   ): Promise<Report> {
-    const [appointments, labs, newPatients, memberships, links] =
-      await Promise.all([
-        tx.appointment.findMany({
-          where: {
-            clinicId: clinicId(),
-            scheduledAt: { gte: range.gte, lt: range.lt },
+    const [appointments, labs, newPatients] = await Promise.all([
+      tx.appointment.findMany({
+        where: {
+          clinicId: clinicId(),
+          scheduledAt: { gte: range.gte, lt: range.lt },
+        },
+        select: {
+          patientId: true,
+          discipline: true,
+          status: true,
+          scheduledAt: true,
+        },
+      }),
+      tx.labOrder.findMany({
+        where: { createdAt: { gte: range.gte, lt: range.lt } },
+        select: {
+          status: true,
+          createdAt: true,
+          results: {
+            where: { status: 'finalized' },
+            orderBy: { finalizedAt: 'asc' },
+            take: 1,
+            select: { finalizedAt: true },
           },
-          select: {
-            patientId: true,
-            discipline: true,
-            status: true,
-            scheduledAt: true,
-          },
-        }),
-        tx.labOrder.findMany({
-          where: { createdAt: { gte: range.gte, lt: range.lt } },
-          select: {
-            status: true,
-            createdAt: true,
-            results: {
-              where: { status: 'finalized' },
-              orderBy: { finalizedAt: 'asc' },
-              take: 1,
-              select: { finalizedAt: true },
-            },
-          },
-        }),
-        tx.patient.count({
-          where: { createdAt: { gte: range.gte, lt: range.lt } },
-        }),
-        tx.membership.findMany({
-          select: {
-            id: true,
-            patientId: true,
-            state: true,
-            effectiveStart: true,
-            effectiveEnd: true,
-          },
-        }),
-        tx.dependentLink.findMany({
-          select: {
-            membershipId: true,
-            dependentPatientId: true,
-            state: true,
-            effectiveStart: true,
-            effectiveEnd: true,
-          },
-        }),
-      ]);
+        },
+      }),
+      tx.patient.count({
+        where: { createdAt: { gte: range.gte, lt: range.lt } },
+      }),
+    ]);
     const daily = new Map<string, number>();
     const lastDay = Date.parse(`${range.to}T00:00:00Z`);
     for (
@@ -199,8 +162,6 @@ export class ReportsService {
       turnarounds.every((minutes) => Number.isFinite(minutes) && minutes >= 0),
       'Laboratory timestamps must preserve ordering.',
     );
-    const active = memberships.filter((member) => eligible(member, range.to));
-    const membershipIds = new Set(active.map((member) => member.id));
     const totals = {
       visits,
       noShows,
@@ -215,15 +176,6 @@ export class ReportsService {
           ) / 10
         : null,
       newPatients,
-      employees: new Set(active.map((member) => member.patientId)).size,
-      dependents: new Set(
-        links
-          .filter(
-            (link) =>
-              membershipIds.has(link.membershipId) && eligible(link, range.to),
-          )
-          .map((link) => link.dependentPatientId),
-      ).size,
     };
     const content = {
       from: range.from,
