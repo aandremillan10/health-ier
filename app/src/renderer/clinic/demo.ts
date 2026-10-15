@@ -12,6 +12,7 @@ import { createOperationsDemo } from './operations-demo';
 import type { DemoAuditInput } from './operations-demo';
 import type { Result as WireResult } from '../../shared/clinic-api';
 import { createReferralsDemo } from './referrals-demo';
+import { createHistoricalDemo } from './historical-demo';
 import type {
   ClinicApi,
   ClinicDocument,
@@ -369,6 +370,7 @@ export function createDemoClinic(): {
     check: () => guard<never>(),
   });
   const api: ClinicApi = {
+    ...createHistoricalDemo(() => principal),
     ...referrals.api,
     ...membership.api,
     ...operations.api,
@@ -810,6 +812,10 @@ export function createDemoClinic(): {
     },
   };
   const auditActions = {
+    importHistoricalDocument: ['create', 'historical-document'],
+    listHistoricalDocuments: ['view', 'historical-document'],
+    readHistoricalDocument: ['view', 'historical-document'],
+    readHistoricalDocumentContent: ['view', 'historical-document'],
     listReferrals: ['view', 'referral'],
     listReferralInbox: ['view', 'referral'],
     listSentReferrals: ['view', 'referral'],

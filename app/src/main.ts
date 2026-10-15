@@ -1,4 +1,12 @@
-import { app, BrowserWindow, ipcMain, net, session } from 'electron';
+import {
+  app,
+  BrowserWindow,
+  dialog,
+  ipcMain,
+  nativeImage,
+  net,
+  session,
+} from 'electron';
 import { join } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { randomUUID } from 'node:crypto';
@@ -7,6 +15,8 @@ import { ClinicBroker } from './privileged/broker';
 import { operationNames } from './privileged/contracts';
 import { createPrintService } from './privileged/printing';
 import { renderDocument } from './printing/template';
+import { readPickedHistoricalFile } from './privileged/file-picker';
+import type { PickedHistoricalFile } from './privileged/historical-selection';
 
 function createWindow(): void {
   const window = new BrowserWindow(
@@ -97,6 +107,29 @@ function createWindow(): void {
     senderId: window.webContents.id,
     fetch: (url, options): Promise<Response> => net.fetch(url, options),
     printer,
+    historicalFilePicker: {
+      pick: async (): Promise<PickedHistoricalFile | null> => {
+        const result = await dialog.showOpenDialog(window, {
+          title: 'Choose historical patient record',
+          properties: ['openFile'],
+          filters: [
+            {
+              name: 'PDF or JPEG historical record',
+              extensions: ['pdf', 'jpg', 'jpeg'],
+            },
+          ],
+        });
+        if (result.canceled || result.filePaths.length !== 1) return null;
+        const picked = await readPickedHistoricalFile(result.filePaths[0]);
+        if (picked.mimeType === 'image/jpeg') {
+          const image = nativeImage.createFromBuffer(Buffer.from(picked.bytes));
+          const size = image.getSize();
+          if (image.isEmpty() || size.width * size.height > 40_000_000)
+            throw new Error('JPEG image cannot be decoded safely');
+        }
+        return picked;
+      },
+    },
     reset: (event): void => {
       if (!window.isDestroyed() && !window.webContents.isDestroyed())
         window.webContents.send('clinic:session-reset', event);

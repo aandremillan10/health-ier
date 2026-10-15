@@ -38,6 +38,58 @@ export async function httpsTransport(events: MirrorEvent[]): Promise<unknown> {
   if (raw.length > 64000) throw new MirrorFailure('INVALID_ACK');
   return JSON.parse(raw) as unknown;
 }
+export async function httpsHistoricalTransport(
+  event: MirrorEvent,
+  bytes: Buffer,
+): Promise<void> {
+  let url: URL;
+  try {
+    url = new URL(process.env.MIRROR_URL ?? '');
+  } catch {
+    throw new MirrorFailure('INVALID_ENDPOINT');
+  }
+  if (
+    url.protocol !== 'https:' ||
+    url.username ||
+    url.password ||
+    url.hash ||
+    url.search ||
+    url.pathname !== '/internal/mirror/events'
+  )
+    throw new MirrorFailure('INVALID_ENDPOINT');
+  url.pathname = '/internal/mirror/historical-files';
+  const response = await fetch(url, {
+    method: 'POST',
+    redirect: 'error',
+    signal: AbortSignal.timeout(30000),
+    headers: {
+      'content-type': 'application/json',
+      authorization: `Bearer ${process.env.MIRROR_MACHINE_TOKEN ?? ''}`,
+    },
+    body: JSON.stringify({
+      clinicId: event.clinicId,
+      event,
+      contentBase64: bytes.toString('base64'),
+    }),
+  });
+  if (!response.ok) throw new MirrorFailure(`REMOTE_HTTP_${response.status}`);
+  const raw = await response.text();
+  if (raw.length > 100) throw new MirrorFailure('INVALID_ACK');
+  let acknowledgment: unknown;
+  try {
+    acknowledgment = JSON.parse(raw) as unknown;
+  } catch {
+    throw new MirrorFailure('INVALID_ACK');
+  }
+  if (
+    typeof acknowledgment !== 'object' ||
+    acknowledgment === null ||
+    Object.keys(acknowledgment).length !== 1 ||
+    !('stored' in acknowledgment) ||
+    acknowledgment.stored !== true
+  )
+    throw new MirrorFailure('INVALID_ACK');
+}
 @Injectable()
 export class MirrorWorker implements OnModuleInit, OnModuleDestroy {
   private timer: ReturnType<typeof setTimeout> | undefined;
@@ -56,7 +108,10 @@ export class MirrorWorker implements OnModuleInit, OnModuleDestroy {
   }
   private async tick(): Promise<void> {
     try {
-      const delivered = await this.mirror.deliver(httpsTransport);
+      const delivered = await this.mirror.deliver(
+        httpsTransport,
+        httpsHistoricalTransport,
+      );
       const status = await this.mirror.status();
       this.backoff =
         delivered > 0 || status.pending === 0

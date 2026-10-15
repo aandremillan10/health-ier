@@ -24,7 +24,9 @@ export class AuditInterceptor implements NestInterceptor {
       )
     )
       return next.handle();
-    const resourceType = req.path.split('/')[1];
+    const resourceType = req.path.includes('/historical-documents')
+      ? 'historical-document'
+      : req.path.split('/')[1];
     const validId = (value: unknown): string | undefined =>
       typeof value === 'string' && /^[0-9a-f-]{36}$/i.test(value)
         ? value
@@ -56,20 +58,22 @@ export class AuditInterceptor implements NestInterceptor {
       }),
       catchError(async (error: unknown): Promise<never> => {
         const action: AuditAction =
-          req.method === 'GET' || req.path === '/documents/preview'
-            ? 'view'
-            : req.path.includes('correction')
-              ? 'correction'
-              : req.path === '/reports/export'
-                ? 'export'
-                : req.path.endsWith('/finalize')
-                  ? 'finalize'
-                  : req.method === 'PATCH' ||
-                      /\/(transitions|inactivate|unlink|accept|start|cancel|reject|review|complete)$/.test(
-                        req.path,
-                      )
-                    ? 'change'
-                    : 'create';
+          req.path.endsWith('/historical-documents') && req.method === 'POST'
+            ? 'import'
+            : req.method === 'GET' || req.path === '/documents/preview'
+              ? 'view'
+              : req.path.includes('correction')
+                ? 'correction'
+                : req.path === '/reports/export'
+                  ? 'export'
+                  : req.path.endsWith('/finalize')
+                    ? 'finalize'
+                    : req.method === 'PATCH' ||
+                        /\/(transitions|inactivate|unlink|accept|start|cancel|reject|review|complete)$/.test(
+                          req.path,
+                        )
+                      ? 'change'
+                      : 'create';
         try {
           await recordAudit(this.db, req.staff, {
             ...metadata(),

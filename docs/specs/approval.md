@@ -1,5 +1,21 @@
 # clinic-demo-v1.2 approval and amendment history
 
+## Historical scans and audit implementation amendment, 2026-10-15
+
+After the guided-onboarding request, the user explicitly expanded the build:
+
+> Oh actually lets implement what needs to be implemented in issue 17 and 19.
+
+The user selected S3 storage:
+
+> Setup a MinIO and use S3. Check the deployed server as well using my railway plugin here on chatgpt to set that up for the cloud server.
+
+The discipline-based access recommendation was approved: own-discipline doctor/dentist/medtech import/read, head oversight read across disciplines while own medical import authority remains, clerk/attendant denied scan metadata and content. After the cloud scope question, the user explicitly selected:
+
+> Mirror scans one-way to Railway; cloud remains read-only
+
+After being informed that upstream MinIO is archived, the user selected Railway managed S3-compatible cloud storage; pinned local MinIO remains a demo-only EDGE choice. This amendment authorizes implementing #17/#19 and approved historical-file mirroring, superseding the earlier backend freeze for these tickets and the exclusion of these scans only. Other attachment categories/secrets stay excluded. [ADR-0003](../adr/0003-historical-record-s3-mirror.md) and the [historical document contract](../features/historical-documents.md) record the bounded implementation. The 10MiB cap is an implementation default, not a separate user-selected value. Source/setup preparation, additive cloud resource configuration, actual code deployment and desktop QA retain their distinct authorization/evidence boundaries. Existing retained clinic infrastructure was not changed by writing the setup files.
+
 Current version: **clinic-demo-v1.2**, user-requested UI refinement on **2026-10-15, Asia/Manila**. The clinic-demo-v1.1 mirror scope and original v1 approval/history remain unchanged below.
 
 Exact user instructions:

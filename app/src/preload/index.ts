@@ -17,6 +17,30 @@ function invoke<K extends keyof Requests>(
   >;
 }
 const clinic = Object.freeze({
+  selectHistoricalFile: (
+    input: Requests['selectHistoricalFile'],
+  ): Promise<Result<Responses['selectHistoricalFile']>> =>
+    invoke('selectHistoricalFile', input),
+  discardHistoricalFile: (
+    input: Requests['discardHistoricalFile'],
+  ): Promise<Result<Responses['discardHistoricalFile']>> =>
+    invoke('discardHistoricalFile', input),
+  importHistoricalDocument: (
+    input: Requests['importHistoricalDocument'],
+  ): Promise<Result<Responses['importHistoricalDocument']>> =>
+    invoke('importHistoricalDocument', input),
+  listHistoricalDocuments: (
+    input: Requests['listHistoricalDocuments'],
+  ): Promise<Result<Responses['listHistoricalDocuments']>> =>
+    invoke('listHistoricalDocuments', input),
+  readHistoricalDocument: (
+    input: Requests['readHistoricalDocument'],
+  ): Promise<Result<Responses['readHistoricalDocument']>> =>
+    invoke('readHistoricalDocument', input),
+  readHistoricalDocumentContent: (
+    input: Requests['readHistoricalDocumentContent'],
+  ): Promise<Result<Responses['readHistoricalDocumentContent']>> =>
+    invoke('readHistoricalDocumentContent', input),
   listReferrals: (
     input: Requests['listReferrals'],
   ): Promise<Result<Responses['listReferrals']>> =>

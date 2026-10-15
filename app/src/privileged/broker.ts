@@ -29,6 +29,15 @@ import {
 } from './membership-contracts';
 import type { MembershipRequests } from '../shared/membership';
 import { referralsRoute } from './referrals-contracts';
+import {
+  historicalRoute,
+  historicalResponseGuards,
+} from './historical-contracts';
+import {
+  HistoricalSelections,
+  type HistoricalFilePicker,
+} from './historical-selection';
+import { createHash } from 'node:crypto';
 
 export interface RequestSender {
   senderId: number;
@@ -54,6 +63,7 @@ export interface BrokerOptions {
   reset: (event: SessionReset) => void;
   printer: PrintService;
   timeoutMs?: number;
+  historicalFilePicker?: HistoricalFilePicker;
 }
 type ErrorDetails = {
   fieldErrors?: Record<string, string>;
@@ -149,6 +159,8 @@ interface Route {
   body?: unknown;
 }
 function route<K extends keyof Requests>(name: K, input: Requests[K]): Route {
+  const historical = historicalRoute(name, input);
+  if (historical) return historical;
   const referral = referralsRoute(name, input);
   if (referral) return referral;
   if (Object.hasOwn(membershipRequestGuards, name))
@@ -257,6 +269,8 @@ export class ClinicBroker {
   private principal: Staff | undefined;
   private generation = 0;
   private readonly pending = new Set<AbortController>();
+  private readonly historicalSelections = new HistoricalSelections();
+  private historicalPickerActive = false;
   constructor(private readonly options: BrokerOptions) {
     this.origin = serverOrigin(
       options.serverUrl,
@@ -265,6 +279,7 @@ export class ClinicBroker {
     );
   }
   clear(reason: SessionReset['reason']): void {
+    this.historicalSelections.clear();
     this.token = undefined;
     this.principal = undefined;
     this.generation += 1;
@@ -349,7 +364,9 @@ export class ClinicBroker {
       )
         throw new BoundaryError('INVALID_RESPONSE', 'Expected JSON');
       const raw = await response.text();
-      if (raw.length > 2_000_000)
+      if (
+        raw.length > (target.path.endsWith('/content') ? 15_000_000 : 2_000_000)
+      )
         throw new BoundaryError('INVALID_RESPONSE', 'Response too large');
       try {
         return JSON.parse(raw) as unknown;
@@ -416,7 +433,97 @@ export class ClinicBroker {
       return failed('UNAUTHENTICATED');
     try {
       let data: unknown;
-      if (name === 'listPrinters')
+      if (name === 'selectHistoricalFile') {
+        if (
+          !this.options.historicalFilePicker ||
+          !this.principal ||
+          !['doctor', 'dentist', 'medtech'].includes(this.principal.role)
+        )
+          return failed('FORBIDDEN');
+        if (this.historicalPickerActive) return failed('CONFLICT');
+        this.historicalPickerActive = true;
+        try {
+          let picked: Awaited<ReturnType<HistoricalFilePicker['pick']>>;
+          try {
+            picked = await this.options.historicalFilePicker.pick();
+          } catch {
+            throw new BoundaryError(
+              'VALIDATION',
+              'Choose a valid PDF or JPEG up to10MiB.',
+            );
+          }
+          if (generation !== this.generation || token !== this.token) {
+            picked?.bytes.fill(0);
+            return failed('SESSION_CHANGED');
+          }
+          const selected = input as Requests['selectHistoricalFile'];
+          let selection: Responses['selectHistoricalFile']['selection'];
+          try {
+            selection = picked
+              ? this.historicalSelections.store(selected.patientId, picked)
+              : null;
+          } catch {
+            picked?.bytes.fill(0);
+            throw new BoundaryError(
+              'VALIDATION',
+              'The selected historical file is invalid.',
+            );
+          }
+          picked?.bytes.fill(0);
+          if (!picked) this.historicalSelections.clear();
+          data = { selection };
+        } finally {
+          this.historicalPickerActive = false;
+        }
+      } else if (name === 'discardHistoricalFile') {
+        this.historicalSelections.discard(
+          (input as Requests['discardHistoricalFile']).selectionToken,
+        );
+        data = { discarded: true };
+      } else if (name === 'importHistoricalDocument') {
+        const upload = input as Requests['importHistoricalDocument'];
+        let selected: ReturnType<HistoricalSelections['read']>;
+        try {
+          selected = this.historicalSelections.read(
+            upload.patientId,
+            upload.selectionToken,
+          );
+        } catch {
+          return failed('VALIDATION');
+        }
+        const { patientId, selectionToken, ...fields } = upload;
+        const selectedSha256 = createHash('sha256')
+          .update(selected.bytes)
+          .digest('hex');
+        const raw = await this.request(
+          {
+            path: `/patients/${patientId}/historical-documents`,
+            method: 'POST',
+            body: {
+              ...fields,
+              id: selectionToken,
+              filename: selected.selection.filename,
+              mimeType: selected.selection.mimeType,
+              contentBase64: selected.bytes.toString('base64'),
+            },
+          },
+          token,
+        );
+        if (generation !== this.generation || token !== this.token)
+          return failed('SESSION_CHANGED');
+        const saved = historicalResponseGuards.importHistoricalDocument(raw);
+        if (
+          saved.patientId !== patientId ||
+          saved.id !== selectionToken ||
+          saved.sha256 !== selectedSha256
+        )
+          throw new BoundaryError(
+            'INVALID_RESPONSE',
+            'Import identity mismatch',
+          );
+        this.historicalSelections.discard(selectionToken);
+        data = saved;
+      } else if (name === 'listPrinters')
         data = await this.options.printer.listPrinters();
       else if (name === 'printDocument') {
         const options = input as Requests['printDocument'];
@@ -518,6 +625,48 @@ export class ClinicBroker {
                 : patientIdentity
               : responseGuards[name as keyof typeof responseGuards];
           data = guard(raw);
+          if (
+            name === 'listHistoricalDocuments' ||
+            name === 'readHistoricalDocument' ||
+            name === 'readHistoricalDocumentContent'
+          ) {
+            const wanted = input as Requests['readHistoricalDocument'];
+            const rows =
+              name === 'listHistoricalDocuments'
+                ? (data as Responses['listHistoricalDocuments']).documents
+                : [
+                    name === 'readHistoricalDocumentContent'
+                      ? (data as Responses['readHistoricalDocumentContent'])
+                          .document
+                      : (data as Responses['readHistoricalDocument']),
+                  ];
+            if (
+              rows.some(
+                (row) =>
+                  row.patientId !== wanted.patientId ||
+                  (wanted.id !== undefined && row.id !== wanted.id),
+              )
+            )
+              throw new BoundaryError(
+                'INVALID_RESPONSE',
+                'Historical record identity mismatch',
+              );
+            if (name === 'readHistoricalDocumentContent') {
+              const content =
+                data as Responses['readHistoricalDocumentContent'];
+              const bytes = Buffer.from(content.contentBase64, 'base64');
+              if (
+                bytes.toString('base64') !== content.contentBase64 ||
+                bytes.length !== content.document.byteLength ||
+                createHash('sha256').update(bytes).digest('hex') !==
+                  content.document.sha256
+              )
+                throw new BoundaryError(
+                  'INVALID_RESPONSE',
+                  'Historical content mismatch',
+                );
+            }
+          }
           if (input && typeof input === 'object' && 'patientId' in input) {
             const wantedPatient = String(input.patientId).toLowerCase();
             const rows = Array.isArray(data) ? data : [data];

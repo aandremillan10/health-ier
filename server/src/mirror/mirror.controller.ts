@@ -44,6 +44,16 @@ export class MirrorController {
   ): Promise<MirrorResult> {
     return this.controlled(authorization, () => this.mirror.ingest(body));
   }
+  @Post('historical-files')
+  @HttpCode(200)
+  historicalFiles(
+    @Headers('authorization') authorization: string | undefined,
+    @Body() body: unknown,
+  ): Promise<{ stored: true }> {
+    return this.controlled(authorization, () =>
+      this.mirror.stageHistorical(body),
+    );
+  }
   @Get('status')
   status(
     @Headers('authorization') authorization: string | undefined,

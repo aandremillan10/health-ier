@@ -1,0 +1,16 @@
+---
+status: accepted
+date: 2026-10-15
+---
+
+# Keep historical scans in local S3 storage and mirror them outbound
+
+The user explicitly authorized implementing issues #17/#19, selected local MinIO/S3 and discipline-specific access, then approved "Mirror scans one-way to Railway; cloud remains read-only" on 2026-10-15. This supersedes ADR-0002's exclusion of these approved historical attachments only. Other attachment categories, credentials, sessions, infrastructure secrets and signature images remain excluded. The user selected Railway managed S3-compatible storage for CLOUD after being informed that upstream MinIO is archived. The retained local MinIO implementation is constrained to demo use because of that upstream maintenance risk; this is an implementation limitation rather than a separate user selection.
+
+EDGE stores immutable PDF/JPEG objects in a durable local MinIO volume and patient-linked metadata in PostgreSQL. The application uses bucket-scoped credentials; MinIO administrator credentials stay in the local setup service. PostgreSQL bytea was considered for atomic persistence, but the user selected S3. Upload stages a unique immutable object first, then transactionally commits metadata, import audit and the existing durable outbox event. Stable per-selection import IDs provide idempotency; verified rollback attempts compensation, uncertain commits preserve bytes, and private orphan objects require reconciliation against authoritative metadata. No workstation persistence or WAN fallback is introduced.
+
+The existing outbound machine-authenticated mirror sends each scan's immutable metadata plus bytes to a bounded companion CLOUD intake, then submits its existing metadata event. Bytes are excluded from durable JSON outbox payloads; the worker retrieves them from local storage. The companion uses canonical base64 JSON for the demo (approximately 33% wire overhead, bounded to 15MiB JSON/10MiB decoded), avoiding a separate transport/parser framework. CLOUD owns its separate S3 credentials and acknowledges the original event only after verifying stored bytes and dependencies. Missing objects, outages or lost acknowledgements leave durable events pending; local saves never await CLOUD. Bootstrap includes approved historical metadata and replays the corresponding local bytes. This remains one-way with staff cloud writes denied.
+
+The 10MiB per-file limit is a chosen bounded implementation default, not a separate user-selected value. Doctors/dentists/medtechs import and read their discipline; head oversight reads all but does not expand import authority. Clerk/attendant scan metadata and contents are denied. Only the original uploader may append a replacement; originals and attribution remain immutable. PDF framing checks are not complete sanitization: previews use PDF.js byte-array canvas rendering without scripting, eval or remote resource loading, with page/pixel bounds; JPEG dimensions are bounded before native decoding. No native PDF/OS opener can bypass the application audit boundary.
+
+Infrastructure provisioning/configuration and code deployment are distinct. Source changes and additive local setup files do not mutate retained clinic deployments. Actual packaged preview, live EDGE/CLOUD delivery and restart proof require their separately authorized verification stages.
