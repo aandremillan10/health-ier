@@ -335,6 +335,7 @@ describe('production practice isolation', () => {
       respiratoryRate: null,
       oxygenSaturation: null,
       weight: null,
+      height: null,
     };
     const saved = data(
       await session.api.saveVitals({ ...fields, patientId: 'DEMO-0001' }),
@@ -358,43 +359,20 @@ describe('production practice isolation', () => {
     expect(corrected.corrections[0]?.authorId).toBe(session.staff.id);
     session.dispose();
   });
-  it('maintains membership eligibility/history and appointment transitions in local state', async () => {
-    const session = await open('clerk', 'family');
-    const family = data(
-      await session.api.readPatientFamily({ patientId: 'DEMO-0001' }),
-    );
-    expect(family.membership?.dependents).toHaveLength(1);
-    const member = family.membership!;
-    data(
-      await session.api.updateMembership({
-        id: member.id,
-        expectedRevision: member.revision,
-        memberNumber: member.memberNumber!,
-        state: 'inactive',
-        effectiveStart: member.effectiveStart,
-        effectiveEnd: null,
-        reason: 'Practice inactive',
-      }),
-    );
-    expect(
-      data(await session.api.readPatientFamily({ patientId: 'DEMO-0001' }))
-        .membership?.eligibility,
-    ).toBe('inactive');
-    expect(
-      data(await session.api.readMembershipHistory({ id: member.id })),
-    ).toHaveLength(2);
+  it('maintains appointment transitions in local state', async () => {
+    const appointmentSession = await open('clerk', 'appointments');
     const appointment = data(
-      await session.api.listAppointments({ date: today() }),
+      await appointmentSession.api.listAppointments({ date: today() }),
     )[0]!;
     const arrived = data(
-      await session.api.transitionAppointment({
+      await appointmentSession.api.transitionAppointment({
         id: appointment.id,
         expectedRevision: appointment.revision,
         status: 'arrived',
       }),
     );
     const waiting = data(
-      await session.api.transitionAppointment({
+      await appointmentSession.api.transitionAppointment({
         id: arrived.id,
         expectedRevision: arrived.revision,
         status: 'waiting',
@@ -403,14 +381,14 @@ describe('production practice isolation', () => {
     expect(waiting.history).toHaveLength(3);
     expect(
       (
-        await session.api.transitionAppointment({
+        await appointmentSession.api.transitionAppointment({
           id: waiting.id,
           expectedRevision: waiting.revision,
           status: 'with_provider',
         })
       ).ok,
     ).toBe(false);
-    session.dispose();
+    appointmentSession.dispose();
   });
   it('performs laboratory roles without switching real accounts', async () => {
     const medtech = await open('medtech', 'laboratory');
@@ -528,9 +506,6 @@ describe('production practice isolation', () => {
         content: {
           kind: 'allergy',
           substance: 'Practice substance',
-          reaction: null,
-          severity: 'unknown',
-          onsetDate: null,
         },
         source: 'Practice record',
         notes: null,

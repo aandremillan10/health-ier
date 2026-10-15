@@ -131,8 +131,6 @@ function install(fixture: ReturnType<typeof createDemoClinic>): void {
             pendingLabs: 0,
             averageLabMinutes: null,
             newPatients: 3,
-            employees: 2,
-            dependents: 1,
           },
           daily,
           departments:
@@ -309,6 +307,8 @@ test('report charts keep exact data and handle a single day, zero values, and a 
     exact: true,
   });
   await expect(chart).toBeVisible();
+  await expect(page.getByText('Employees', { exact: true })).toHaveCount(0);
+  await expect(page.getByText('Dependents', { exact: true })).toHaveCount(0);
   await expect(
     page.getByRole('figure', { name: 'Patients by department', exact: true }),
   ).toContainText('5');

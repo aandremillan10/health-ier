@@ -221,8 +221,7 @@ export function Reports({
           Refresh applied report
         </Button>
         <p className="hint report-range-help">
-          Use up to 366 days. Both dates are included. Membership and dependent
-          totals use eligibility on the end date.
+          Use up to 366 days. Both dates are included.
         </p>
       </form>
       <p className="report-applied">
@@ -323,16 +322,6 @@ function ReportMetrics({ report }: { report: ClinicReport }): ReactElement {
       label: 'New patient registrations',
       value: totals.newPatients.toLocaleString('en-PH'),
       hint: 'Patient records created in the range.',
-    },
-    {
-      label: 'Employees',
-      value: totals.employees.toLocaleString('en-PH'),
-      hint: 'Distinct patients with active eligible employee memberships on the end date.',
-    },
-    {
-      label: 'Dependents',
-      value: totals.dependents.toLocaleString('en-PH'),
-      hint: 'Distinct patients with active dependent links and eligible memberships on the end date.',
     },
   ];
   return (

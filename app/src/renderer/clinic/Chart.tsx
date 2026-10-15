@@ -337,6 +337,12 @@ export function Chart({
                   </Button>
                 )}
               </div>
+            ) : staff.isHead && v.status === 'finalized' ? (
+              <div className="entry-actions">
+                <Button variant="outline" onClick={() => onVitals(v, true)}>
+                  Correct finalized vital signs
+                </Button>
+              </div>
             ) : (
               <p className="hint">
                 Read-only · Only the author can change these measurements.

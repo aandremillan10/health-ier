@@ -51,8 +51,6 @@ const report = object<ClinicReport>({
     pendingLabs: count,
     averageLabMinutes: nullable(number()),
     newPatients: count,
-    employees: count,
-    dependents: count,
   }),
   daily: array(object<ClinicReport['daily'][number]>({ date, visits: count })),
   departments: array(

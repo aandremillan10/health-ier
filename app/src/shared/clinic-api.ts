@@ -5,7 +5,6 @@ import type {
   AppointmentResponses,
 } from './appointments-api';
 import type { LaboratoryRequests, LaboratoryResponses } from './laboratory-api';
-import type { MembershipRequests, MembershipResponses } from './membership';
 import type { ReferralsRequests, ReferralsResponses } from './referrals-api';
 import type {
   HistoricalDocumentsRequests,
@@ -47,6 +46,7 @@ export interface Measurements {
   respiratoryRate: number | null;
   oxygenSaturation: number | null;
   weight: number | null;
+  height: number | null;
 }
 export interface VitalsFields extends Measurements {
   recordedAt?: string;
@@ -165,7 +165,6 @@ export interface Requests
     SummaryRequests,
     AppointmentRequests,
     LaboratoryRequests,
-    MembershipRequests,
     ReferralsRequests,
     HistoricalDocumentsRequests {
   login: { username: string; password: string };
@@ -208,7 +207,6 @@ export interface Responses
     SummaryResponses,
     AppointmentResponses,
     LaboratoryResponses,
-    MembershipResponses,
     ReferralsResponses,
     HistoricalDocumentsResponses {
   login: { staff: Staff; generation: number };

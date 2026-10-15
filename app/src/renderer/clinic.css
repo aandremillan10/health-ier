@@ -717,6 +717,32 @@ h2 {
   gap: 24px;
 }
 
+.blood-pressure-group {
+  min-inline-size: 0;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 16px;
+}
+
+.blood-pressure-group legend {
+  padding-inline: 4px;
+  font-weight: 600;
+}
+
+.blood-pressure-inputs {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: end;
+  gap: 12px;
+}
+
+.blood-pressure-divider {
+  padding-bottom: 10px;
+  color: var(--foreground);
+  font-size: 1.25rem;
+  font-weight: 600;
+}
+
 .form-actions {
   display: flex;
   justify-content: flex-end;
@@ -783,6 +809,11 @@ h2 {
 .badge.warning {
   color: var(--warning);
   background: var(--warning-bg);
+}
+
+.badge.info {
+  color: var(--accent-strong);
+  background: var(--accent-subtle);
 }
 
 .empty {

@@ -2,7 +2,11 @@ import { useEffect, useRef, useState } from 'react';
 import type { ReactElement } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import type { AuditEvent, AuditQuery } from '../../shared/operations-api';
+import type {
+  AuditAction,
+  AuditEvent,
+  AuditQuery,
+} from '../../shared/operations-api';
 import { auditActions } from '../../shared/operations-api';
 import type { ClinicApi, ClinicError } from './contract';
 import { ErrorNotice, Field } from './ui';
@@ -16,6 +20,19 @@ interface AuditPage {
   cursor: string | null;
   error: ClinicError | null;
   busy: boolean;
+}
+
+function auditActionTone(
+  action: AuditAction,
+): 'neutral' | 'success' | 'warning' | 'info' {
+  if (action === 'view') return 'neutral';
+  if (action === 'create' || action === 'finalize') return 'success';
+  if (action === 'change' || action === 'correction') return 'warning';
+  return 'info';
+}
+
+function auditActionLabel(action: AuditAction): string {
+  return `${action[0]!.toUpperCase()}${action.slice(1)}`;
 }
 
 export function AuditViewer({
@@ -306,7 +323,13 @@ export function AuditViewer({
                   <tr key={event.id}>
                     <td>{timestamp(event.createdAt)}</td>
                     <td>{event.actorName}</td>
-                    <td>{event.action}</td>
+                    <td>
+                      <span
+                        className={`badge ${auditActionTone(event.action)}`}
+                      >
+                        {auditActionLabel(event.action)}
+                      </span>
+                    </td>
                     <td>
                       {event.resourceType}
                       <br />

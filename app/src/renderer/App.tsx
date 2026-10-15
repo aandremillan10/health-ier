@@ -41,7 +41,6 @@ import { AuditViewer } from './clinic/AuditViewer';
 import { Appointments } from './clinic/Appointments';
 import { Laboratory } from './clinic/Laboratory';
 import { Reports } from './clinic/Reports';
-import { PatientFamily } from './clinic/PatientFamily';
 import { Referrals } from './clinic/Referrals';
 import './clinic/operations.css';
 import { ContextHelp, PracticeGuide } from './clinic/Guidance';
@@ -59,7 +58,6 @@ type Screen =
         | 'appointments'
         | 'laboratory'
         | 'reports'
-        | 'family'
         | 'referrals'
         | 'historical';
     }
@@ -78,7 +76,6 @@ const toolNames: Partial<Record<Screen['kind'], string>> = {
   appointments: 'Clinic flow',
   laboratory: 'Laboratory orders',
   reports: 'Reports',
-  family: 'Family and eligibility',
   referrals: 'Referrals',
   historical: 'Historical documents',
 };
@@ -814,7 +811,7 @@ function Workspace({
         : screen.kind === 'entry' || screen.kind === 'document'
           ? 'medical'
           : 'details';
-  const recordsActive = !toolNames[screen.kind] || screen.kind === 'family';
+  const recordsActive = !toolNames[screen.kind];
   const helpTopic: PracticeTopic =
     screen.kind === 'chart'
       ? screen.tab === 'details'
@@ -1176,18 +1173,6 @@ function Workspace({
                       Historical documents
                     </Button>
                   )}
-                  {(staff.role !== 'medtech' || staff.isHead) && (
-                    <Button
-                      variant="ghost"
-                      className={`patient-nav-item ${screen.kind === 'family' ? 'selected' : ''}`}
-                      aria-current={
-                        screen.kind === 'family' ? 'page' : undefined
-                      }
-                      onClick={() => navigate({ kind: 'family' })}
-                    >
-                      Family and eligibility
-                    </Button>
-                  )}
                 </nav>
               )}
             {screen.kind === 'registry' && (
@@ -1257,43 +1242,6 @@ function Workspace({
                 onExpired={onExpired}
                 onDirty={markDirty}
                 onChoosePatient={choosePatient}
-              />
-            )}
-            {screen.kind === 'family' && patient && (
-              <PatientFamily
-                key={`${staff.id}/${patient.id}`}
-                api={api}
-                staff={staff}
-                patientId={patient.id}
-                patientName={patient.fullName}
-                demo={demo}
-                onExpired={onExpired}
-                onDirty={markDirty}
-                onOpenPatient={(id) => void select({ id })}
-                searchPatients={async (search) => {
-                  const result = await api.findPatients({ search });
-                  return result.ok
-                    ? {
-                        ok: true,
-                        data: result.data.map((record) => ({
-                          id: record.id,
-                          revision: record.revision,
-                          fullName: record.fullName,
-                          sex: record.sex || null,
-                          dateOfBirth: record.dateOfBirth,
-                        })),
-                      }
-                    : {
-                        ok: false,
-                        error: {
-                          code:
-                            result.error.code === 'DENIED'
-                              ? 'FORBIDDEN'
-                              : result.error.code,
-                          message: result.error.message,
-                        },
-                      };
-                }}
               />
             )}
             {(screen.kind === 'register' || screen.kind === 'editPatient') && (
