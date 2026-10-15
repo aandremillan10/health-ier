@@ -1,5 +1,7 @@
 # Later-run Windows laptop LAN and TLS proof
 
+Later execution record, 2026-10-15: [laptop EDGE HTTPS and packaged workstation proof](qa/laptop-edge-tls.md) records the actual reversed topology: laptop `192.168.1.35` hosts Docker EDGE/PostgreSQL/Caddy and workstation `192.168.1.95` runs the client. Use that run's verified identities, configuration and results for the retained setup. The original desktop-server/laptop-client instructions below retain their historical provenance and are not an execution claim for the newer run.
+
 Yes: a Windows laptop on the same home/clinic router can prove that a second machine uses the desktop's shared records over validated HTTPS. The desktop may be wired and the laptop on Wi-Fi. SSH is optional remote command access; it does not control the laptop's graphical Electron/browser session.
 
 These are instructions to run later, **not an executed LAN/TLS test**. No OpenSSH feature, certificate, firewall rule, router setting or device was changed while writing this guide. Use synthetic records only. Desktop Ethernet was observed at **192.168.1.95**; recheck it before running anything. The laptop address and Windows account are still unknown.

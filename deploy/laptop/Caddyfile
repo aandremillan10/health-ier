@@ -1,0 +1,10 @@
+{
+	auto_https disable_redirects
+	skip_install_trust
+	default_sni {$LAPTOP_IP}
+}
+
+https://{$LAPTOP_IP} {
+	tls internal
+	reverse_proxy server:3000
+}
