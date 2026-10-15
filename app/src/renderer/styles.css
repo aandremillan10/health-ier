@@ -2,27 +2,27 @@
 
 /*
   Approved staff-tool foundation; see DESIGN.md.
-  Neutral shadcn palette plus approved semantic status colors (DESIGN.md table).
+  Sage canvas, warm card surfaces, blue-teal actions, and semantic status colors.
   Spacing/type scale lives in DESIGN.md: 4px base steps (4-8-12-16-24-32-48),
   type 16px body / 14px labels / 20px section titles / 24px page titles.
 */
 :root {
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.205 0 0);
-  --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.97 0 0);
-  --secondary-foreground: oklch(0.205 0 0);
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: #616161;
-  --accent: oklch(0.97 0 0);
-  --accent-foreground: oklch(0.205 0 0);
+  --background: #eef4f2;
+  --foreground: #1c3038;
+  --card: #fbfcf9;
+  --card-foreground: #1c3038;
+  --primary: #154d64;
+  --primary-foreground: #f8fcfb;
+  --secondary: #e0ebe8;
+  --secondary-foreground: #243e43;
+  --muted: #e8f0ed;
+  --muted-foreground: #4f6668;
+  --accent: #d8e8e4;
+  --accent-foreground: #234450;
   --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.922 0 0);
-  --input: oklch(0.922 0 0);
-  --ring: oklch(0.205 0 0);
+  --border: #c2d0cc;
+  --input: #7a8e8a;
+  --ring: #15556a;
   --radius: 0.625rem;
   --success: #166534;
   --success-bg: #f0fdf4;
@@ -30,10 +30,10 @@
   --warning-bg: #fffbeb;
   --error: #b91c1c;
   --error-bg: #fef2f2;
-  --border-strong: #8a8a8a;
-  --skeleton: oklch(0.88 0 0);
-  --skeleton-highlight: oklch(0.93 0 0);
-  --surface-recessed: oklch(0.935 0 0);
+  --border-strong: #788b88;
+  --skeleton: #d6e2de;
+  --skeleton-highlight: #e5eeeb;
+  --surface-recessed: #e3ece9;
   --dur-fast: 120ms;
   --dur-med: 180ms;
   --ease-standard: cubic-bezier(0.22, 1, 0.36, 1);

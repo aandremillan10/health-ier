@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import type { FormEvent, ReactElement } from 'react';
+import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -65,20 +66,12 @@ export function Documents({
     'loading' | 'ready' | 'error'
   >('loading');
   const [headerAttempt, setHeaderAttempt] = useState(0);
-  const [copied, setCopied] = useState(false);
   const [copyError, setCopyError] = useState(false);
-  const copyTimer = useRef(0);
   const paperShell = useRef<HTMLDivElement>(null);
   const [fitPreview, setFitPreview] = useState(true);
   const [paperZoom, setPaperZoom] = useState(1);
   const { busy, error, conflict, run, clearError } = useOperation(onExpired);
   const title = form.kind === 'prescription' ? 'prescription' : 'certificate';
-  useEffect(
-    () => (): void => {
-      window.clearTimeout(copyTimer.current);
-    },
-    [],
-  );
   useEffect(() => {
     const shell = paperShell.current;
     if (!shell) return;
@@ -216,7 +209,9 @@ export function Documents({
       setNotice(
         demo
           ? 'Demo print submission simulated. No print job was sent.'
-          : 'Sent to printer. Check the printer for the paper output.',
+          : result.auditRecorded === false
+            ? 'Sent to printer. Audit recording failed; tell the clinic head. Check the paper output before retrying.'
+            : 'Sent to printer. Check the printer for the paper output.',
       );
     else if (result)
       setPrintError({
@@ -229,10 +224,8 @@ export function Documents({
     setCopyError(false);
     try {
       await navigator.clipboard.writeText(document.id);
-      setCopied(true);
-      copyTimer.current = window.setTimeout(() => setCopied(false), 1400);
+      toast.success('Document ID copied');
     } catch {
-      setCopied(false);
       setCopyError(true);
     }
   }
@@ -553,38 +546,21 @@ export function Documents({
                       aria-label="Copy document ID"
                       onClick={() => void copyId()}
                     >
-                      <span className={`swap-icon ${copied ? 'copied' : ''}`}>
-                        <svg
-                          className="icon-main"
-                          aria-hidden="true"
-                          width="16"
-                          height="16"
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          stroke="currentColor"
-                          strokeWidth="1.75"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                        >
-                          <rect x="9" y="9" width="12" height="12" rx="2" />
-                          <path d="M5 15V5a2 2 0 0 1 2-2h10" />
-                        </svg>
-                        <svg
-                          className="icon-alt"
-                          aria-hidden="true"
-                          width="16"
-                          height="16"
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          stroke="currentColor"
-                          strokeWidth="2.5"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                        >
-                          <path d="m4 12.5 5 5L20 6.5" />
-                        </svg>
-                      </span>
-                      {copied ? 'Copied' : 'Copy ID'}
+                      <svg
+                        aria-hidden="true"
+                        width="16"
+                        height="16"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="1.75"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      >
+                        <rect x="9" y="9" width="12" height="12" rx="2" />
+                        <path d="M5 15V5a2 2 0 0 1 2-2h10" />
+                      </svg>
+                      Copy ID
                     </Button>
                   </div>
                 </section>

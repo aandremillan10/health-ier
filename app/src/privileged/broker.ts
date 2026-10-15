@@ -17,6 +17,18 @@ import {
   staff,
 } from './contracts';
 import { array, object, record, revision, text, timestamp } from './validation';
+import { operationsRoute } from './operations-contracts';
+import { clinicalSummaryRoute } from './clinical-summary-contracts';
+import type { SummaryRequests } from '../shared/clinical-summary';
+import { appointmentRoute } from './appointments-contracts';
+import type { AppointmentRequests } from '../shared/appointments-api';
+import { laboratoryRoute } from './laboratory-contracts';
+import {
+  membershipRoute,
+  membershipRequestGuards,
+} from './membership-contracts';
+import type { MembershipRequests } from '../shared/membership';
+import { referralsRoute } from './referrals-contracts';
 
 export interface RequestSender {
   senderId: number;
@@ -86,7 +98,8 @@ const messages: Record<ErrorCode, string> = {
   FORBIDDEN: 'This operation is not permitted.',
   NOT_FOUND: 'The requested record is unavailable.',
   CONFLICT: 'The record changed; reload before saving.',
-  UNAVAILABLE: 'The clinic server is unavailable. No save was confirmed.',
+  UNAVAILABLE:
+    'The clinic server did not confirm this request. If you were saving, check the record before you try again.',
   INVALID_RESPONSE: 'The clinic server returned an unexpected response.',
   SESSION_CHANGED: 'The staff session changed. Reload after signing in.',
   PRINT_FAILED:
@@ -136,6 +149,15 @@ interface Route {
   body?: unknown;
 }
 function route<K extends keyof Requests>(name: K, input: Requests[K]): Route {
+  const referral = referralsRoute(name, input);
+  if (referral) return referral;
+  if (Object.hasOwn(membershipRequestGuards, name))
+    return membershipRoute(
+      name as keyof MembershipRequests,
+      input as MembershipRequests[keyof MembershipRequests],
+    );
+  const laboratory = laboratoryRoute(name, input);
+  if (laboratory) return laboratory;
   const value = input as unknown as Record<string, unknown> | undefined;
   const id = value?.id as string;
   const patientId = value?.patientId as string;
@@ -146,6 +168,29 @@ function route<K extends keyof Requests>(name: K, input: Requests[K]): Route {
   );
   // IDs were validated before this fixed route construction.
   switch (name) {
+    case 'listAppointments':
+    case 'createAppointment':
+    case 'transitionAppointment':
+    case 'correctAppointment':
+      return appointmentRoute(
+        name,
+        input as AppointmentRequests[keyof AppointmentRequests],
+      );
+    case 'readClinicalSummary':
+    case 'createSummaryItem':
+    case 'updateSummaryItem':
+    case 'correctSummaryItem':
+    case 'inactivateSummaryItem':
+    case 'readSummaryHistory':
+      return clinicalSummaryRoute(
+        name,
+        input as SummaryRequests[keyof SummaryRequests],
+      );
+    case 'listAuditEvents':
+    case 'listAuditActors':
+    case 'readReport':
+    case 'exportReport':
+      return operationsRoute(name, input);
     case 'login':
       return { path: '/auth/login', method: 'POST', body: input };
     case 'currentStaff':
@@ -390,12 +435,47 @@ export class ClinicBroker {
         if (!printers.some((printer) => printer.name === options.printerName))
           throw new BoundaryError('PRINTER_UNAVAILABLE', 'Printer unavailable');
         if (generation !== this.generation) return failed('SESSION_CHANGED');
-        await this.options.printer.print(
-          document,
-          options,
-          () => generation === this.generation && token === this.token,
-        );
-        data = { documentId: document.id, submitted: true };
+        const auditPrint = async (
+          outcome: 'success' | 'failure',
+        ): Promise<boolean> => {
+          try {
+            const response = await this.request(
+              {
+                path: '/audit-events/print',
+                method: 'POST',
+                body: { documentId: document.id, outcome },
+              },
+              token,
+            );
+            object<{ recorded: boolean }>({
+              recorded: (value) => {
+                if (value !== true)
+                  throw new Error('Print audit not confirmed');
+                return true;
+              },
+            })(response);
+            return true;
+          } catch {
+            return false;
+          }
+        };
+        try {
+          await this.options.printer.print(
+            document,
+            options,
+            () => generation === this.generation && token === this.token,
+          );
+        } catch (error: unknown) {
+          await auditPrint('failure');
+          throw error;
+        }
+        const auditRecorded = await auditPrint('success');
+        // A submitted print job cannot be recalled when later audit recording fails.
+        data = {
+          documentId: document.id,
+          submitted: true,
+          ...(!auditRecorded ? { auditRecorded: false } : {}),
+        };
       } else {
         const raw = await this.request(
           route(name, input),
@@ -438,6 +518,58 @@ export class ClinicBroker {
                 : patientIdentity
               : responseGuards[name as keyof typeof responseGuards];
           data = guard(raw);
+          if (input && typeof input === 'object' && 'patientId' in input) {
+            const wantedPatient = String(input.patientId).toLowerCase();
+            const rows = Array.isArray(data) ? data : [data];
+            if (
+              rows.some(
+                (value) =>
+                  value &&
+                  typeof value === 'object' &&
+                  'patientId' in value &&
+                  String(value.patientId).toLowerCase() !== wantedPatient,
+              )
+            )
+              throw new BoundaryError(
+                'INVALID_RESPONSE',
+                'Patient identity mismatch',
+              );
+          }
+          const sameIdOperations: (keyof Requests)[] = [
+            'updateSummaryItem',
+            'correctSummaryItem',
+            'inactivateSummaryItem',
+            'transitionAppointment',
+            'correctAppointment',
+            'updateMembership',
+            'correctMembership',
+            'updateDependent',
+            'correctDependent',
+            'unlinkDependent',
+            'startLabOrder',
+            'cancelLabOrder',
+            'rejectLabOrder',
+            'reviewLabOrder',
+            'acceptReferral',
+            'startReferral',
+            'completeReferral',
+            'cancelReferral',
+            'rejectReferral',
+          ];
+          if (
+            sameIdOperations.includes(name) &&
+            input &&
+            typeof input === 'object' &&
+            'id' in input &&
+            data &&
+            typeof data === 'object' &&
+            'id' in data &&
+            String(data.id).toLowerCase() !== String(input.id).toLowerCase()
+          )
+            throw new BoundaryError(
+              'INVALID_RESPONSE',
+              'Record identity mismatch',
+            );
           if (
             name === 'currentStaff' &&
             JSON.stringify(data) !== JSON.stringify(this.principal)

@@ -17,6 +17,175 @@ function invoke<K extends keyof Requests>(
   >;
 }
 const clinic = Object.freeze({
+  listReferrals: (
+    input: Requests['listReferrals'],
+  ): Promise<Result<Responses['listReferrals']>> =>
+    invoke('listReferrals', input),
+  listReferralInbox: (
+    input: Requests['listReferralInbox'],
+  ): Promise<Result<Responses['listReferralInbox']>> =>
+    invoke('listReferralInbox', input),
+  listSentReferrals: (
+    input: Requests['listSentReferrals'],
+  ): Promise<Result<Responses['listSentReferrals']>> =>
+    invoke('listSentReferrals', input),
+  createReferral: (
+    input: Requests['createReferral'],
+  ): Promise<Result<Responses['createReferral']>> =>
+    invoke('createReferral', input),
+  acceptReferral: (
+    input: Requests['acceptReferral'],
+  ): Promise<Result<Responses['acceptReferral']>> =>
+    invoke('acceptReferral', input),
+  startReferral: (
+    input: Requests['startReferral'],
+  ): Promise<Result<Responses['startReferral']>> =>
+    invoke('startReferral', input),
+  completeReferral: (
+    input: Requests['completeReferral'],
+  ): Promise<Result<Responses['completeReferral']>> =>
+    invoke('completeReferral', input),
+  cancelReferral: (
+    input: Requests['cancelReferral'],
+  ): Promise<Result<Responses['cancelReferral']>> =>
+    invoke('cancelReferral', input),
+  rejectReferral: (
+    input: Requests['rejectReferral'],
+  ): Promise<Result<Responses['rejectReferral']>> =>
+    invoke('rejectReferral', input),
+  readPatientFamily: (
+    input: Requests['readPatientFamily'],
+  ): Promise<Result<Responses['readPatientFamily']>> =>
+    invoke('readPatientFamily', input),
+  createMembership: (
+    input: Requests['createMembership'],
+  ): Promise<Result<Responses['createMembership']>> =>
+    invoke('createMembership', input),
+  updateMembership: (
+    input: Requests['updateMembership'],
+  ): Promise<Result<Responses['updateMembership']>> =>
+    invoke('updateMembership', input),
+  correctMembership: (
+    input: Requests['correctMembership'],
+  ): Promise<Result<Responses['correctMembership']>> =>
+    invoke('correctMembership', input),
+  linkDependent: (
+    input: Requests['linkDependent'],
+  ): Promise<Result<Responses['linkDependent']>> =>
+    invoke('linkDependent', input),
+  updateDependent: (
+    input: Requests['updateDependent'],
+  ): Promise<Result<Responses['updateDependent']>> =>
+    invoke('updateDependent', input),
+  correctDependent: (
+    input: Requests['correctDependent'],
+  ): Promise<Result<Responses['correctDependent']>> =>
+    invoke('correctDependent', input),
+  unlinkDependent: (
+    input: Requests['unlinkDependent'],
+  ): Promise<Result<Responses['unlinkDependent']>> =>
+    invoke('unlinkDependent', input),
+  readMembershipHistory: (
+    input: Requests['readMembershipHistory'],
+  ): Promise<Result<Responses['readMembershipHistory']>> =>
+    invoke('readMembershipHistory', input),
+  readDependentHistory: (
+    input: Requests['readDependentHistory'],
+  ): Promise<Result<Responses['readDependentHistory']>> =>
+    invoke('readDependentHistory', input),
+  listLabOrders: (
+    input: Requests['listLabOrders'],
+  ): Promise<Result<Responses['listLabOrders']>> =>
+    invoke('listLabOrders', input),
+  listLabQueue: (
+    input: Requests['listLabQueue'],
+  ): Promise<Result<Responses['listLabQueue']>> =>
+    invoke('listLabQueue', input),
+  createLabOrder: (
+    input: Requests['createLabOrder'],
+  ): Promise<Result<Responses['createLabOrder']>> =>
+    invoke('createLabOrder', input),
+  startLabOrder: (
+    input: Requests['startLabOrder'],
+  ): Promise<Result<Responses['startLabOrder']>> =>
+    invoke('startLabOrder', input),
+  cancelLabOrder: (
+    input: Requests['cancelLabOrder'],
+  ): Promise<Result<Responses['cancelLabOrder']>> =>
+    invoke('cancelLabOrder', input),
+  rejectLabOrder: (
+    input: Requests['rejectLabOrder'],
+  ): Promise<Result<Responses['rejectLabOrder']>> =>
+    invoke('rejectLabOrder', input),
+  saveLabResult: (
+    input: Requests['saveLabResult'],
+  ): Promise<Result<Responses['saveLabResult']>> =>
+    invoke('saveLabResult', input),
+  finalizeLabResult: (
+    input: Requests['finalizeLabResult'],
+  ): Promise<Result<Responses['finalizeLabResult']>> =>
+    invoke('finalizeLabResult', input),
+  correctLabResult: (
+    input: Requests['correctLabResult'],
+  ): Promise<Result<Responses['correctLabResult']>> =>
+    invoke('correctLabResult', input),
+  reviewLabOrder: (
+    input: Requests['reviewLabOrder'],
+  ): Promise<Result<Responses['reviewLabOrder']>> =>
+    invoke('reviewLabOrder', input),
+  listAppointments: (
+    input: Requests['listAppointments'],
+  ): Promise<Result<Responses['listAppointments']>> =>
+    invoke('listAppointments', input),
+  createAppointment: (
+    input: Requests['createAppointment'],
+  ): Promise<Result<Responses['createAppointment']>> =>
+    invoke('createAppointment', input),
+  transitionAppointment: (
+    input: Requests['transitionAppointment'],
+  ): Promise<Result<Responses['transitionAppointment']>> =>
+    invoke('transitionAppointment', input),
+  correctAppointment: (
+    input: Requests['correctAppointment'],
+  ): Promise<Result<Responses['correctAppointment']>> =>
+    invoke('correctAppointment', input),
+  readClinicalSummary: (
+    input: Requests['readClinicalSummary'],
+  ): Promise<Result<Responses['readClinicalSummary']>> =>
+    invoke('readClinicalSummary', input),
+  createSummaryItem: (
+    input: Requests['createSummaryItem'],
+  ): Promise<Result<Responses['createSummaryItem']>> =>
+    invoke('createSummaryItem', input),
+  updateSummaryItem: (
+    input: Requests['updateSummaryItem'],
+  ): Promise<Result<Responses['updateSummaryItem']>> =>
+    invoke('updateSummaryItem', input),
+  correctSummaryItem: (
+    input: Requests['correctSummaryItem'],
+  ): Promise<Result<Responses['correctSummaryItem']>> =>
+    invoke('correctSummaryItem', input),
+  inactivateSummaryItem: (
+    input: Requests['inactivateSummaryItem'],
+  ): Promise<Result<Responses['inactivateSummaryItem']>> =>
+    invoke('inactivateSummaryItem', input),
+  readSummaryHistory: (
+    input: Requests['readSummaryHistory'],
+  ): Promise<Result<Responses['readSummaryHistory']>> =>
+    invoke('readSummaryHistory', input),
+  listAuditEvents: (
+    input: Requests['listAuditEvents'],
+  ): Promise<Result<Responses['listAuditEvents']>> =>
+    invoke('listAuditEvents', input),
+  listAuditActors: (): Promise<Result<Responses['listAuditActors']>> =>
+    invoke('listAuditActors', undefined),
+  readReport: (
+    input: Requests['readReport'],
+  ): Promise<Result<Responses['readReport']>> => invoke('readReport', input),
+  exportReport: (
+    input: Requests['exportReport'],
+  ): Promise<Result<Responses['exportReport']>> =>
+    invoke('exportReport', input),
   login: (input: Requests['login']): Promise<Result<Responses['login']>> =>
     invoke('login', input),
   currentStaff: (): Promise<Result<Responses['currentStaff']>> =>

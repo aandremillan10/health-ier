@@ -1,4 +1,7 @@
 import type * as Wire from '../../shared/clinic-api';
+import { createAppointmentDesktopClient } from './appointments-api';
+import { createMembershipDesktopClient } from './membership-client';
+import { createReferralsClient } from './referrals-client';
 import type {
   ClinicApi,
   ClinicDocument,
@@ -219,6 +222,36 @@ export function createDesktopClient(wire: Wire.ClinicApi): ClinicApi {
     return mapped;
   }
   const client: ClinicApi = {
+    ...createReferralsClient(wire),
+    ...createMembershipDesktopClient(wire),
+    listLabOrders: (input) => result(wire.listLabOrders(input), (data) => data),
+    listLabQueue: (input) => result(wire.listLabQueue(input), (data) => data),
+    createLabOrder: (input) =>
+      result(wire.createLabOrder(input), (data) => data),
+    startLabOrder: (input) => result(wire.startLabOrder(input), (data) => data),
+    cancelLabOrder: (input) =>
+      result(wire.cancelLabOrder(input), (data) => data),
+    rejectLabOrder: (input) =>
+      result(wire.rejectLabOrder(input), (data) => data),
+    saveLabResult: (input) => result(wire.saveLabResult(input), (data) => data),
+    finalizeLabResult: (input) =>
+      result(wire.finalizeLabResult(input), (data) => data),
+    correctLabResult: (input) =>
+      result(wire.correctLabResult(input), (data) => data),
+    reviewLabOrder: (input) =>
+      result(wire.reviewLabOrder(input), (data) => data),
+    ...createAppointmentDesktopClient(wire),
+    readClinicalSummary: (input) => wire.readClinicalSummary(input),
+    createSummaryItem: (input) => wire.createSummaryItem(input),
+    updateSummaryItem: (input) => wire.updateSummaryItem(input),
+    correctSummaryItem: (input) => wire.correctSummaryItem(input),
+    inactivateSummaryItem: (input) => wire.inactivateSummaryItem(input),
+    readSummaryHistory: (input) => wire.readSummaryHistory(input),
+    listAuditEvents: (input) =>
+      result(wire.listAuditEvents(input), (data) => data),
+    listAuditActors: () => result(wire.listAuditActors(), (data) => data),
+    readReport: (input) => result(wire.readReport(input), (data) => data),
+    exportReport: (input) => result(wire.exportReport(input), (data) => data),
     async login(input) {
       const context = {
         sequence: ++loginSequence,
@@ -385,7 +418,12 @@ export function createDesktopClient(wire: Wire.ClinicApi): ClinicApi {
           copies: 1,
           duplexMode: 'simplex',
         }),
-        (data) => ({ submitted: data.submitted }),
+        (data) => ({
+          submitted: data.submitted,
+          ...(data.auditRecorded === false
+            ? { auditRecorded: false as const }
+            : {}),
+        }),
       ),
     onSessionReset: (listener) => {
       resetListeners.add(listener);

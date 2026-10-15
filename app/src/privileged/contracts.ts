@@ -15,6 +15,30 @@ import type {
   VitalsFields,
 } from '../shared/clinic-api';
 import {
+  operationsRequestGuards,
+  operationsResponseGuards,
+} from './operations-contracts';
+import {
+  summaryRequestGuards,
+  summaryResponseGuards,
+} from './clinical-summary-contracts';
+import {
+  appointmentRequestGuards,
+  appointmentResponseGuards,
+} from './appointments-contracts';
+import {
+  laboratoryRequestGuards,
+  laboratoryResponseGuards,
+} from './laboratory-contracts';
+import {
+  membershipRequestGuards,
+  membershipResponseGuards,
+} from './membership-contracts';
+import {
+  referralsRequestGuards,
+  referralsResponseGuards,
+} from './referrals-contracts';
+import {
   array,
   boolean,
   choice,
@@ -232,6 +256,12 @@ function edit<T>(
   };
 }
 export const requestGuards = {
+  ...operationsRequestGuards,
+  ...summaryRequestGuards,
+  ...appointmentRequestGuards,
+  ...laboratoryRequestGuards,
+  ...membershipRequestGuards,
+  ...referralsRequestGuards,
   login: object<Requests['login']>({
     username: text(100, 1),
     password: text(1024, 1),
@@ -285,6 +315,12 @@ export const requestGuards = {
 } satisfies { [K in keyof Requests]: Guard<Requests[K]> };
 export const operationNames = Object.keys(requestGuards) as (keyof Requests)[];
 export const responseGuards = {
+  ...operationsResponseGuards,
+  ...summaryResponseGuards,
+  ...appointmentResponseGuards,
+  ...laboratoryResponseGuards,
+  ...membershipResponseGuards,
+  ...referralsResponseGuards,
   currentStaff: staff,
   health: object<{ status: 'ok'; mode: 'EDGE' | 'CLOUD' }>({
     status: choice(['ok']),

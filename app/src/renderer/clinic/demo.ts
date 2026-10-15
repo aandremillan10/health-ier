@@ -4,6 +4,14 @@ import {
   canWriteEntry,
   visibleDisciplines,
 } from './contract';
+import { createClinicalSummaryDemo } from './clinical-summary-demo';
+import { createDemoAppointments } from './appointments-demo';
+import { createLaboratoryDemo } from './laboratory-demo';
+import { createMembershipDemo } from './membership-demo';
+import { createOperationsDemo } from './operations-demo';
+import type { DemoAuditInput } from './operations-demo';
+import type { Result as WireResult } from '../../shared/clinic-api';
+import { createReferralsDemo } from './referrals-demo';
 import type {
   ClinicApi,
   ClinicDocument,
@@ -325,7 +333,51 @@ export function createDemoClinic(): {
       status: 'preview',
     });
   }
+  const appointments = createDemoAppointments({
+    getStaff: () => principal,
+    getPatient: (id) => patients.find((patient) => patient.id === id) ?? null,
+    isAvailable: () => available,
+  });
+  const { snapshotAppointments: appointmentSnapshot, ...appointmentApi } =
+    appointments;
+  const laboratory = createLaboratoryDemo({
+    getStaff: () => principal,
+    getPatient: (id) => patients.find((patient) => patient.id === id),
+    check: () => guard<never>(),
+  });
+  const membership = createMembershipDemo(
+    () => principal,
+    (id) => patients.find((patient) => patient.id === id) ?? null,
+  );
+  const registrations = new Map(
+    patients.map((patient) => [patient.id, new Date().toISOString()]),
+  );
+  const operations = createOperationsDemo({
+    getStaff: () => principal,
+    isAvailable: () => available,
+    getStaffList: () => demoStaff,
+    getPatientRegistrations: () =>
+      [...registrations].map(([id, createdAt]) => ({ id, createdAt })),
+    getAppointments: appointmentSnapshot,
+    getLabOrders: laboratory.snapshot,
+    getMemberships: membership.snapshot,
+  });
+  const referrals = createReferralsDemo({
+    getStaff: () => principal,
+    getPatient: (id) => patients.find((patient) => patient.id === id),
+    getLabOrders: laboratory.snapshot,
+    check: () => guard<never>(),
+  });
   const api: ClinicApi = {
+    ...referrals.api,
+    ...membership.api,
+    ...operations.api,
+    ...laboratory.api,
+    ...appointmentApi,
+    ...createClinicalSummaryDemo(
+      () => principal,
+      (id) => patients.some((patient) => patient.id === id),
+    ),
     async login() {
       return failure(
         'UNAVAILABLE',
@@ -757,6 +809,107 @@ export function createDemoClinic(): {
       return success({ submitted: true });
     },
   };
+  const auditActions = {
+    listReferrals: ['view', 'referral'],
+    listReferralInbox: ['view', 'referral'],
+    listSentReferrals: ['view', 'referral'],
+    createReferral: ['create', 'referral'],
+    acceptReferral: ['change', 'referral'],
+    startReferral: ['change', 'referral'],
+    completeReferral: ['change', 'referral'],
+    cancelReferral: ['change', 'referral'],
+    rejectReferral: ['change', 'referral'],
+    getPatient: ['view', 'patient'],
+    listVitals: ['view', 'vitals'],
+    listEntries: ['view', 'entry'],
+    listDocuments: ['view', 'document'],
+    getDocument: ['view', 'document'],
+    createPatient: ['create', 'patient'],
+    updatePatient: ['change', 'patient'],
+    saveVitals: ['change', 'vitals'],
+    finalizeVitals: ['finalize', 'vitals'],
+    correctVitals: ['correction', 'vitals'],
+    saveEntry: ['change', 'entry'],
+    finalizeEntry: ['finalize', 'entry'],
+    correctEntry: ['correction', 'entry'],
+    issueDocument: ['create', 'document'],
+    printDocument: ['print', 'document'],
+    readClinicalSummary: ['view', 'clinical-summary'],
+    readSummaryHistory: ['view', 'clinical-summary'],
+    createSummaryItem: ['create', 'clinical-summary'],
+    updateSummaryItem: ['change', 'clinical-summary'],
+    correctSummaryItem: ['correction', 'clinical-summary'],
+    inactivateSummaryItem: ['change', 'clinical-summary'],
+    listAppointments: ['view', 'appointment'],
+    createAppointment: ['create', 'appointment'],
+    transitionAppointment: ['change', 'appointment'],
+    correctAppointment: ['correction', 'appointment'],
+    listLabOrders: ['view', 'lab-order'],
+    listLabQueue: ['view', 'lab-order'],
+    createLabOrder: ['create', 'lab-order'],
+    startLabOrder: ['change', 'lab-order'],
+    cancelLabOrder: ['change', 'lab-order'],
+    rejectLabOrder: ['change', 'lab-order'],
+    saveLabResult: ['change', 'lab-result'],
+    finalizeLabResult: ['finalize', 'lab-result'],
+    correctLabResult: ['correction', 'lab-result'],
+    reviewLabOrder: ['change', 'lab-order'],
+    readPatientFamily: ['view', 'membership'],
+    readMembershipHistory: ['view', 'membership'],
+    readDependentHistory: ['view', 'dependent-link'],
+    createMembership: ['create', 'membership'],
+    updateMembership: ['change', 'membership'],
+    correctMembership: ['correction', 'membership'],
+    linkDependent: ['create', 'dependent-link'],
+    updateDependent: ['change', 'dependent-link'],
+    correctDependent: ['correction', 'dependent-link'],
+    unlinkDependent: ['change', 'dependent-link'],
+  } satisfies Partial<
+    Record<keyof ClinicApi, [DemoAuditInput['action'], string]>
+  >;
+  for (const name of Object.keys(
+    auditActions,
+  ) as (keyof typeof auditActions)[]) {
+    const original = api[name] as (
+      input: unknown,
+    ) => Promise<Result<unknown> | WireResult<unknown>>;
+    Object.assign(api, {
+      [name]: async (input: unknown) => {
+        const denied = guard<never>();
+        if (denied) return denied;
+        const result = await original(input);
+        const fields =
+          input && typeof input === 'object'
+            ? (input as Record<string, unknown>)
+            : {};
+        const row =
+          result.ok &&
+          result.data &&
+          typeof result.data === 'object' &&
+          !Array.isArray(result.data)
+            ? (result.data as Record<string, unknown>)
+            : {};
+        const id = (value: unknown): string | undefined =>
+          typeof value === 'string' ? value : undefined;
+        const [action, resourceType] = auditActions[name];
+        operations.record({
+          action,
+          resourceType,
+          resourceId: id(row.id) ?? id(fields.id) ?? id(fields.documentId),
+          patientId:
+            id(row.patientId) ??
+            id(fields.patientId) ??
+            (resourceType === 'patient'
+              ? (id(row.id) ?? id(fields.id))
+              : undefined),
+          outcome: result.ok ? 'success' : 'failure',
+        });
+        if (name === 'createPatient' && result.ok && id(row.id))
+          registrations.set(id(row.id)!, new Date().toISOString());
+        return result;
+      },
+    });
+  }
   return {
     api,
     selectStaff(id): Principal {

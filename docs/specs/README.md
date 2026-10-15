@@ -1,6 +1,6 @@
-# clinic-demo-v1.1 specifications
+# clinic-demo-v1.2 specifications
 
-Status: **approved clinic-demo-v1.1 amendment on 2026-10-14, Asia/Manila**. See the [exact approval/document set](approval.md). The ten original paired issues plus one Backend mirror issue and their scope updates are authorized; product feature implementation requires a separate explicit build instruction.
+Status: **approved clinic-demo-v1.1 requirements with a user-requested UI refinement recorded as clinic-demo-v1.2 on 2026-10-15, Asia/Manila**. See the [approval and amendment record](approval.md). The v1.2 scope covers the accessible color palette and root-level toast feedback. Other product feature work remains outside this amendment.
 
 ## Read in this order
 
@@ -14,7 +14,7 @@ Status: **approved clinic-demo-v1.1 amendment on 2026-10-14, Asia/Manila**. See 
 8. [One-way mirror amendment](mirror-amendment.md): authoritative edge, durable delivery, read-only cloud and mandatory cloud proof.
 9. [Feature template](feature-template.md): format for later approved features.
 
-The root [glossary](../../CONTEXT.md) holds terminology. [DESIGN.md](../../DESIGN.md) holds the approved staff-tool baseline. [Tracker guidance](../agents/issue-tracker.md) controls publication/status changes. No route or product screen is claimed implemented by this approval.
+The root [glossary](../../CONTEXT.md) holds terminology. [DESIGN.md](../../DESIGN.md) holds the staff-tool baseline and v1.2 visual update. [Tracker guidance](../agents/issue-tracker.md) controls publication/status changes.
 
 ## Approval workflow
 
