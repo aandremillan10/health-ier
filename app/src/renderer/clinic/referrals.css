@@ -34,7 +34,7 @@
   margin: 16px 0 0;
 }
 .referral-list li + li {
-  margin-block-start: 12px;
+  margin-block-start: 0;
 }
 .referral-option {
   display: grid;
@@ -43,9 +43,11 @@
   width: 100%;
   min-width: 0;
   padding: 16px;
-  border: 1px solid var(--border-strong);
-  border-radius: var(--radius-md);
-  background: var(--card);
+  border: 0;
+  border-block-end: 1px solid var(--border);
+  border-inline-start: 3px solid transparent;
+  border-radius: 0;
+  background: transparent;
 }
 .referral-option > * {
   overflow-wrap: anywhere;
@@ -55,7 +57,7 @@
 }
 .referral-option[aria-pressed='true'] {
   background: var(--muted);
-  border-color: var(--primary);
+  border-inline-start-color: var(--primary);
 }
 .referral-option:disabled {
   opacity: 0.6;
@@ -88,9 +90,9 @@
     grid-template-columns: minmax(0, 1fr);
   }
   .referral-list ul {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(min(100%, 16rem), 1fr));
-    gap: 12px;
+    max-height: 20rem;
+    overflow-y: auto;
+    padding: 4px;
   }
   .referral-list li + li {
     margin-block-start: 0;

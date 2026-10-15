@@ -9,6 +9,7 @@
     "baseColor": "neutral",
     "cssVariables": true
   },
+  "registries": { "@uiarc": "https://uiarc.dev/r/{name}.json" },
   "aliases": {
     "components": "@/components",
     "utils": "@/lib/utils",

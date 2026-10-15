@@ -16,6 +16,7 @@ export default tseslint.config(
       '**/.claude/**',
       '**/.windsurf/**',
       '**/src/generated/**',
+      'app/src/renderer/components/arc/**',
       '.husky/**',
     ],
   },

@@ -29,7 +29,7 @@
   margin: 16px 0 0;
 }
 .lab-order-list li + li {
-  margin-block-start: 12px;
+  margin-block-start: 0;
 }
 .lab-order-option {
   display: grid;
@@ -38,13 +38,15 @@
   width: 100%;
   min-width: 0;
   padding: 16px;
-  border: 1px solid var(--border-strong);
-  border-radius: var(--radius-md);
-  background: var(--card);
+  border: 0;
+  border-block-end: 1px solid var(--border);
+  border-inline-start: 3px solid transparent;
+  border-radius: 0;
+  background: transparent;
 }
 .lab-order-option[aria-pressed='true'] {
   background: var(--muted);
-  border-color: var(--primary);
+  border-inline-start-color: var(--primary);
 }
 .lab-order-option > * {
   overflow-wrap: anywhere;
@@ -66,12 +68,12 @@
 }
 .lab-value-fields {
   min-width: 0;
-  border: 1px solid var(--border);
-  border-radius: var(--radius-md);
-  padding: 16px;
+  border: 0;
+  border-block-start: 1px solid var(--border);
+  padding: 16px 0;
 }
 .lab-value-fields legend {
-  padding-inline: 8px;
+  padding-inline: 0 8px;
   font-weight: 500;
 }
 .lab-value-fields .form-grid {
@@ -121,9 +123,9 @@
     grid-template-columns: minmax(0, 1fr);
   }
   .lab-order-list ul {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(min(100%, 16rem), 1fr));
-    gap: 12px;
+    max-height: 20rem;
+    overflow-y: auto;
+    padding: 4px;
   }
   .lab-order-list li + li {
     margin-block-start: 0;

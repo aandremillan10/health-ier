@@ -11,6 +11,8 @@
 }
 .summary-section {
   min-width: 0;
+  border-block-start: 1px solid var(--border);
+  padding-block-start: 16px;
 }
 .summary-section > .section-heading {
   margin-block-end: 12px;
@@ -36,9 +38,8 @@
 }
 .summary-editor {
   margin-block: 16px 24px;
-  padding: 16px;
-  background: var(--muted);
-  border-radius: var(--radius-md);
+  padding: 24px 0;
+  border-block: 1px solid var(--border);
 }
 .summary-fieldset {
   border: 0;

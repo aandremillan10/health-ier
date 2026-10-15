@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import type { FormEvent, ReactElement } from 'react';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/arc/badge/badge';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import type {
@@ -18,7 +19,16 @@ import {
 import { date, timestamp, today } from './format';
 import { Confirm, Empty, ErrorNotice, Field, Loading } from './ui';
 import { useOperation } from './use-operation';
+import { CountChart } from './CountChart';
 import './appointments.css';
+
+const sortColumns = [
+  { key: 'scheduledAt', label: 'Time' },
+  { key: 'patientName', label: 'Patient' },
+  { key: 'discipline', label: 'Discipline' },
+  { key: 'status', label: 'Current state' },
+] as const;
+type SortKey = (typeof sortColumns)[number]['key'];
 
 const actions: Record<AppointmentStatus, string> = {
   scheduled: 'Return to scheduled',
@@ -43,6 +53,7 @@ export function Appointments({
   onExpired,
   onOpenPatient,
   onDirty,
+  onChoosePatient,
 }: {
   api: AppointmentApi;
   staff: Principal;
@@ -50,6 +61,7 @@ export function Appointments({
   onExpired: () => void;
   onOpenPatient?: (id: string) => void;
   onDirty?: (dirty: boolean) => void;
+  onChoosePatient?: () => void;
 }): ReactElement {
   const [day, setDay] = useState(today);
   const [area, setArea] = useState<Discipline | ''>('');
@@ -62,6 +74,10 @@ export function Appointments({
   }>({ key: '', records: null, error: null, loadedAt: null });
   const [reload, setReload] = useState(0);
   const [automatic, setAutomatic] = useState(true);
+  const [sort, setSort] = useState<{
+    key: SortKey;
+    direction: 'ascending' | 'descending';
+  }>({ key: 'scheduledAt', direction: 'ascending' });
   const [notice, setNotice] = useState('');
   const [pending, setPending] = useState<Pending | null>(null);
   const [time, setTime] = useState('09:00');
@@ -75,6 +91,24 @@ export function Appointments({
   const validDay = /^\d{4}-\d{2}-\d{2}$/.test(day);
   const loading = validDay && board.key !== queryKey;
   const records = board.key === queryKey ? board.records : null;
+  const sortedRecords = records?.toSorted((a, b) => {
+    const time = Date.parse(a.scheduledAt) - Date.parse(b.scheduledAt);
+    const comparison =
+      sort.key === 'scheduledAt'
+        ? time
+        : sort.key === 'status'
+          ? appointmentStatuses.indexOf(a.status) -
+            appointmentStatuses.indexOf(b.status)
+          : a[sort.key].localeCompare(b[sort.key], 'en-PH', {
+              sensitivity: 'base',
+              numeric: true,
+            });
+    return (
+      comparison * (sort.direction === 'ascending' ? 1 : -1) ||
+      time ||
+      a.id.localeCompare(b.id)
+    );
+  });
   const loadError = !validDay
     ? {
         code: 'VALIDATION' as const,
@@ -196,6 +230,16 @@ export function Appointments({
   }
   const clinics = [...new Set(records?.map((record) => record.clinicId) ?? [])];
 
+  function sortBy(key: SortKey): void {
+    setSort((current) => ({
+      key,
+      direction:
+        current.key === key && current.direction === 'ascending'
+          ? 'descending'
+          : 'ascending',
+    }));
+  }
+
   return (
     <div className="appointments-view">
       <div className="page-heading">
@@ -302,7 +346,17 @@ export function Appointments({
 
       {canScheduleAppointments(staff) && (
         <section className="panel" aria-labelledby="appointment-schedule-title">
-          <h2 id="appointment-schedule-title">Schedule selected patient</h2>
+          <div className="section-heading">
+            <h2 id="appointment-schedule-title">Schedule selected patient</h2>
+            {onChoosePatient && !patient && (
+              <Button
+                disabled={operation.busy || hasCorrections}
+                onClick={onChoosePatient}
+              >
+                Choose patient
+              </Button>
+            )}
+          </div>
           {patient ? (
             <form onSubmit={(event) => void schedule(event)}>
               <div className="appointment-patient">
@@ -361,8 +415,8 @@ export function Appointments({
             </form>
           ) : (
             <p className="muted">
-              Select a patient from the registry, then return here to schedule
-              their appointment.
+              Choose a patient to schedule an appointment here. Confirm their
+              patient number and birth date before you save.
             </p>
           )}
         </section>
@@ -378,16 +432,23 @@ export function Appointments({
       )}
       {records && records.length > 0 && (
         <>
-          <ol className="appointment-steps" aria-label="Appointment states">
-            {appointmentStatuses.map((status) => (
-              <li key={status}>
-                <span>{appointmentStatusNames[status]}</span>
-                <strong>
-                  {records.filter((record) => record.status === status).length}
-                </strong>
-              </li>
-            ))}
-          </ol>
+          <section
+            className="panel appointment-state-chart"
+            aria-labelledby="appointment-states-title"
+          >
+            <div className="section-heading">
+              <h2 id="appointment-states-title">Appointments by state</h2>
+              <p className="hint">For the selected clinic date and filters.</p>
+            </div>
+            <CountChart
+              label="Appointments by state"
+              rows={appointmentStatuses.map((status) => ({
+                label: appointmentStatusNames[status],
+                value: records.filter((record) => record.status === status)
+                  .length,
+              }))}
+            />
+          </section>
           <section
             className="panel table-panel"
             aria-labelledby="appointment-list-title"
@@ -400,6 +461,16 @@ export function Appointments({
                 <span className="badge warning">Last loaded data</span>
               )}
             </div>
+            <p className="hint table-help">
+              Select a heading to sort or reverse the order. States follow
+              clinic-flow order. Scroll horizontally to see all columns and
+              appointment actions.
+            </p>
+            <p className="sr-only" role="status">
+              Sorted by{' '}
+              {sortColumns.find((column) => column.key === sort.key)?.label},{' '}
+              {sort.direction}.
+            </p>
             <div
               className="table-scroll"
               tabIndex={0}
@@ -409,15 +480,52 @@ export function Appointments({
               <table className="appointment-table">
                 <thead>
                   <tr>
-                    <th scope="col">Time</th>
-                    <th scope="col">Patient</th>
-                    <th scope="col">Discipline</th>
-                    <th scope="col">Current state</th>
+                    {sortColumns.map((column) => (
+                      <th
+                        key={column.key}
+                        scope="col"
+                        aria-sort={
+                          sort.key === column.key ? sort.direction : undefined
+                        }
+                      >
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          className="appointment-sort"
+                          aria-label={`Sort by ${column.label}`}
+                          onClick={() => sortBy(column.key)}
+                        >
+                          {column.label}
+                          <svg
+                            aria-hidden="true"
+                            width="16"
+                            height="16"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="2"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                          >
+                            <path
+                              d={
+                                sort.key !== column.key
+                                  ? 'M8 4v16m-4-4 4 4 4-4m4 4V4m-4 4 4-4 4 4'
+                                  : sort.direction === 'ascending'
+                                    ? 'M12 19V5m-5 5 5-5 5 5'
+                                    : 'M12 5v14m-5-5 5 5 5-5'
+                              }
+                            />
+                          </svg>
+                        </Button>
+                      </th>
+                    ))}
                     <th scope="col">Actions and history</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {records.map((record) => (
+                  {sortedRecords?.map((record) => (
                     <tr
                       key={record.id}
                       className={
@@ -460,11 +568,17 @@ export function Appointments({
                       </td>
                       <td className="capitalize">{record.discipline}</td>
                       <td>
-                        <span
-                          className={`badge ${record.status === 'completed' ? 'success' : record.status === 'no_show' ? 'warning' : ''}`}
+                        <Badge
+                          tone={
+                            record.status === 'completed'
+                              ? 'success'
+                              : record.status === 'no_show'
+                                ? 'warning'
+                                : 'neutral'
+                          }
                         >
-                          {appointmentStatusNames[record.status]}
-                        </span>
+                          <span>{appointmentStatusNames[record.status]}</span>
+                        </Badge>
                         <span className="appointment-meta">
                           {timestamp(record.statusChangedAt)}
                         </span>

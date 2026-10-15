@@ -8,6 +8,7 @@ import type { ReportsApi } from './reports-contract';
 import { date, timestamp, today } from './format';
 import { Empty, ErrorNotice, Field, Loading } from './ui';
 import { useOperation } from './use-operation';
+import { CountChart } from './CountChart';
 import './reports.css';
 
 export function Reports({
@@ -351,13 +352,28 @@ function ReportMetrics({ report }: { report: ClinicReport }): ReactElement {
 }
 
 function DailyTrend({ rows }: { rows: ClinicReport['daily'] }): ReactElement {
-  const maximum = Math.max(1, ...rows.map((row) => row.visits));
+  const interval = rows.length > 31 ? 7 : 1;
+  const values = Array.from(
+    { length: Math.ceil(rows.length / interval) },
+    (_, index) =>
+      rows
+        .slice(index * interval, (index + 1) * interval)
+        .reduce((sum, row) => sum + row.visits, 0),
+  );
+  const peak = Math.max(0, ...values);
+  const maximum = Math.max(1, peak);
+  const points = values.map((value, index) => [
+    values.length === 1 ? 320 : (index / (values.length - 1)) * 640,
+    200 - (value / maximum) * 200,
+  ]);
   return (
     <section
       className="panel report-trend"
       aria-labelledby="report-daily-title"
     >
-      <h2 id="report-daily-title">Visits per day</h2>
+      <h2 id="report-daily-title">
+        {interval === 7 ? 'Visits by 7-day period' : 'Visits per day'}
+      </h2>
       {rows.length === 0 ? (
         <Empty>
           No visits in this range. Choose another range to compare daily
@@ -371,44 +387,84 @@ function DailyTrend({ rows }: { rows: ClinicReport['daily'] }): ReactElement {
               day.
             </p>
           )}
-          <p className="hint">
-            Exact daily counts appear beside each bar. Scroll the table for more
-            dates.
-          </p>
-          <div
-            className="table-scroll report-scroll"
-            tabIndex={0}
-            role="region"
-            aria-label="Daily visits; scroll for all dates"
-          >
-            <table>
-              <thead>
-                <tr>
-                  <th scope="col">Clinic date</th>
-                  <th scope="col">Daily trend</th>
-                  <th scope="col">Visits</th>
-                </tr>
-              </thead>
-              <tbody>
-                {rows.map((row) => (
-                  <tr key={row.date}>
-                    <th scope="row">{date(row.date)}</th>
-                    <td>
-                      <div className="report-bar-track" aria-hidden="true">
-                        <div
-                          className="report-bar"
-                          style={{ width: `${(row.visits / maximum) * 100}%` }}
-                        />
-                      </div>
-                    </td>
-                    <td className="report-number">
-                      {row.visits.toLocaleString('en-PH')}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+          <div className="daily-chart">
+            <div className="chart-scale" aria-hidden="true">
+              <span>{maximum.toLocaleString('en-PH')}</span>
+              <span>0</span>
+            </div>
+            <svg
+              role="img"
+              aria-label="Visits trend chart"
+              viewBox="0 0 640 200"
+              preserveAspectRatio="none"
+            >
+              <desc>
+                {interval === 7 ? '7-day visit totals' : 'Daily visits'} from{' '}
+                {date(rows[0].date)} to {date(rows[rows.length - 1].date)}.
+                Highest period count: {peak.toLocaleString('en-PH')}. Exact
+                values are available in View daily data.
+              </desc>
+              <g className="chart-grid">
+                <path d="M0 0H640M0 100H640M0 200H640" />
+              </g>
+              <polyline
+                className="chart-series"
+                points={points.map((point) => point.join(',')).join(' ')}
+              />
+              {values.length === 1 && (
+                <circle
+                  className="chart-point"
+                  cx={points[0][0]}
+                  cy={points[0][1]}
+                  r="5"
+                />
+              )}
+            </svg>
+            <div
+              className="chart-dates"
+              data-single={rows.length === 1}
+              aria-hidden="true"
+            >
+              <span>{date(rows[0].date)}</span>
+              {rows.length > 1 && (
+                <span>{date(rows[rows.length - 1].date)}</span>
+              )}
+            </div>
           </div>
+          <p className="hint">
+            {interval === 7
+              ? 'Each point totals up to 7 days. The last period may be shorter. '
+              : 'Each point shows one day. '}
+            Open the data table for exact counts on each date.
+          </p>
+          <details className="report-data">
+            <summary>View daily data</summary>
+            <div
+              className="table-scroll report-scroll"
+              tabIndex={0}
+              role="region"
+              aria-label="Daily visits; scroll for all dates"
+            >
+              <table>
+                <thead>
+                  <tr>
+                    <th scope="col">Clinic date</th>
+                    <th scope="col">Visits</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {rows.map((row) => (
+                    <tr key={row.date}>
+                      <th scope="row">{date(row.date)}</th>
+                      <td className="report-number">
+                        {row.visits.toLocaleString('en-PH')}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </details>
         </>
       )}
     </section>
@@ -419,7 +475,6 @@ function DepartmentTrend({
 }: {
   rows: ClinicReport['departments'];
 }): ReactElement {
-  const maximum = Math.max(1, ...rows.map((row) => row.patients));
   return (
     <section
       className="panel report-trend"
@@ -436,42 +491,45 @@ function DepartmentTrend({
           departments.
         </Empty>
       ) : (
-        <div
-          className="table-scroll"
-          tabIndex={0}
-          role="region"
-          aria-label="Patients by department; scroll horizontally for all columns"
-        >
-          <table>
-            <thead>
-              <tr>
-                <th scope="col">Department</th>
-                <th scope="col">Department trend</th>
-                <th scope="col">Patients</th>
-              </tr>
-            </thead>
-            <tbody>
-              {rows.map((row) => (
-                <tr key={row.discipline}>
-                  <th scope="row" className="capitalize">
-                    {row.discipline}
-                  </th>
-                  <td>
-                    <div className="report-bar-track" aria-hidden="true">
-                      <div
-                        className="report-bar"
-                        style={{ width: `${(row.patients / maximum) * 100}%` }}
-                      />
-                    </div>
-                  </td>
-                  <td className="report-number">
-                    {row.patients.toLocaleString('en-PH')}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        <>
+          <CountChart
+            label="Patients by department"
+            rows={rows.map((row) => ({
+              label: row.discipline,
+              value: row.patients,
+            }))}
+          />
+          <details className="report-data">
+            <summary>View department data</summary>
+            <div
+              className="table-scroll"
+              tabIndex={0}
+              role="region"
+              aria-label="Patients by department; scroll horizontally for all columns"
+            >
+              <table>
+                <thead>
+                  <tr>
+                    <th scope="col">Department</th>
+                    <th scope="col">Patients</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {rows.map((row) => (
+                    <tr key={row.discipline}>
+                      <th scope="row" className="capitalize">
+                        {row.discipline}
+                      </th>
+                      <td className="report-number">
+                        {row.patients.toLocaleString('en-PH')}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </details>
+        </>
       )}
     </section>
   );

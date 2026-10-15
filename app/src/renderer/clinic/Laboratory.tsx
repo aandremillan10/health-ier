@@ -3,6 +3,7 @@ import type { ReactElement, FormEvent } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
+import { Badge } from '@/components/arc/badge/badge';
 import type {
   LabOrder,
   LabOrderStatus,
@@ -41,6 +42,7 @@ export function Laboratory({
   demo = false,
   onExpired,
   onDirty,
+  onChoosePatient,
 }: {
   api: LaboratoryApi;
   staff: Principal;
@@ -48,6 +50,7 @@ export function Laboratory({
   demo?: boolean;
   onExpired?: () => void;
   onDirty?: (dirty: boolean) => void;
+  onChoosePatient?: () => void;
 }): ReactElement {
   const [orders, setOrders] = useState<LabOrder[] | null>(null);
   const [loadError, setLoadError] = useState<ClinicError | null>(null);
@@ -287,9 +290,22 @@ export function Laboratory({
     return <Empty>Your account cannot access laboratory orders.</Empty>;
   if (!patient && staff.role !== 'medtech')
     return (
-      <Empty>
-        Open a patient from the registry to view or create laboratory orders.
-      </Empty>
+      <section>
+        <div className="page-heading">
+          <h1>Laboratory orders</h1>
+        </div>
+        <Empty
+          title="Choose a patient for laboratory orders"
+          action={
+            onChoosePatient && (
+              <Button onClick={onChoosePatient}>Choose patient</Button>
+            )
+          }
+        >
+          Find the patient to view their orders or request tests. You can
+          continue here after you select a record.
+        </Empty>
+      </section>
     );
   return (
     <section
@@ -532,7 +548,9 @@ export function Laboratory({
                       {date(order.requestedFor)} ·{' '}
                       {order.priority === 'urgent' ? 'Urgent' : 'Routine'}
                     </span>
-                    <span className="badge">{states[order.status]}</span>
+                    <Badge>
+                      <span>{states[order.status]}</span>
+                    </Badge>
                   </button>
                 </li>
               ))}
@@ -542,11 +560,17 @@ export function Laboratory({
             <article className="panel lab-order-detail">
               <div className="section-heading">
                 <h3>{selected.patient.fullName}</h3>
-                <span
-                  className={`badge ${selected.status === 'reviewed' ? 'success' : selected.status === 'resulted' ? 'warning' : ''}`}
+                <Badge
+                  tone={
+                    selected.status === 'reviewed'
+                      ? 'success'
+                      : selected.status === 'resulted'
+                        ? 'warning'
+                        : 'neutral'
+                  }
                 >
-                  {states[selected.status]}
-                </span>
+                  <span>{states[selected.status]}</span>
+                </Badge>
               </div>
               <p className="hint">
                 Patient number: {selected.patient.id} · Birth date:{' '}
@@ -1032,11 +1056,9 @@ function ResultRecord({
               : 'Original finalized result'}
           {current ? ' · Current' : ''}
         </h4>
-        <span
-          className={`badge ${result.status === 'finalized' ? 'success' : 'warning'}`}
-        >
-          {result.status === 'draft' ? 'Draft' : 'Finalized'}
-        </span>
+        <Badge tone={result.status === 'finalized' ? 'success' : 'warning'}>
+          <span>{result.status === 'draft' ? 'Draft' : 'Finalized'}</span>
+        </Badge>
       </div>
       <p className="hint">
         {result.authorName} ·{' '}

@@ -3,6 +3,7 @@ import type { FormEvent, ReactElement } from 'react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
+import { Badge } from '@/components/arc/badge/badge';
 import type { LabOrder } from '../../shared/laboratory-api';
 import type { PatientIdentity } from '../../shared/clinic-api';
 import type {
@@ -43,6 +44,7 @@ export function Referrals({
   demo = false,
   onExpired,
   onDirty,
+  onChoosePatient,
 }: {
   api: WorkspaceApi;
   staff: Principal;
@@ -50,6 +52,7 @@ export function Referrals({
   demo?: boolean;
   onExpired?: () => void;
   onDirty?: (dirty: boolean) => void;
+  onChoosePatient?: () => void;
 }): ReactElement {
   const [referrals, setReferrals] = useState<Referral[] | null>(null);
   const [selected, setSelected] = useState<Referral | null>(null);
@@ -291,6 +294,11 @@ export function Referrals({
           </p>
         </div>
         <div className="referral-actions">
+          {provider && !patient && onChoosePatient && (
+            <Button onClick={onChoosePatient}>
+              Choose patient for referral
+            </Button>
+          )}
           <Button
             variant="outline"
             disabled={busy || loading}
@@ -535,7 +543,9 @@ export function Referrals({
                     <span className="hint">
                       {record.originStaffName} · {date(record.createdAt)}
                     </span>
-                    <span className="badge">{states[record.status]}</span>
+                    <Badge>
+                      <span>{states[record.status]}</span>
+                    </Badge>
                   </button>
                 </li>
               ))}
@@ -545,11 +555,11 @@ export function Referrals({
             <article className="panel referral-detail">
               <div className="section-heading">
                 <h3>{selected.patient.fullName}</h3>
-                <span
-                  className={`badge ${selected.status === 'completed' ? 'success' : ''}`}
+                <Badge
+                  tone={selected.status === 'completed' ? 'success' : 'neutral'}
                 >
-                  {states[selected.status]}
-                </span>
+                  <span>{states[selected.status]}</span>
+                </Badge>
               </div>
               <p className="hint">
                 Patient number: {selected.patient.id} · Birth date:{' '}

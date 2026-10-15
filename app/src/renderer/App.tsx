@@ -5,7 +5,7 @@ import {
   useRef,
   useState,
 } from 'react';
-import type { FormEvent, ReactElement } from 'react';
+import type { FocusEvent, FormEvent, ReactElement } from 'react';
 import { createPortal } from 'react-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -31,7 +31,7 @@ import { chartNames } from './clinic/contract';
 import type { ChartTab } from './clinic/contract';
 import { EntryForm, VitalsForm } from './clinic/ClinicalForms';
 import { Documents } from './clinic/Documents';
-import { ErrorNotice, Field } from './clinic/ui';
+import { ClinicIcon, ErrorNotice, Field } from './clinic/ui';
 import { useOperation } from './clinic/use-operation';
 import { date } from './clinic/format';
 import { createDesktopClient } from './clinic/desktop-client';
@@ -83,6 +83,17 @@ const toolNames: Partial<Record<Screen['kind'], string>> = {
   historical: 'Historical documents',
 };
 
+function revealPatientNavigation(event: FocusEvent<HTMLElement>): void {
+  const identity =
+    event.currentTarget.previousElementSibling?.getBoundingClientRect();
+  const control = event.target.getBoundingClientRect();
+  if (identity && control.top < identity.bottom)
+    window.scrollBy({
+      top: control.top - identity.bottom - 12,
+      behavior: 'instant',
+    });
+}
+
 export function App(): ReactElement {
   const [fixture] = useState(() =>
     __CLINIC_BROWSER_QA__ ? createDemoClinic() : null,
@@ -105,7 +116,6 @@ export function App(): ReactElement {
   const [signingOut, setSigningOut] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [capsLock, setCapsLock] = useState(false);
-  const panelRef = useRef<HTMLElement>(null);
   const loginAttempt = useRef(0);
   const loginPending = useRef(false);
   const { busy, error, run, clearError } = useOperation();
@@ -117,13 +127,6 @@ export function App(): ReactElement {
     setSession((s) => s + 1);
     setSessionNotice('Your session changed or expired. Sign in again.');
   }, []);
-  function wobble(): void {
-    const element = panelRef.current;
-    if (!element) return;
-    element.classList.remove('shake');
-    void element.offsetWidth;
-    element.classList.add('shake');
-  }
   useEffect(() => {
     if (demo) return;
     return bridge?.onSessionReset?.((reason) => {
@@ -157,9 +160,6 @@ export function App(): ReactElement {
       setStaff(result);
       setSession((s) => s + 1);
       setSessionNotice('');
-      panelRef.current?.classList.remove('shake');
-    } else {
-      wobble();
     }
   }
   function openDemo(): void {
@@ -214,147 +214,167 @@ export function App(): ReactElement {
         />
       ) : (
         <main id="main-content" className="sign-in">
-          <section className="login-panel" ref={panelRef}>
-            <div className="login-identity">
-              <img src="./amlig-logo.png" alt="" width="48" height="48" />
-              <div>
-                <strong>AMLIG</strong>
-                <span>Iloilo Provincial HMO-Clinic</span>
+          <div className="login-layout">
+            <section className="login-intro" aria-labelledby="workspace-title">
+              <div className="login-identity">
+                <img src="./amlig-logo.png" alt="" width="48" height="48" />
+                <div>
+                  <strong>AMLIG</strong>
+                  <span>Iloilo Provincial HMO-Clinic</span>
+                </div>
               </div>
-            </div>
-            <h1>Staff sign-in</h1>
-            {sessionNotice && (
-              <p className="notice warning" role="status">
-                {sessionNotice}
+              <div>
+                <h2 id="workspace-title">Your clinic workspace</h2>
+                <p>
+                  Patient records, daily clinic flow, and clinical documents in
+                  one place.
+                </p>
+              </div>
+              <p className="login-access">
+                Your staff role determines which records and actions are
+                available.
               </p>
-            )}
-            <ErrorNotice error={error} />
-            <form onSubmit={(e) => void login(e)}>
-              <Field label="Username" name="username" error={error}>
-                <Input
-                  disabled={busy || signingOut}
-                  id="username"
-                  value={username}
-                  onChange={(e) => setUsername(e.target.value)}
-                  autoComplete="username"
-                  required
-                />
-              </Field>
-              <Field label="Password" name="password" error={error}>
-                <div className="pw-field">
+            </section>
+            <section className="login-panel">
+              <h1>Staff sign-in</h1>
+              <p className="login-description">
+                Use your assigned clinic account to continue.
+              </p>
+              {sessionNotice && (
+                <p className="notice warning" role="status">
+                  {sessionNotice}
+                </p>
+              )}
+              <ErrorNotice error={error} />
+              <form onSubmit={(e) => void login(e)}>
+                <Field label="Username" name="username" error={error}>
                   <Input
                     disabled={busy || signingOut}
-                    id="password"
-                    type={showPassword ? 'text' : 'password'}
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    onKeyDown={(e) => {
-                      setCapsLock(e.getModifierState('CapsLock'));
-                    }}
-                    onKeyUp={(e) => {
-                      setCapsLock(e.getModifierState('CapsLock'));
-                    }}
-                    onBlur={() => setCapsLock(false)}
-                    autoComplete="current-password"
+                    id="username"
+                    name="username"
+                    value={username}
+                    onChange={(e) => setUsername(e.target.value)}
+                    autoComplete="username"
                     required
-                    aria-invalid={Boolean(error?.fieldErrors?.password)}
-                    aria-describedby={
-                      error?.fieldErrors?.password
-                        ? 'password-error'
-                        : undefined
-                    }
                   />
-                  {capsLock && (
-                    <span className="pw-caps" role="status">
+                </Field>
+                <Field label="Password" name="password" error={error}>
+                  <div className="pw-field">
+                    <Input
+                      disabled={busy || signingOut}
+                      id="password"
+                      name="password"
+                      type={showPassword ? 'text' : 'password'}
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      onKeyDown={(e) => {
+                        setCapsLock(e.getModifierState('CapsLock'));
+                      }}
+                      onKeyUp={(e) => {
+                        setCapsLock(e.getModifierState('CapsLock'));
+                      }}
+                      onBlur={() => setCapsLock(false)}
+                      autoComplete="current-password"
+                      required
+                      aria-invalid={Boolean(error?.fieldErrors?.password)}
+                      aria-describedby={
+                        error?.fieldErrors?.password
+                          ? 'password-error'
+                          : undefined
+                      }
+                    />
+                    {capsLock && (
+                      <span className="pw-caps" role="status">
+                        <svg
+                          aria-hidden="true"
+                          width="18"
+                          height="18"
+                          viewBox="0 0 24 24"
+                          fill="currentColor"
+                        >
+                          <title>Caps Lock is on.</title>
+                          <path d="M12 1.2 20.2 7.8H16v8c0 .55-.45 1-1 1H9c-.55 0-1-.45-1-1v-8H3.8L12 1.2Z" />
+                          <rect
+                            x="8.1"
+                            y="19.5"
+                            width="7.8"
+                            height="2.4"
+                            rx="1.2"
+                          />
+                        </svg>
+                        <span className="sr-only">Caps Lock is on.</span>
+                      </span>
+                    )}
+                    <button
+                      type="button"
+                      className="pw-toggle"
+                      aria-label={
+                        showPassword ? 'Hide password' : 'Show password'
+                      }
+                      aria-pressed={showPassword}
+                      onClick={() => setShowPassword((visible) => !visible)}
+                    >
                       <svg
                         aria-hidden="true"
                         width="18"
                         height="18"
                         viewBox="0 0 24 24"
-                        fill="currentColor"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="1.75"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
                       >
-                        <title>Caps Lock is on.</title>
-                        <path d="M12 1.2 20.2 7.8H16v8c0 .55-.45 1-1 1H9c-.55 0-1-.45-1-1v-8H3.8L12 1.2Z" />
-                        <rect
-                          x="8.1"
-                          y="19.5"
-                          width="7.8"
-                          height="2.4"
-                          rx="1.2"
-                        />
+                        <path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12Z" />
+                        <circle cx="12" cy="12" r="3" />
+                        {showPassword ? <path d="m3 3 18 18" /> : null}
                       </svg>
-                      <span className="sr-only">Caps Lock is on.</span>
-                    </span>
-                  )}
-                  <button
-                    type="button"
-                    className="pw-toggle"
-                    aria-label={
-                      showPassword ? 'Hide password' : 'Show password'
-                    }
-                    aria-pressed={showPassword}
-                    onClick={() => setShowPassword((visible) => !visible)}
-                  >
-                    <svg
-                      aria-hidden="true"
-                      width="18"
-                      height="18"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="1.75"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    >
-                      <path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12Z" />
-                      <circle cx="12" cy="12" r="3" />
-                      {showPassword ? <path d="m3 3 18 18" /> : null}
-                    </svg>
-                  </button>
-                </div>
-              </Field>
-              <Button type="submit" disabled={busy || signingOut}>
-                {busy ? 'Signing in…' : 'Sign in'}
-              </Button>
-            </form>
-            {!bridge && !sessionNotice && (
-              <p className="hint">
-                {fixture
-                  ? 'Browser QA uses fictional records. Live sign-in requires the desktop app.'
-                  : 'The desktop connection is unavailable. Restart the clinic app and try again.'}
-              </p>
-            )}
-            {fixture && (
-              <section className="fixture-launch">
-                <h2>Frontend demo</h2>
-                <p className="hint">
-                  Fictional records. Changes reset on reload.
-                </p>
-                <Field label="Demo staff" name="demo-staff">
-                  <select
-                    className="clinic-select"
-                    id="demo-staff"
-                    value={selectedStaff}
-                    onChange={(e) => setSelectedStaff(e.target.value)}
-                  >
-                    {demoStaff.map((s) => (
-                      <option key={s.id} value={s.id}>
-                        {s.displayName} · {roleNames[s.role]}
-                        {s.isHead ? ' · Clinic head' : ''}
-                      </option>
-                    ))}
-                  </select>
+                    </button>
+                  </div>
                 </Field>
-                <Button
-                  variant="outline"
-                  onClick={openDemo}
-                  disabled={busy || signingOut}
-                >
-                  Open frontend demo
+                <Button type="submit" disabled={busy || signingOut}>
+                  {busy ? 'Signing in…' : 'Sign in'}
                 </Button>
-              </section>
-            )}
-          </section>
+              </form>
+              {!bridge && !sessionNotice && (
+                <p className="hint">
+                  {fixture
+                    ? 'Browser QA uses fictional records. Live sign-in requires the desktop app.'
+                    : 'The desktop connection is unavailable. Restart the clinic app and try again.'}
+                </p>
+              )}
+              {fixture && (
+                <section className="fixture-launch">
+                  <h2>Frontend demo</h2>
+                  <p className="hint">
+                    Fictional records. Changes reset on reload.
+                  </p>
+                  <Field label="Demo staff" name="demo-staff">
+                    <select
+                      className="clinic-select"
+                      id="demo-staff"
+                      value={selectedStaff}
+                      onChange={(e) => setSelectedStaff(e.target.value)}
+                    >
+                      {demoStaff.map((s) => (
+                        <option key={s.id} value={s.id}>
+                          {s.displayName} · {roleNames[s.role]}
+                          {s.isHead ? ' · Clinic head' : ''}
+                        </option>
+                      ))}
+                    </select>
+                  </Field>
+                  <Button
+                    variant="outline"
+                    onClick={openDemo}
+                    disabled={busy || signingOut}
+                  >
+                    Open frontend demo
+                  </Button>
+                </section>
+              )}
+            </section>
+          </div>
         </main>
       )}
     </>
@@ -559,7 +579,17 @@ function Workspace({
   });
   const { screen, patient, generation } = context;
   const [palette, setPalette] = useState(false);
+  const [navigationOpen, setNavigationOpen] = useState(false);
   const paletteOrigin = useRef<HTMLElement | null>(null);
+  const patientDestination = useRef<Screen | null>(null);
+  function choosePatient(): void {
+    patientDestination.current = screen;
+    paletteOrigin.current =
+      document.activeElement instanceof HTMLElement
+        ? document.activeElement
+        : null;
+    setPalette(true);
+  }
   const restorePaletteFocus = useCallback((): void => {
     if (paletteOrigin.current?.isConnected) paletteOrigin.current.focus();
   }, []);
@@ -623,6 +653,7 @@ function Workspace({
     function toggle(event: KeyboardEvent): void {
       if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'k') {
         event.preventDefault();
+        patientDestination.current = null;
         if (!document.querySelector('.command-dialog[open]'))
           paletteOrigin.current =
             document.activeElement instanceof HTMLElement
@@ -703,12 +734,15 @@ function Workspace({
     setError(null);
     markDirty(false);
     setNotice(feedback);
+    setNavigationOpen(false);
     setContext((current) => ({
       screen: next,
       patient: nextPatient,
       generation: current.generation + 1,
     }));
-    requestAnimationFrame(() => heading.current?.focus());
+    requestAnimationFrame(() =>
+      heading.current?.focus({ preventScroll: true }),
+    );
     window.scrollTo(0, 0);
   }
   function navigate(next: Screen, nextPatient = patient): void {
@@ -720,7 +754,10 @@ function Workspace({
       next.kind === 'registry' || next.kind === 'register' ? null : nextPatient,
     );
   }
-  async function select(record: Pick<Patient, 'id'>): Promise<void> {
+  async function select(
+    record: Pick<Patient, 'id'>,
+    destination: Screen = { kind: 'chart', tab: 'details' },
+  ): Promise<void> {
     const request = ++selection.current;
     setBusy(true);
     setError(null);
@@ -739,7 +776,7 @@ function Workspace({
         });
         return;
       }
-      navigate({ kind: 'chart', tab: 'details' }, result.data);
+      navigate(destination, result.data);
     } catch {
       if (request === selection.current)
         setError({
@@ -777,6 +814,7 @@ function Workspace({
         : screen.kind === 'entry' || screen.kind === 'document'
           ? 'medical'
           : 'details';
+  const recordsActive = !toolNames[screen.kind] || screen.kind === 'family';
   const helpTopic: PracticeTopic =
     screen.kind === 'chart'
       ? screen.tab === 'details'
@@ -792,186 +830,153 @@ function Workspace({
   return (
     <>
       <div className="workspace">
-        <aside className="sidebar">
-          <div className="brand">
-            <img src="./amlig-logo.png" alt="" width="44" height="44" />
-            <div>
-              <strong>AMLIG</strong>
-              <span>HMO-Clinic · Iloilo</span>
+        <aside className={`sidebar ${navigationOpen ? 'navigation-open' : ''}`}>
+          <div className="sidebar-heading">
+            <div className="brand">
+              <img src="./amlig-logo.png" alt="" width="44" height="44" />
+              <div>
+                <strong>AMLIG</strong>
+                <span>HMO-Clinic · Iloilo</span>
+              </div>
             </div>
+            <Button
+              className="clinic-menu"
+              variant="outline"
+              aria-label="Clinic menu"
+              aria-expanded={navigationOpen}
+              aria-controls="clinic-navigation"
+              onClick={() => setNavigationOpen((open) => !open)}
+            >
+              <ClinicIcon name="menu" />
+              Menu
+            </Button>
           </div>
-          <nav aria-label="Clinic navigation">
-            <Button
-              className={`nav-item ${screen.kind === 'registry' ? 'selected' : ''}`}
-              aria-current={screen.kind === 'registry' ? 'page' : undefined}
-              variant="ghost"
-              onClick={() => navigate({ kind: 'registry' })}
-            >
-              Patient records
-            </Button>
-            <Button
-              className={`nav-item ${screen.kind === 'appointments' ? 'selected' : ''}`}
-              variant="ghost"
-              aria-current={screen.kind === 'appointments' ? 'page' : undefined}
-              onClick={() => navigate({ kind: 'appointments' })}
-            >
-              Clinic flow
-            </Button>
-            {['doctor', 'dentist', 'medtech'].includes(staff.role) && (
+          <div id="clinic-navigation" className="sidebar-content">
+            <nav aria-label="Clinic navigation">
+              <span className="nav-label">Clinic workspace</span>
               <Button
-                className={`nav-item ${screen.kind === 'referrals' ? 'selected' : ''}`}
+                className={`nav-item ${recordsActive ? 'selected' : ''}`}
+                aria-current={recordsActive ? 'page' : undefined}
                 variant="ghost"
-                aria-current={screen.kind === 'referrals' ? 'page' : undefined}
-                onClick={() => navigate({ kind: 'referrals' })}
+                onClick={() => navigate({ kind: 'registry' })}
               >
-                Referrals
+                <ClinicIcon name="records" />
+                Patient records
               </Button>
-            )}
-            {['doctor', 'dentist', 'medtech'].includes(staff.role) && (
               <Button
-                className={`nav-item ${screen.kind === 'laboratory' ? 'selected' : ''}`}
+                className={`nav-item ${screen.kind === 'appointments' ? 'selected' : ''}`}
                 variant="ghost"
-                aria-current={screen.kind === 'laboratory' ? 'page' : undefined}
-                onClick={() => navigate({ kind: 'laboratory' })}
+                aria-current={
+                  screen.kind === 'appointments' ? 'page' : undefined
+                }
+                onClick={() => navigate({ kind: 'appointments' })}
               >
-                Laboratory orders
+                <ClinicIcon name="flow" />
+                Clinic flow
               </Button>
-            )}
-            {(staff.isHead || ['clerk', 'attendant'].includes(staff.role)) && (
-              <Button
-                className={`nav-item ${screen.kind === 'reports' ? 'selected' : ''}`}
-                variant="ghost"
-                aria-current={screen.kind === 'reports' ? 'page' : undefined}
-                onClick={() => navigate({ kind: 'reports' })}
-              >
-                Reports
-              </Button>
-            )}
-            {staff.isHead && (
-              <Button
-                className={`nav-item ${screen.kind === 'audit' ? 'selected' : ''}`}
-                variant="ghost"
-                aria-current={screen.kind === 'audit' ? 'page' : undefined}
-                onClick={() => navigate({ kind: 'audit' })}
-              >
-                Audit trail
-              </Button>
-            )}
-            {patient &&
-              screen.kind !== 'registry' &&
-              screen.kind !== 'register' && (
-                <div className="patient-navigation">
-                  <span className="nav-label">Selected patient</span>
-                  {(staff.role !== 'medtech' || staff.isHead) && (
-                    <Button
-                      variant="ghost"
-                      className={`nav-item ${screen.kind === 'family' ? 'selected' : ''}`}
-                      aria-current={
-                        screen.kind === 'family' ? 'page' : undefined
-                      }
-                      onClick={() => navigate({ kind: 'family' })}
-                    >
-                      Family and eligibility
-                    </Button>
-                  )}
-                  <Button
-                    variant="ghost"
-                    className={`nav-item ${currentTab === 'details' ? 'selected' : ''}`}
-                    aria-current={currentTab === 'details' ? 'page' : undefined}
-                    onClick={() => backToChart('details')}
-                  >
-                    Patient details
-                  </Button>
-                  {canReadVitals(staff) && (
-                    <Button
-                      variant="ghost"
-                      className={`nav-item ${currentTab === 'vitals' ? 'selected' : ''}`}
-                      aria-current={
-                        currentTab === 'vitals' ? 'page' : undefined
-                      }
-                      onClick={() => backToChart('vitals')}
-                    >
-                      Vital signs
-                    </Button>
-                  )}
-                  {visibleDisciplines(staff).map((d) => (
-                    <Button
-                      key={d}
-                      variant="ghost"
-                      className={`nav-item ${currentTab === d ? 'selected' : ''}`}
-                      aria-current={currentTab === d ? 'page' : undefined}
-                      onClick={() => backToChart(d)}
-                    >
-                      {chartNames[d]}
-                    </Button>
-                  ))}
-                  {visibleDisciplines(staff).length > 0 && (
-                    <Button
-                      variant="ghost"
-                      className={`nav-item ${screen.kind === 'historical' ? 'selected' : ''}`}
-                      aria-current={
-                        screen.kind === 'historical' ? 'page' : undefined
-                      }
-                      onClick={() => navigate({ kind: 'historical' })}
-                    >
-                      Historical documents
-                    </Button>
-                  )}
-                </div>
-              )}
-          </nav>
-          <div className="sidebar-bottom">
-            <div className="connection">
-              <span
-                className={`status-dot ${available === null ? 'checking' : available ? 'online' : ''}`}
-              />
-              <strong role="status">
-                {available === null
-                  ? 'Checking clinic connection…'
-                  : available
-                    ? demo
-                      ? 'Demo connection available'
-                      : 'Last connection check passed'
-                    : 'Last connection check failed'}
-              </strong>
-              <Button
-                variant="ghost"
-                size="sm"
-                disabled={busy || available === null}
-                onClick={() => void refreshHealth()}
-              >
-                Check connection
-              </Button>
-            </div>
-            <div className="staff-identity">
-              <strong>{staff.displayName}</strong>
-              <span>
-                {roleNames[staff.role]}
-                {staff.isHead ? ' · Clinic head' : ''}
-              </span>
-              {!practice && (
+              {['doctor', 'dentist', 'medtech'].includes(staff.role) && (
                 <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => {
-                    if (
-                      !dirtyRef.current ||
-                      window.confirm('Discard unsaved changes and sign out?')
-                    ) {
-                      selection.current++;
-                      void onLogout();
-                    }
-                  }}
+                  className={`nav-item ${screen.kind === 'referrals' ? 'selected' : ''}`}
+                  variant="ghost"
+                  aria-current={
+                    screen.kind === 'referrals' ? 'page' : undefined
+                  }
+                  onClick={() => navigate({ kind: 'referrals' })}
                 >
-                  Sign out
+                  <ClinicIcon name="referrals" />
+                  Referrals
                 </Button>
               )}
-              {practice && (
-                <p className="hint">
-                  Your real session stays active. Exit practice to return to
-                  clinic work.
-                </p>
+              {['doctor', 'dentist', 'medtech'].includes(staff.role) && (
+                <Button
+                  className={`nav-item ${screen.kind === 'laboratory' ? 'selected' : ''}`}
+                  variant="ghost"
+                  aria-current={
+                    screen.kind === 'laboratory' ? 'page' : undefined
+                  }
+                  onClick={() => navigate({ kind: 'laboratory' })}
+                >
+                  <ClinicIcon name="lab" />
+                  Laboratory orders
+                </Button>
               )}
+              {(staff.isHead ||
+                ['clerk', 'attendant'].includes(staff.role)) && (
+                <Button
+                  className={`nav-item ${screen.kind === 'reports' ? 'selected' : ''}`}
+                  variant="ghost"
+                  aria-current={screen.kind === 'reports' ? 'page' : undefined}
+                  onClick={() => navigate({ kind: 'reports' })}
+                >
+                  <ClinicIcon name="reports" />
+                  Reports
+                </Button>
+              )}
+              {staff.isHead && (
+                <Button
+                  className={`nav-item ${screen.kind === 'audit' ? 'selected' : ''}`}
+                  variant="ghost"
+                  aria-current={screen.kind === 'audit' ? 'page' : undefined}
+                  onClick={() => navigate({ kind: 'audit' })}
+                >
+                  <ClinicIcon name="audit" />
+                  Audit trail
+                </Button>
+              )}
+            </nav>
+            <div className="sidebar-bottom">
+              <div className="connection">
+                <span
+                  className={`status-dot ${available === null ? 'checking' : available ? 'online' : ''}`}
+                />
+                <strong role="status">
+                  {available === null
+                    ? 'Checking clinic connection…'
+                    : available
+                      ? demo
+                        ? 'Demo connection available'
+                        : 'Last connection check passed'
+                      : 'Last connection check failed'}
+                </strong>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  disabled={busy || available === null}
+                  onClick={() => void refreshHealth()}
+                >
+                  Check connection
+                </Button>
+              </div>
+              <div className="staff-identity">
+                <strong>{staff.displayName}</strong>
+                <span>
+                  {roleNames[staff.role]}
+                  {staff.isHead ? ' · Clinic head' : ''}
+                </span>
+                {!practice && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      if (
+                        !dirtyRef.current ||
+                        window.confirm('Discard unsaved changes and sign out?')
+                      ) {
+                        selection.current++;
+                        void onLogout();
+                      }
+                    }}
+                  >
+                    Sign out
+                  </Button>
+                )}
+                {practice && (
+                  <p className="hint">
+                    Your real session stays active. Exit practice to return to
+                    clinic work.
+                  </p>
+                )}
+              </div>
             </div>
           </div>
         </aside>
@@ -1010,13 +1015,32 @@ function Workspace({
                 </>
               )}
             </nav>
-            <span className="badge">
-              {practice
-                ? 'Practice · Memory only'
-                : demo
-                  ? 'Frontend demo · Memory only'
-                  : 'Clinic LAN'}
-            </span>
+            <div className="topbar-actions">
+              <Button
+                className="quick-search"
+                variant="outline"
+                aria-label="Search patients"
+                aria-haspopup="dialog"
+                onClick={(event) => {
+                  patientDestination.current = null;
+                  paletteOrigin.current = event.currentTarget;
+                  setPalette(true);
+                }}
+              >
+                <ClinicIcon name="search" />
+                <span>Search patients</span>
+                <kbd className="kbd" aria-hidden="true">
+                  Ctrl K
+                </kbd>
+              </Button>
+              <span className={`badge ${demo ? 'warning' : ''}`}>
+                {practice
+                  ? 'Practice · Memory only'
+                  : demo
+                    ? 'Frontend demo · Memory only'
+                    : 'Clinic LAN'}
+              </span>
+            </div>
           </header>
           <main id="main-content" ref={heading} tabIndex={-1}>
             {!practice && onPractice && (
@@ -1035,7 +1059,7 @@ function Workspace({
             {available === false && (
               <p className="notice error" role="alert">
                 Clinic server unavailable. Input remains unsaved until a save
-                succeeds.
+                succeeds. Check the clinic connection and try again.
               </p>
             )}
             {error && <ErrorNotice error={error} />}
@@ -1054,7 +1078,9 @@ function Workspace({
             )}
             {patient &&
               screen.kind !== 'registry' &&
-              screen.kind !== 'register' && (
+              screen.kind !== 'register' &&
+              screen.kind !== 'reports' &&
+              screen.kind !== 'audit' && (
                 <div className="patient-banner">
                   <span className="patient-avatar" aria-hidden="true">
                     {patient.fullName
@@ -1072,7 +1098,97 @@ function Workspace({
                   {dirty && (
                     <span className="badge warning">Unsaved changes</span>
                   )}
+                  {['appointments', 'laboratory', 'referrals'].includes(
+                    screen.kind,
+                  ) && (
+                    <div className="patient-context-actions">
+                      <Button
+                        variant="outline"
+                        disabled={dirty || busy}
+                        onClick={choosePatient}
+                      >
+                        Change patient
+                      </Button>
+                      {(screen.kind === 'referrals' ||
+                        (screen.kind === 'laboratory' &&
+                          staff.role === 'medtech')) && (
+                        <Button
+                          variant="ghost"
+                          onClick={() => navigate(screen, null)}
+                        >
+                          View work queue
+                        </Button>
+                      )}
+                    </div>
+                  )}
                 </div>
+              )}
+            {patient &&
+              screen.kind !== 'registry' &&
+              screen.kind !== 'register' &&
+              screen.kind !== 'reports' &&
+              screen.kind !== 'audit' && (
+                <nav
+                  className="patient-navigation"
+                  aria-label="Patient navigation"
+                  onFocusCapture={revealPatientNavigation}
+                >
+                  <Button
+                    variant="ghost"
+                    className={`patient-nav-item ${currentTab === 'details' ? 'selected' : ''}`}
+                    aria-current={currentTab === 'details' ? 'page' : undefined}
+                    onClick={() => backToChart('details')}
+                  >
+                    Patient details
+                  </Button>
+                  {canReadVitals(staff) && (
+                    <Button
+                      variant="ghost"
+                      className={`patient-nav-item ${currentTab === 'vitals' ? 'selected' : ''}`}
+                      aria-current={
+                        currentTab === 'vitals' ? 'page' : undefined
+                      }
+                      onClick={() => backToChart('vitals')}
+                    >
+                      Vital signs
+                    </Button>
+                  )}
+                  {visibleDisciplines(staff).map((d) => (
+                    <Button
+                      key={d}
+                      variant="ghost"
+                      className={`patient-nav-item ${currentTab === d ? 'selected' : ''}`}
+                      aria-current={currentTab === d ? 'page' : undefined}
+                      onClick={() => backToChart(d)}
+                    >
+                      {chartNames[d]}
+                    </Button>
+                  ))}
+                  {visibleDisciplines(staff).length > 0 && (
+                    <Button
+                      variant="ghost"
+                      className={`patient-nav-item ${screen.kind === 'historical' ? 'selected' : ''}`}
+                      aria-current={
+                        screen.kind === 'historical' ? 'page' : undefined
+                      }
+                      onClick={() => navigate({ kind: 'historical' })}
+                    >
+                      Historical documents
+                    </Button>
+                  )}
+                  {(staff.role !== 'medtech' || staff.isHead) && (
+                    <Button
+                      variant="ghost"
+                      className={`patient-nav-item ${screen.kind === 'family' ? 'selected' : ''}`}
+                      aria-current={
+                        screen.kind === 'family' ? 'page' : undefined
+                      }
+                      onClick={() => navigate({ kind: 'family' })}
+                    >
+                      Family and eligibility
+                    </Button>
+                  )}
+                </nav>
               )}
             {screen.kind === 'registry' && (
               <Registry
@@ -1108,6 +1224,7 @@ function Workspace({
                 onExpired={onExpired}
                 onDirty={markDirty}
                 onOpenPatient={(id) => void select({ id })}
+                onChoosePatient={choosePatient}
               />
             )}
             {screen.kind === 'laboratory' && (
@@ -1119,6 +1236,7 @@ function Workspace({
                 demo={demo}
                 onExpired={onExpired}
                 onDirty={markDirty}
+                onChoosePatient={choosePatient}
               />
             )}
             {screen.kind === 'reports' && (
@@ -1138,6 +1256,7 @@ function Workspace({
                 demo={demo}
                 onExpired={onExpired}
                 onDirty={markDirty}
+                onChoosePatient={choosePatient}
               />
             )}
             {screen.kind === 'family' && patient && (
@@ -1177,21 +1296,6 @@ function Workspace({
                 }}
               />
             )}
-            {patient &&
-              screen.kind === 'chart' &&
-              screen.tab === 'details' &&
-              canReadClinicalSummary(staff) && (
-                <ClinicalSummary
-                  key={patient.id}
-                  api={api}
-                  staff={staff}
-                  patientId={patient.id}
-                  patientName={patient.fullName}
-                  onExpired={onExpired}
-                  onDirty={markDirty}
-                  demo={demo}
-                />
-              )}
             {(screen.kind === 'register' || screen.kind === 'editPatient') && (
               <PatientForm
                 key={generation}
@@ -1233,6 +1337,21 @@ function Workspace({
                 onExpired={onExpired}
               />
             )}
+            {patient &&
+              screen.kind === 'chart' &&
+              screen.tab === 'details' &&
+              canReadClinicalSummary(staff) && (
+                <ClinicalSummary
+                  key={patient.id}
+                  api={api}
+                  staff={staff}
+                  patientId={patient.id}
+                  patientName={patient.fullName}
+                  onExpired={onExpired}
+                  onDirty={markDirty}
+                  demo={demo}
+                />
+              )}
             {patient && screen.kind === 'entry' && (
               <EntryForm
                 key={generation}
@@ -1346,7 +1465,7 @@ function Workspace({
         onDismiss={() => setPalette(false)}
         onSelect={(record) => {
           setPalette(false);
-          void select(record);
+          void select(record, patientDestination.current ?? undefined);
         }}
         onRegister={() => {
           setPalette(false);

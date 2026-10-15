@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import type { ReactElement } from 'react';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/arc/badge/badge';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import type { Result, Staff } from '../../shared/clinic-api';
@@ -576,11 +577,15 @@ function ClinicalSummaryPanel({
                     <li key={item.id} className="summary-item">
                       <div className="section-heading">
                         <h4>{contentName(item.content)}</h4>
-                        <span
-                          className={`badge ${item.status === 'inactive' ? '' : 'success'}`}
+                        <Badge
+                          tone={
+                            item.status === 'inactive' ? 'neutral' : 'success'
+                          }
                         >
-                          {item.status === 'active' ? 'Active' : 'Inactive'}
-                        </span>
+                          <span>
+                            {item.status === 'active' ? 'Active' : 'Inactive'}
+                          </span>
+                        </Badge>
                       </div>
                       <ContentDetails fields={item} />
                       <p className="hint">
