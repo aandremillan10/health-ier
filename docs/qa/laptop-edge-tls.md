@@ -2,6 +2,8 @@
 
 Status: executed on 2026-10-15. The laptop EDGE deployment and real packaged Electron HTTPS flow work. All 18 guide cases are accounted for: **12 passed, 3 partial, 3 failed**. The layout, PDF submission and Celsius failures remain unresolved; the working server and synthetic data are retained for ongoing QA.
 
+Later EDGE update, 2026-10-15 16:27 Asia/Manila: the user authorized refreshing the retained backend. Merged source `ef496bf3f9fd12aaa2147945c697f7b340930d6a` now runs in image `sha256:4e1a07ddd498793a0980e93baa4964db91512f9e98d8c34a5bd76168c86a12ed`, with private local MinIO and eight applied migrations. Existing PostgreSQL/Caddy containers, volumes, original environment and Caddyfile were preserved. The new scan/audit API passed a bounded synthetic integration probe; [rollout evidence](../verification/guided-onboarding-postmerge-2026-10-15/server-readiness.md) records exact checks, backup and limitations. Use the updated [Resume this run](laptop-edge-setup.md#resume-this-run) command. The 18-case results below remain the historical `b974375` desktop baseline; they are not new-package passes. After the user manually opened exact `5631a43`, the desktop owner completed actual HTTPS sign-in as Synthetic Clerk using official `set_value` input plus Tab/Return; the Clinic LAN badge and last connection check passed. Coordinate clicks still fail with `GetLastError87`, while keyboard-controlled native workflow QA is in progress. CLOUD scan intake is not deployed, and EDGE mirroring stays disabled.
+
 For copyable numbered instructions and the exact retained package launcher, use [operator setup and resume steps](laptop-edge-setup.md). The sections below record this run's configuration, diagnostics and results.
 
 ## Scope and identities

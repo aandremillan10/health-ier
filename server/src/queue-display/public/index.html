@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="light" />
+    <title>Clinic queue</title>
+    <link rel="stylesheet" href="/queue-display/display.css" />
+    <script src="/queue-display/announcements.js" defer></script>
+    <script src="/queue-display/display.js" defer></script>
+  </head>
+  <body>
+    <div class="display">
+      <header class="display-header">
+        <div>
+          <h1>Clinic queue</h1>
+          <p>Please check your queue number below.</p>
+        </div>
+        <p class="clinic-date" id="clinic-date">Today at the clinic</p>
+      </header>
+
+      <main>
+        <section
+          class="connection-message"
+          id="connection-message"
+          aria-labelledby="connection-title"
+        >
+          <h2 id="connection-title">Connecting to the clinic…</h2>
+          <p id="connection-help">
+            Queue numbers will appear when the display connects.
+          </p>
+          <button id="retry" type="button" hidden>Retry connection</button>
+        </section>
+
+        <div class="departments" id="departments" hidden>
+          <section
+            class="department"
+            aria-labelledby="medical-title"
+            data-discipline="medical"
+          >
+            <h2 id="medical-title">Medical</h2>
+            <div class="serving">
+              <h3>Now serving</h3>
+              <ul class="serving-numbers" aria-label="Medical now serving"></ul>
+              <p class="serving-empty" hidden>No one being served</p>
+            </div>
+            <div class="waiting">
+              <h3>Waiting</h3>
+              <ol class="waiting-numbers" aria-label="Medical waiting"></ol>
+              <p class="waiting-empty" hidden>No one waiting</p>
+              <p class="waiting-more" hidden></p>
+            </div>
+          </section>
+          <section
+            class="department"
+            aria-labelledby="dental-title"
+            data-discipline="dental"
+          >
+            <h2 id="dental-title">Dental</h2>
+            <div class="serving">
+              <h3>Now serving</h3>
+              <ul class="serving-numbers" aria-label="Dental now serving"></ul>
+              <p class="serving-empty" hidden>No one being served</p>
+            </div>
+            <div class="waiting">
+              <h3>Waiting</h3>
+              <ol class="waiting-numbers" aria-label="Dental waiting"></ol>
+              <p class="waiting-empty" hidden>No one waiting</p>
+              <p class="waiting-more" hidden></p>
+            </div>
+          </section>
+          <section
+            class="department"
+            aria-labelledby="laboratory-title"
+            data-discipline="laboratory"
+          >
+            <h2 id="laboratory-title">Laboratory</h2>
+            <div class="serving">
+              <h3>Now serving</h3>
+              <ul
+                class="serving-numbers"
+                aria-label="Laboratory now serving"
+              ></ul>
+              <p class="serving-empty" hidden>No one being served</p>
+            </div>
+            <div class="waiting">
+              <h3>Waiting</h3>
+              <ol class="waiting-numbers" aria-label="Laboratory waiting"></ol>
+              <p class="waiting-empty" hidden>No one waiting</p>
+              <p class="waiting-more" hidden></p>
+            </div>
+          </section>
+        </div>
+        <noscript
+          ><p class="noscript">
+            Enable JavaScript in this browser to see the live clinic queue.
+          </p></noscript
+        >
+      </main>
+
+      <footer class="display-footer">
+        <div class="queue-status">
+          <p id="connection-status" role="status" aria-live="polite">
+            Connecting…
+          </p>
+          <p id="last-updated">Clinic time · Manila</p>
+        </div>
+        <div class="audio-controls">
+          <button
+            id="announcements-toggle"
+            type="button"
+            aria-describedby="audio-status"
+            aria-pressed="false"
+            disabled
+          >
+            Enable announcements
+          </button>
+          <p id="audio-status" role="status" aria-live="polite">
+            Audio unavailable. Reload this display to retry.
+          </p>
+        </div>
+      </footer>
+    </div>
+  </body>
+</html>

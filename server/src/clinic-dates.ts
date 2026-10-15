@@ -1,5 +1,9 @@
 import { dateOnly, invalid } from './validation';
 
+export function manilaDay(instant: Date): string {
+  return new Date(instant.getTime() + 28800000).toISOString().slice(0, 10);
+}
+
 export function clinicRange(
   from: unknown,
   to: unknown,

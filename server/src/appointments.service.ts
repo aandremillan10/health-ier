@@ -5,6 +5,7 @@ import { DatabaseService } from './database/database.service';
 import { fail } from './errors';
 import type { Prisma } from './generated/prisma/client';
 import type { Principal } from './mirror-contract';
+import { manilaDay } from './clinic-dates';
 import {
   dateOnly,
   discipline,
@@ -61,6 +62,7 @@ type AppointmentDto = Omit<
   | 'updatedBy'
   | 'history'
   | 'scheduledAt'
+  | 'queueDay'
   | 'statusChangedAt'
   | 'createdAt'
   | 'updatedAt'
@@ -94,6 +96,7 @@ function dto(record: RecordWithHistory): AppointmentDto {
     clinicId: record.clinicId,
     discipline: record.discipline,
     scheduledAt: record.scheduledAt.toISOString(),
+    queueNumber: record.queueNumber,
     status: record.status,
     revision: record.revision,
     statusChangedAt: record.statusChangedAt.toISOString(),
@@ -209,6 +212,8 @@ export class AppointmentsService {
       typeof body.discipline === 'string' ? body.discipline : '',
     );
     const scheduledAt = scheduledInstant(body.scheduledAt);
+    const queueDay = manilaDay(scheduledAt);
+    const site = clinicId();
     return this.db.$transaction(async (tx) => {
       if (
         !(await tx.patient.findUnique({
@@ -221,12 +226,20 @@ export class AppointmentsService {
           'NOT_FOUND',
           'Patient not found. Select a patient from the registry.',
         );
+      // Hold the same department/day lock until this transaction commits.
+      await tx.$queryRaw`SELECT 1 AS locked FROM pg_advisory_xact_lock(hashtextextended(${JSON.stringify([site, area, queueDay])}, 0))`;
+      const latest = await tx.appointment.aggregate({
+        where: { clinicId: site, discipline: area, queueDay },
+        _max: { queueNumber: true },
+      });
       const record = await tx.appointment.create({
         data: {
           patientId,
-          clinicId: clinicId(),
+          clinicId: site,
           discipline: area,
           scheduledAt,
+          queueDay,
+          queueNumber: (latest._max.queueNumber ?? 0) + 1,
           createdById: staff.id,
           updatedById: staff.id,
           history: {

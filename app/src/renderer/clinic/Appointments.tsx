@@ -30,6 +30,15 @@ const sortColumns = [
 ] as const;
 type SortKey = (typeof sortColumns)[number]['key'];
 
+function queueLabel(record: Appointment): string {
+  const prefixes = {
+    medical: 'M',
+    dental: 'D',
+    laboratory: 'L',
+  } satisfies Record<Discipline, string>;
+  return `${prefixes[record.discipline]}${String(record.queueNumber).padStart(3, '0')}`;
+}
+
 const actions: Record<AppointmentStatus, string> = {
   scheduled: 'Return to scheduled',
   arrived: 'Mark arrived',
@@ -203,7 +212,7 @@ export function Appointments({
     );
     if (result) {
       setNotice(
-        `Appointment saved for ${result.patientName} at ${timestamp(result.scheduledAt)}.`,
+        `Appointment saved for ${result.patientName} at ${timestamp(result.scheduledAt)}. Queue number: ${queueLabel(result)}.`,
       );
       setScheduleDirty(false);
       onDirty?.(hasCorrections);
@@ -535,6 +544,9 @@ export function Appointments({
                       }
                     >
                       <td>
+                        <strong className="appointment-meta">
+                          Queue {queueLabel(record)}
+                        </strong>
                         <time dateTime={record.scheduledAt}>
                           {new Intl.DateTimeFormat('en-PH', {
                             hour: 'numeric',

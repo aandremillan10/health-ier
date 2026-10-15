@@ -1,6 +1,6 @@
 # Laptop EDGE setup: operator steps
 
-The retained run is already deployed. Use **Resume this run** for ongoing QA. The numbered **Fresh setup** sequence documents how to repeat the deployment in a different directory/project; it refuses existing targets and must not be pasted over the retained database. See [actual results and artifact diagnostics](laptop-edge-tls.md) for the verified identities, hashes, limitations and QA completion record.
+The retained EDGE was updated to merged source `ef496bf3f9fd12aaa2147945c697f7b340930d6a` on 2026-10-15, including historical scans and local MinIO. Use **Resume this run** for ongoing QA; the former two-file command would select the old backend image and omit scan storage. The numbered **Fresh setup** sequence preserves the earlier baseline procedure for a different directory/project; it must not be pasted over the retained database. See [actual results and artifact diagnostics](laptop-edge-tls.md) for the baseline and later rollout records.
 
 ## Resume this run
 
@@ -8,22 +8,41 @@ On the laptop, keep Docker Desktop's Linux engine running. Open PowerShell as `w
 
 ```powershell
 Set-Location 'C:\Users\ajapa\HealthierLanProof\20261015t1230d6a1\source'
+$original = (Get-Location).Path
+$release = 'C:\Users\ajapa\HealthierLanProof\releases\20261015-ef496bf'
 $env:DOCKER_CONFIG = Join-Path (Get-Location) '.private/docker-client'
 $env:DOCKER_HOST = 'npipe:////./pipe/dockerDesktopLinuxEngine'
-$compose = @('--project-name', 'healthier-laptop-20261015t1230d6a1', '--env-file', '.private/laptop.env', '-f', 'compose.prod.yaml', '-f', 'compose.laptop.yaml')
-docker compose @compose up -d --no-build --wait
+$compose = @('--project-name', 'healthier-laptop-20261015t1230d6a1', '--project-directory', $original, '--env-file', "$release\.private\laptop-attachments.env", '-f', "$original\compose.prod.yaml", '-f', "$original\compose.laptop.yaml", '-f', "$release\source\compose.attachments.yaml", '-f', "$release\.private\rollout.yaml")
+docker compose @compose up -d --no-build --pull never --wait
+if ($LASTEXITCODE -ne 0) { throw 'Retained EDGE resume failed; preserve existing resources and inspect the failure' }
 docker compose @compose ps
 ```
 
-Do not run the seed again for ordinary use. Leave PostgreSQL/CA volumes, private accounts and the existing root trust in place. On the workstation as `AJ-DESKTOP\ajapa`, launch the exact verified portable package:
+This resolves the existing PostgreSQL and Caddy volumes and original Caddyfile bind; the release override selects image `health-ier-laptop-edge:20261015-ef496bf` and the new initializer script. The new environment file privately retains the existing database values plus the storage credentials generated once. Keep the entire release and both historical MinIO volumes. `MIRROR_ENABLED=false` remains explicit. Do not run the seed again, recreate credentials, delete volumes or change root trust for ordinary use.
+
+The new portable package has verified source/build hashes. The user manually opened that exact package after the automated launch was rejected; the desktop QA owner verified its process/window and completed actual HTTPS sign-in as Synthetic Clerk using official `set_value` input plus Tab/Return. The Clinic LAN badge and last connection check passed. Coordinate clicks still fail with `GetLastError87`; keyboard-controlled native workflow QA is in progress. On the workstation as `AJ-DESKTOP\ajapa`, the package launcher is:
 
 ```powershell
 $env:HEALTH_IER_SERVER_URL = 'https://192.168.1.35'
 $env:HEALTH_IER_ALLOW_SYNTHETIC_HTTP = 'false'
-Start-Process -FilePath 'D:\health-ier\docs\verification\laptop-edge-tls-2026-10-15\packaged\current-b974375\AMLIG-win32-x64\AMLIG.exe'
+Start-Process -FilePath 'C:\Users\ajapa\.codex\worktrees\guided-onboarding\health-ier\app\dist\windows\2026-10-15T07-15-30-545Z\AMLIG-win32-x64\AMLIG.exe'
 ```
 
-Retain its entire portable folder. Its ZIP is `D:\health-ier\docs\verification\laptop-edge-tls-2026-10-15\packaged\current-b974375\AMLIG-win32-x64.zip`, SHA-256 `b2add74e40eb5cc4a1035259ebd4945584a9581ebfc129a595de3c2fd0c90bcd`. The package records application source `b974375123c5afa5be2721d69cffc8c68d945811`, tree `3987821c68774f6f6b50d91ff7fcc0cde21acea3`, Electron `44.7.2`. Staff credentials are held privately outside the portable folder; no database/mirror settings belong in this launcher.
+Retain its entire portable folder. The sibling ZIP has SHA-256 `06179737af6725c7aae15c7aa2fc68b74a2d1d187277f0b747b81669a2bb9f75`; application source `5631a43fa8dcfcd233762ae7bf063d3440da4f83`, tree `9612c223ffd8e2cb7059b4cc7ccba2da2f9efcba`, Electron `44.7.2`. [Package provenance](../verification/guided-onboarding-2026-10-15/packaged-provenance.json) identifies all nine compiled hashes. The former `current-b974375` package remains historical baseline evidence and does not verify these changes. Staff credentials stay private outside the portable folder; no database/storage/mirror values belong in the launcher. Respect the dedicated QA launch-policy boundary; do not use another mechanism to evade a rejected launch.
+
+### Application rollback
+
+The old source, original `.private/laptop.env` and image `health-ier-laptop-edge:20261015t1230d6a1` remain retained. A deliberate application-only rollback uses the original definitions and replaces only the server:
+
+```powershell
+Set-Location 'C:\Users\ajapa\HealthierLanProof\20261015t1230d6a1\source'
+$env:DOCKER_CONFIG = Join-Path (Get-Location) '.private/docker-client'
+$env:DOCKER_HOST = 'npipe:////./pipe/dockerDesktopLinuxEngine'
+$rollback = @('--project-name', 'healthier-laptop-20261015t1230d6a1', '--env-file', '.private/laptop.env', '-f', 'compose.prod.yaml', '-f', 'compose.laptop.yaml')
+docker compose @rollback up -d --no-build --pull never --no-deps --wait server
+```
+
+This removes scan API availability while preserving the additive table, stored objects, audit history and existing PostgreSQL/CA volumes. Do not run `down`, restore a database or delete storage as part of this application rollback. The verified pre-migration custom-format database backup is `C:\Users\ajapa\HealthierLanProof\releases\20261015-ef496bf\.private\before-historical-20261015-ef496bf.dump`; database restoration would require a separate recovery decision because it would discard subsequent writes. [Rollout evidence](../verification/guided-onboarding-postmerge-2026-10-15/server-readiness.md) records exact image/backup hashes and executed API checks.
 
 ## Fresh setup
 
