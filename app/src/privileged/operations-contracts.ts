@@ -51,10 +51,14 @@ const report = object<ClinicReport>({
     pendingLabs: count,
     averageLabMinutes: nullable(number()),
     newPatients: count,
-    employees: count,
-    dependents: count,
   }),
   daily: array(object<ClinicReport['daily'][number]>({ date, visits: count })),
+  sexBreakdown: array(
+    object<ClinicReport['sexBreakdown'][number]>({
+      sex: choice(['female', 'male', 'other', 'not_recorded']),
+      patients: count,
+    }),
+  ),
   departments: array(
     object<ClinicReport['departments'][number]>({
       discipline: choice(['medical', 'dental', 'laboratory']),

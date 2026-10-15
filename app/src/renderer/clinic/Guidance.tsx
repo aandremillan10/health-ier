@@ -24,6 +24,42 @@ export function ContextHelp({
       <details>
         <summary>How to use</summary>
         <p>
+          Use Patients for the registry, Clinic work for appointments,
+          referrals, and laboratory orders, and Review for reports and the audit
+          trail. Some destinations depend on your role.
+        </p>
+        <ul className="navigation-help">
+          <li>
+            <strong>Find a patient:</strong> select Search patients or press
+            Ctrl+K from any screen. Select Patient records to return to the
+            registry.
+          </li>
+          <li>
+            <strong>Move within a record:</strong> when a patient is open, use
+            Record sections below the patient identity. Select the patient name
+            in the breadcrumb to return to Patient details.
+          </li>
+          <li>
+            <strong>Open clinic work:</strong> use the Clinic work group. If a
+            task has a selected patient, use View work queue when it appears to
+            clear that patient context.
+          </li>
+          <li>
+            <strong>Review clinic activity:</strong> open Reports in Review and
+            apply a date range. Patient counts by recorded sex count each
+            patient once; missing or unknown values appear as Not recorded.
+          </li>
+          <li>
+            <strong>Review consultations:</strong> open a patient’s Medical
+            chart. Select a row in Consultation history to open its full note;
+            entries are newest first.
+          </li>
+          <li>
+            <strong>On a narrow window:</strong> select Menu to open clinic
+            navigation.
+          </li>
+        </ul>
+        <p>
           Work with the selected patient and your own named account. Read the
           result after each save. If a save fails, keep your input and use the
           visible recovery action.

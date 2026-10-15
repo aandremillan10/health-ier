@@ -131,8 +131,6 @@ function install(fixture: ReturnType<typeof createDemoClinic>): void {
             pendingLabs: 0,
             averageLabMinutes: null,
             newPatients: 3,
-            employees: 2,
-            dependents: 1,
           },
           daily,
           departments:
@@ -148,6 +146,20 @@ function install(fixture: ReturnType<typeof createDemoClinic>): void {
                     patients: control.mode === 'zero' ? 0 : 3,
                   },
                   { discipline: 'laboratory', patients: 0 },
+                ],
+          sexBreakdown:
+            control.mode === 'empty'
+              ? [
+                  { sex: 'female', patients: 0 },
+                  { sex: 'male', patients: 0 },
+                  { sex: 'other', patients: 0 },
+                  { sex: 'not_recorded', patients: 0 },
+                ]
+              : [
+                  { sex: 'female', patients: control.mode === 'zero' ? 0 : 2 },
+                  { sex: 'male', patients: control.mode === 'zero' ? 0 : 1 },
+                  { sex: 'other', patients: 0 },
+                  { sex: 'not_recorded', patients: 0 },
                 ],
         },
       };
@@ -309,6 +321,8 @@ test('report charts keep exact data and handle a single day, zero values, and a 
     exact: true,
   });
   await expect(chart).toBeVisible();
+  await expect(page.getByText('Employees', { exact: true })).toHaveCount(0);
+  await expect(page.getByText('Dependents', { exact: true })).toHaveCount(0);
   await expect(
     page.getByRole('figure', { name: 'Patients by department', exact: true }),
   ).toContainText('5');

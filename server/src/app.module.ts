@@ -18,8 +18,6 @@ import { AppointmentsController } from './appointments.controller';
 import { AppointmentsService } from './appointments.service';
 import { LaboratoryController } from './laboratory/laboratory.controller';
 import { LaboratoryService } from './laboratory/laboratory.service';
-import { MembershipController } from './membership/membership.controller';
-import { MembershipService } from './membership/membership.service';
 import { ReferralsController } from './referrals/referrals.controller';
 import { ReferralsService } from './referrals/referrals.service';
 import { HistoricalDocumentsController } from './historical-documents/historical-documents.controller';
@@ -37,7 +35,6 @@ import { HistoricalStorage } from './historical-documents/historical-storage';
     ReportsController,
     AppointmentsController,
     LaboratoryController,
-    MembershipController,
     ReferralsController,
     HistoricalDocumentsController,
   ],
@@ -50,7 +47,6 @@ import { HistoricalStorage } from './historical-documents/historical-storage';
     ReportsService,
     AppointmentsService,
     LaboratoryService,
-    MembershipService,
     ReferralsService,
     HistoricalDocumentsService,
     HistoricalStorage,

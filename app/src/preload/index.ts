@@ -77,46 +77,6 @@ const clinic = Object.freeze({
     input: Requests['rejectReferral'],
   ): Promise<Result<Responses['rejectReferral']>> =>
     invoke('rejectReferral', input),
-  readPatientFamily: (
-    input: Requests['readPatientFamily'],
-  ): Promise<Result<Responses['readPatientFamily']>> =>
-    invoke('readPatientFamily', input),
-  createMembership: (
-    input: Requests['createMembership'],
-  ): Promise<Result<Responses['createMembership']>> =>
-    invoke('createMembership', input),
-  updateMembership: (
-    input: Requests['updateMembership'],
-  ): Promise<Result<Responses['updateMembership']>> =>
-    invoke('updateMembership', input),
-  correctMembership: (
-    input: Requests['correctMembership'],
-  ): Promise<Result<Responses['correctMembership']>> =>
-    invoke('correctMembership', input),
-  linkDependent: (
-    input: Requests['linkDependent'],
-  ): Promise<Result<Responses['linkDependent']>> =>
-    invoke('linkDependent', input),
-  updateDependent: (
-    input: Requests['updateDependent'],
-  ): Promise<Result<Responses['updateDependent']>> =>
-    invoke('updateDependent', input),
-  correctDependent: (
-    input: Requests['correctDependent'],
-  ): Promise<Result<Responses['correctDependent']>> =>
-    invoke('correctDependent', input),
-  unlinkDependent: (
-    input: Requests['unlinkDependent'],
-  ): Promise<Result<Responses['unlinkDependent']>> =>
-    invoke('unlinkDependent', input),
-  readMembershipHistory: (
-    input: Requests['readMembershipHistory'],
-  ): Promise<Result<Responses['readMembershipHistory']>> =>
-    invoke('readMembershipHistory', input),
-  readDependentHistory: (
-    input: Requests['readDependentHistory'],
-  ): Promise<Result<Responses['readDependentHistory']>> =>
-    invoke('readDependentHistory', input),
   listLabOrders: (
     input: Requests['listLabOrders'],
   ): Promise<Result<Responses['listLabOrders']>> =>

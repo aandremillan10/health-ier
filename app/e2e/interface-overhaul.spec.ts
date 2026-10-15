@@ -161,7 +161,7 @@ for (const doubledText of [false, true]) {
     });
     await page.keyboard.press('Shift+Tab');
     await expect(
-      page.getByRole('button', { name: 'Family and eligibility', exact: true }),
+      page.getByRole('button', { name: 'Historical documents', exact: true }),
     ).toBeFocused();
     const bounds = await page.evaluate(() => ({
       control: document.activeElement!.getBoundingClientRect().toJSON(),

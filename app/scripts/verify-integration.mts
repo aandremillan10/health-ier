@@ -284,7 +284,10 @@ try {
     else denied(history);
     const vitals = await bridgeResult('readVitals', { patientId: seedPatient });
     if (['doctor', 'dentist', 'attendant'].includes(staff.role))
-      assert.ok(vitals.ok);
+      assert.ok(
+        vitals.ok,
+        vitals.ok ? undefined : `readVitals: ${vitals.error.code}`,
+      );
     else denied(vitals);
     await page.getByLabel('Find a patient').fill(seedPatient);
     await page
@@ -543,6 +546,16 @@ try {
   );
   await logout();
   await login('demo.doctor.head');
+  await bridge('readClinicalSummary', { patientId });
+  await bridge('listHistoricalDocuments', { patientId });
+  const report = await bridge('readReport', {
+    from: '2026-10-15',
+    to: '2026-10-15',
+  });
+  assert.ok(Array.isArray(report.sexBreakdown));
+  results.push(
+    'Clinic head reads clinical summary, historical documents and patient report',
+  );
   await openPatient();
   await page
     .getByRole('button', { name: 'Medical chart', exact: true })

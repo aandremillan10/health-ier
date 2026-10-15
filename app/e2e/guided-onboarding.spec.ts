@@ -3,6 +3,7 @@ import type { Page } from '@playwright/test';
 import { createHash } from 'node:crypto';
 import type { createDemoClinic } from '../src/renderer/clinic/demo';
 import type { HistoricalDocument } from '../src/shared/historical-documents-api';
+import type { AuditEvent } from '../src/shared/operations-api';
 
 declare global {
   interface Window {
@@ -852,34 +853,19 @@ async function finishStep(page: Page): Promise<void> {
   await noLiveEffects(page);
 }
 
-test('family eligibility update and history remain synthetic', async ({
+test('HMO family navigation and eligibility copy are removed', async ({
   page,
 }): Promise<void> => {
-  await signIn(page, 'demo-clerk');
-  await start(page, 'family');
-  await nextStep(page);
+  await page.goto('/');
+  await page.getByLabel('Demo staff').selectOption('demo-clerk');
+  await page.getByRole('button', { name: 'Open frontend demo' }).click();
   await page
-    .getByRole('button', { name: 'Check eligibility', exact: true })
+    .getByRole('button', { name: 'Open Lina Marquez DEMO-0001', exact: true })
     .click();
-  await nextStep(page);
-  await page
-    .getByRole('button', { name: 'Update eligibility', exact: true })
-    .click();
-  await nextStep(page);
-  await page
-    .getByLabel('Reason for change', { exact: true })
-    .fill('Independent practice membership review');
-  await page
-    .getByRole('button', { name: 'Save family record', exact: true })
-    .click();
-  await finishStep(page);
-  await page.locator('.family-history summary').first().click();
   await expect(
-    page.getByText('Reason: Independent practice membership review', {
-      exact: true,
-    }),
-  ).toBeVisible();
-  await noLiveEffects(page);
+    page.getByRole('button', { name: 'Family and eligibility', exact: true }),
+  ).toHaveCount(0);
+  await expect(page.getByText(/eligibility/i)).toHaveCount(0);
 });
 
 test('clinic queue transitions and history do not touch live appointments', async ({
@@ -918,8 +904,13 @@ test('vital practice validates nullable drafts then preserves finalized original
   await page
     .getByRole('button', { name: 'Record vital signs', exact: true })
     .click();
+  await expect(
+    page.getByRole('group', { name: 'Blood pressure (mmHg)' }),
+  ).toBeVisible();
+  await expect(page.locator('.blood-pressure-divider')).toHaveText('/');
   await nextStep(page);
   await page.getByLabel('Pulse (/min)', { exact: true }).fill('74');
+  await page.getByLabel('Height (cm)', { exact: true }).fill('165');
   await page.getByRole('button', { name: 'Save draft', exact: true }).click();
   await nextStep(page);
   const row = page.getByTestId('vitals').first();
@@ -943,8 +934,32 @@ test('vital practice validates nullable drafts then preserves finalized original
     .click();
   await finishStep(page);
   await expect(row).toContainText('74');
+  await expect(row).toContainText('165');
   await expect(row).toContainText('75');
   await expect(row).toContainText('Independent transcription correction');
+});
+
+test('clinic head can correct another attendant finalized vital signs', async ({
+  page,
+}): Promise<void> => {
+  await signIn(page, 'demo-doctor-1');
+  await start(page, 'vitals');
+  const row = page.getByTestId('vitals').first();
+  await expect(row).toContainText('Recorded by Celia Moreno');
+  await row
+    .getByRole('button', { name: 'Correct finalized vital signs', exact: true })
+    .click();
+  await page
+    .getByLabel('Correction reason', { exact: true })
+    .fill('Head review correction');
+  await page.getByLabel('Pulse (/min)', { exact: true }).fill('76');
+  await page
+    .getByRole('button', { name: 'Save correction', exact: true })
+    .click();
+  await expect(row).toContainText('Head review correction');
+  await expect(row).toContainText('Dr. Mira Dalisay');
+  await expect(row).toContainText('76');
+  await noLiveEffects(page);
 });
 
 test('medical practice handles conflict review retry finalization and attributed correction locally', async ({
@@ -1151,8 +1166,17 @@ test('clinical summary creates sourced history while report export and audit sta
   await signIn(page);
   await start(page, 'summary');
   await nextStep(page);
+  await expect(
+    page.getByRole('heading', { name: 'Immunizations', exact: true }),
+  ).toHaveCount(0);
+  await expect(
+    page.getByRole('button', { name: 'Add immunization', exact: true }),
+  ).toHaveCount(0);
   await page.getByRole('button', { name: 'Add allergy', exact: true }).click();
   await nextStep(page);
+  await expect(page.getByLabel('Reaction', { exact: true })).toHaveCount(0);
+  await expect(page.getByLabel('Severity', { exact: true })).toHaveCount(0);
+  await expect(page.getByLabel('Onset date', { exact: true })).toHaveCount(0);
   await page
     .getByLabel('Substance', { exact: true })
     .fill('Independent fictional substance');
@@ -1163,7 +1187,11 @@ test('clinical summary creates sourced history while report export and audit sta
     .getByRole('button', { name: 'Save summary item', exact: true })
     .click();
   await nextStep(page);
+  await expect(page.getByText('Severity', { exact: true })).toHaveCount(0);
+  await expect(page.getByText('Reaction', { exact: true })).toHaveCount(0);
   await page.locator('.summary-history summary').last().click();
+  await expect(page.locator('.summary-history')).not.toContainText('Severity');
+  await expect(page.locator('.summary-history')).not.toContainText('Reaction');
   await finishStep(page);
   await page
     .getByRole('button', { name: 'Exit practice', exact: true })
@@ -1187,6 +1215,84 @@ test('clinical summary creates sourced history while report export and audit sta
     .getByRole('button', { name: 'Apply audit filters', exact: true })
     .click();
   await finishStep(page);
+  const auditTable = page.getByRole('region', {
+    name: 'Audit events',
+    exact: true,
+  });
+  const createAction = auditTable
+    .locator('tbody td:nth-child(3)')
+    .filter({ hasText: 'Create' })
+    .first();
+  await expect(createAction.locator('.badge.success')).toContainText('Create');
+  const changeAction = auditTable
+    .locator('tbody td:nth-child(3)')
+    .filter({ hasText: 'Change' })
+    .first();
+  await expect(changeAction.locator('.badge.warning')).toContainText('Change');
+});
+
+test('audit action labels use semantic colors and remain keyboard accessible', async ({
+  page,
+}): Promise<void> => {
+  await signIn(page);
+  const actionTones = [
+    { action: 'view', label: 'View', tone: 'neutral' },
+    { action: 'create', label: 'Create', tone: 'success' },
+    { action: 'finalize', label: 'Finalize', tone: 'success' },
+    { action: 'change', label: 'Change', tone: 'warning' },
+    { action: 'correction', label: 'Correction', tone: 'warning' },
+    { action: 'import', label: 'Import', tone: 'info' },
+    { action: 'export', label: 'Export', tone: 'info' },
+    { action: 'print', label: 'Print', tone: 'info' },
+  ] as const;
+  const events: AuditEvent[] = actionTones.map(({ action }, index) => ({
+    id: `synthetic-audit-${index}`,
+    actorId: 'demo-doctor-1',
+    actorName: 'Dr. Mira Dalisay',
+    actorRole: 'doctor',
+    action,
+    patientId: null,
+    resourceType: 'synthetic-record',
+    resourceId: null,
+    outcome: 'success',
+    source: 'synthetic-verification',
+    workstation: null,
+    createdAt: '2026-10-15T08:00:00.000Z',
+  }));
+  await page.evaluate((auditEvents) => {
+    const api = window.clinicApi;
+    if (!api) throw new Error('The synthetic clinic API is unavailable.');
+    api.listAuditEvents = async (): ReturnType<typeof api.listAuditEvents> => ({
+      ok: true,
+      data: { events: auditEvents, nextCursor: null },
+    });
+    api.listAuditActors = async (): ReturnType<typeof api.listAuditActors> => ({
+      ok: true,
+      data: [{ id: 'demo-doctor-1', displayName: 'Dr. Mira Dalisay' }],
+    });
+  }, events);
+  await page.getByRole('button', { name: 'Audit trail', exact: true }).click();
+  const auditTable = page.getByRole('region', {
+    name: 'Audit events',
+    exact: true,
+  });
+
+  for (const { label, tone } of actionTones) {
+    const action = auditTable
+      .locator('tbody td:nth-child(3)')
+      .filter({ hasText: label })
+      .first();
+    await expect(action).toBeVisible();
+    await expect(action).toContainText(label);
+    await expect(action.locator(`.badge.${tone}`)).toContainText(label);
+  }
+
+  await expect(auditTable).toHaveAttribute('tabindex', '0');
+  const actionFilter = page.getByLabel('Action', { exact: true });
+  await actionFilter.focus();
+  await expect(actionFilter).toBeFocused();
+  await actionFilter.press('p');
+  await expect(actionFilter).toHaveValue('print');
 });
 
 test('historical scan practice imports views replaces and cancels without picker files or PDF effects', async ({

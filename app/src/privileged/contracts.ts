@@ -31,10 +31,6 @@ import {
   laboratoryResponseGuards,
 } from './laboratory-contracts';
 import {
-  membershipRequestGuards,
-  membershipResponseGuards,
-} from './membership-contracts';
-import {
   referralsRequestGuards,
   referralsResponseGuards,
 } from './referrals-contracts';
@@ -97,6 +93,7 @@ const measurements = {
   respiratoryRate: nullable(number()),
   oxygenSaturation: nullable(number(0, 100)),
   weight: nullable(number()),
+  height: nullable(number()),
 };
 const vitalsFields = {
   ...measurements,
@@ -265,7 +262,6 @@ export const requestGuards = {
   ...summaryRequestGuards,
   ...appointmentRequestGuards,
   ...laboratoryRequestGuards,
-  ...membershipRequestGuards,
   ...referralsRequestGuards,
   login: object<Requests['login']>({
     username: text(100, 1),
@@ -325,7 +321,6 @@ export const responseGuards = {
   ...summaryResponseGuards,
   ...appointmentResponseGuards,
   ...laboratoryResponseGuards,
-  ...membershipResponseGuards,
   ...referralsResponseGuards,
   currentStaff: staff,
   health: object<{ status: 'ok'; mode: 'EDGE' | 'CLOUD' }>({

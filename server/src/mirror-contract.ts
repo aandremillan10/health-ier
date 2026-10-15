@@ -113,6 +113,7 @@ export const payloadKeys = {
     'pulse',
     'respiratoryRate',
     'oxygenSaturation',
+    'height',
     'weight',
     'createdAt',
     'updatedAt',

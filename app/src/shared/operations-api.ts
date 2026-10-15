@@ -47,10 +47,12 @@ export interface ClinicReport {
     pendingLabs: number;
     averageLabMinutes: number | null;
     newPatients: number;
-    employees: number;
-    dependents: number;
   };
   daily: { date: string; visits: number }[];
+  sexBreakdown: {
+    sex: 'female' | 'male' | 'other' | 'not_recorded';
+    patients: number;
+  }[];
   departments: {
     discipline: 'medical' | 'dental' | 'laboratory';
     patients: number;

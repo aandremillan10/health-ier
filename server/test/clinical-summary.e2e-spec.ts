@@ -24,9 +24,6 @@ describe.skipIf(!process.env.SUMMARY_E2E_DATABASE_URL)(
     const content = {
       kind: 'allergy',
       substance: 'Synthetic penicillin',
-      reaction: 'Rash',
-      severity: 'moderate',
-      onsetDate: null,
     };
     let itemId: string;
 
@@ -115,10 +112,10 @@ describe.skipIf(!process.env.SUMMARY_E2E_DATABASE_URL)(
         .auth(token, { type: 'bearer' })
         .send({
           expectedRevision: 1,
-          content: { ...content, reaction: 'Hives' },
+          content: { ...content, substance: 'Synthetic latex' },
           source: 'Synthetic patient report',
           notes: null,
-          reason: 'Clarified reaction',
+          reason: 'Corrected substance',
         })
         .expect(201);
       await client
@@ -139,7 +136,7 @@ describe.skipIf(!process.env.SUMMARY_E2E_DATABASE_URL)(
         revision: 3,
         status: 'inactive',
         canEdit: false,
-        content: { reaction: 'Hives' },
+        content: { substance: 'Synthetic latex' },
       });
       const history = await client
         .get(`/clinical-summary-items/${itemId}/history`)
@@ -155,7 +152,9 @@ describe.skipIf(!process.env.SUMMARY_E2E_DATABASE_URL)(
         [2, 'correct'],
         [1, 'create'],
       ]);
-      expect(history.body[2].snapshot.content.reaction).toBe('Rash');
+      expect(history.body[2].snapshot.content.substance).toBe(
+        'Synthetic penicillin',
+      );
       await client
         .post(path)
         .auth(token, { type: 'bearer' })
@@ -167,6 +166,230 @@ describe.skipIf(!process.env.SUMMARY_E2E_DATABASE_URL)(
         .expect(400);
     });
 
+    it('accepts only reduced fields and projects retained legacy records and revisions', async () => {
+      const client = request(app.getHttpServer());
+      const path = '/patients/' + patientId + '/clinical-summary';
+      const legacyAllergyId = '34000000-0000-4000-8000-000000000014';
+      const legacyImmunizationId = '34000000-0000-4000-8000-000000000015';
+      const legacyContent = {
+        kind: 'allergy',
+        substance: 'Synthetic ragweed',
+        reaction: 'Legacy reaction',
+        severity: 'moderate',
+        onsetDate: null,
+      };
+      const legacy = await db.clinicalSummaryItem.create({
+        data: {
+          id: legacyAllergyId,
+          patientId,
+          authorId: doctorId,
+          kind: 'allergy',
+          content: legacyContent,
+          source: 'Legacy chart',
+          notes: 'Legacy note',
+        },
+      });
+      await db.clinicalSummaryRevision.create({
+        data: {
+          itemId: legacy.id,
+          authorId: doctorId,
+          revision: 1,
+          action: 'create',
+          snapshot: {
+            content: legacyContent,
+            source: legacy.source,
+            notes: legacy.notes,
+            status: legacy.status,
+          },
+        },
+      });
+      const oldImmunization = await db.clinicalSummaryItem.create({
+        data: {
+          id: legacyImmunizationId,
+          patientId,
+          authorId: doctorId,
+          kind: 'immunization',
+          content: {
+            kind: 'immunization',
+            name: 'Retired vaccine',
+            administeredOn: '2026-10-01',
+            lotNumber: null,
+            nextDueOn: null,
+          },
+          source: 'Legacy chart',
+          notes: null,
+        },
+      });
+      await db.clinicalSummaryRevision.create({
+        data: {
+          itemId: oldImmunization.id,
+          authorId: doctorId,
+          revision: 1,
+          action: 'create',
+          snapshot: {
+            content: oldImmunization.content,
+            source: oldImmunization.source,
+            notes: oldImmunization.notes,
+            status: oldImmunization.status,
+          },
+        },
+      });
+
+      const medication = await client
+        .post(path)
+        .auth(token, { type: 'bearer' })
+        .send({
+          content: {
+            kind: 'medication',
+            name: 'Synthetic tablet',
+            dose: '500 mg',
+          },
+          source: 'Synthetic medication list',
+          notes: null,
+        })
+        .expect(201);
+      expect(medication.body.content).toEqual({
+        kind: 'medication',
+        name: 'Synthetic tablet',
+        dose: '500 mg',
+      });
+      const condition = await client
+        .post(path)
+        .auth(token, { type: 'bearer' })
+        .send({
+          content: { kind: 'condition', name: 'Synthetic condition' },
+          source: 'Synthetic patient report',
+          notes: 'Current note',
+        })
+        .expect(201);
+      expect(condition.body.content).toEqual({
+        kind: 'condition',
+        name: 'Synthetic condition',
+      });
+
+      const summary = await client
+        .get(path)
+        .auth(token, { type: 'bearer' })
+        .expect(200);
+      expect(
+        summary.body.items.find(
+          (item: { id: string }) => item.id === legacyAllergyId,
+        ),
+      ).toMatchObject({
+        content: { kind: 'allergy', substance: 'Synthetic ragweed' },
+        source: 'Legacy chart',
+        notes: 'Legacy note',
+      });
+      expect(
+        summary.body.items.some(
+          (item: { id: string }) => item.id === legacyImmunizationId,
+        ),
+      ).toBe(false);
+      expect(
+        summary.body.items.find(
+          (item: { id: string }) => item.id === medication.body.id,
+        ).content,
+      ).toEqual({
+        kind: 'medication',
+        name: 'Synthetic tablet',
+        dose: '500 mg',
+      });
+      expect(
+        summary.body.items.find(
+          (item: { id: string }) => item.id === condition.body.id,
+        ).content,
+      ).toEqual({
+        kind: 'condition',
+        name: 'Synthetic condition',
+      });
+
+      const oldHistory = await client
+        .get('/clinical-summary-items/' + legacyAllergyId + '/history')
+        .auth(token, { type: 'bearer' })
+        .expect(200);
+      expect(oldHistory.body[0].snapshot.content).toEqual({
+        kind: 'allergy',
+        substance: 'Synthetic ragweed',
+      });
+
+      await client
+        .patch('/clinical-summary-items/' + legacyAllergyId)
+        .auth(token, { type: 'bearer' })
+        .send({
+          expectedRevision: 1,
+          reason: 'Synthetic update',
+          content: { kind: 'allergy', substance: 'Synthetic ragweed' },
+          source: 'Legacy chart',
+          notes: 'Updated note',
+        })
+        .expect(200);
+      const updatedHistory = await client
+        .get('/clinical-summary-items/' + legacyAllergyId + '/history')
+        .auth(token, { type: 'bearer' })
+        .expect(200);
+      expect(updatedHistory.body).toHaveLength(2);
+      expect(updatedHistory.body[0].snapshot.content).toEqual({
+        kind: 'allergy',
+        substance: 'Synthetic ragweed',
+      });
+      expect(updatedHistory.body[1].snapshot.content).toEqual({
+        kind: 'allergy',
+        substance: 'Synthetic ragweed',
+      });
+      const stillRetainedRevision =
+        await db.clinicalSummaryRevision.findUniqueOrThrow({
+          where: {
+            itemId_revision: { itemId: legacyAllergyId, revision: 1 },
+          },
+        });
+      expect(stillRetainedRevision.snapshot).toMatchObject({
+        content: { reaction: 'Legacy reaction' },
+      });
+
+      await client
+        .get('/clinical-summary-items/' + legacyImmunizationId + '/history')
+        .auth(token, { type: 'bearer' })
+        .expect(404);
+      await client
+        .patch('/clinical-summary-items/' + legacyImmunizationId)
+        .auth(token, { type: 'bearer' })
+        .send({
+          expectedRevision: 1,
+          reason: 'Synthetic edit',
+          content: { kind: 'allergy', substance: 'Synthetic pollen' },
+          source: 'Synthetic record',
+          notes: null,
+        })
+        .expect(404);
+      await client
+        .post(path)
+        .auth(token, { type: 'bearer' })
+        .send({
+          content: {
+            kind: 'allergy',
+            substance: 'Synthetic pollen',
+            reaction: 'Retired reaction',
+          },
+          source: 'Synthetic record',
+          notes: null,
+        })
+        .expect(400);
+      await client
+        .post(path)
+        .auth(token, { type: 'bearer' })
+        .send({
+          content: {
+            kind: 'immunization',
+            name: 'Retired vaccine',
+            administeredOn: '2026-10-01',
+            lotNumber: null,
+            nextDueOn: null,
+          },
+          source: 'Synthetic record',
+          notes: null,
+        })
+        .expect(400);
+    });
     afterAll(async () => {
       if (!db) return;
       await db.clinicalSummaryRevision.deleteMany({

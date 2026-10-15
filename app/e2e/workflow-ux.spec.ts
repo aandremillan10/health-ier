@@ -30,6 +30,17 @@ test('schedule a patient without leaving daily clinic flow', async ({
   await expect(
     page.getByRole('button', { name: 'Save appointment', exact: true }),
   ).toBeVisible();
+  const timeTop = await page
+    .locator('#appointment-time')
+    .evaluate((element) => element.getBoundingClientRect().top);
+  const disciplineTop = await page
+    .locator('#appointment-new-discipline')
+    .evaluate((element) => element.getBoundingClientRect().top);
+  const saveTop = await page
+    .getByRole('button', { name: 'Save appointment', exact: true })
+    .evaluate((element) => element.getBoundingClientRect().top);
+  expect(disciplineTop).toBe(timeTop);
+  expect(saveTop).toBe(timeTop);
   await page
     .getByRole('button', { name: 'Save appointment', exact: true })
     .click();
@@ -132,33 +143,6 @@ test('referral patient picker stays in the task and can return to the inbox', as
     page.getByRole('button', { name: 'My unit inbox', exact: true }),
   ).toBeVisible();
   await expect(page.locator('.patient-banner')).toHaveCount(0);
-});
-
-test('family picker uses clearable search without leaving the family form', async ({
-  page,
-}) => {
-  await page.goto('/');
-  await page.getByLabel('Demo staff').selectOption('demo-clerk');
-  await page.getByRole('button', { name: 'Open frontend demo' }).click();
-  await page
-    .getByRole('button', { name: 'Open Lina Marquez DEMO-0001', exact: true })
-    .click();
-  await page
-    .getByRole('button', { name: 'Family and eligibility', exact: true })
-    .click();
-  await page
-    .getByRole('button', { name: 'Link this patient to a member', exact: true })
-    .click();
-  const search = page.locator('#family-patient-search');
-  await search.fill('Mateo');
-  await page.getByRole('button', { name: 'Clear search', exact: true }).click();
-  await expect(search).toBeFocused();
-  await expect(search).toHaveValue('');
-  await search.fill('DEMO-0003');
-  await search.press('Enter');
-  await expect(page.locator('.family-search-results')).toContainText(
-    'Mateo Ramos',
-  );
 });
 
 test('patient scope can return to the laboratory queue', async ({ page }) => {

@@ -19,7 +19,7 @@ export class AuditInterceptor implements NestInterceptor {
     if (req.staff) setAuditWorkstation(req.staff, req.ip);
     if (
       !req.staff ||
-      !/^\/(patients|entries|vitals|documents|clinical-summary-items|lab-orders|lab-results|appointments|memberships|dependent-links|referrals|reports)(\/|$)/.test(
+      !/^\/(patients|entries|vitals|documents|clinical-summary-items|lab-orders|lab-results|appointments|referrals|reports)(\/|$)/.test(
         req.path,
       )
     )

@@ -1,6 +1,12 @@
 # Decision and approval record
 
-Status: **all ten questions resolved; clinic-demo-v1.1 mirror amendment confirmed on 2026-10-14; clinic-demo-v1.2 UI refinement requested on 2026-10-15, Asia/Manila**. This filename is retained for stable links; it records resolved decisions and later amendments.
+Status: **all ten original questions resolved; clinic-demo-v1.1 mirror amendment confirmed on 2026-10-14; clinic-demo-v1.2 UI refinement requested and clinic-demo-v1.3 amendment approved on 2026-10-15, Asia/Manila**. This filename is retained for stable links; it records resolved decisions and later amendments.
+
+## clinic-demo-v1.3 confirmed on 2026-10-15
+
+The user approved implementation of the [v1.3 amendment](clinic-demo-v1.3-amendment.md): reduce clinical-summary fields while retaining prior stored history; add height and a visually combined blood-pressure entry; let the Clinic head correct any finalized vital signs while preserving author-owned drafts; remove HMO membership/dependent eligibility and its records; and color-code audit actions. All changes have equal priority. Keep patient category, optional employee reference, application branding, and generic audit events. The user authorized this build; production migration/deployment are not included.
+
+Seven implementation tickets are published in the [v1.3 amendment](clinic-demo-v1.3-amendment.md#published-tickets). The prior HMO feature issue #18 remains closed as historical work; v1.3 adds a separate removal ticket.
 
 ## Confirmed on 2026-10-14
 

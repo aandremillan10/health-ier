@@ -33,10 +33,6 @@ model Staff {
   labOrders                LabOrder[]                @relation("OrderingProvider")
   labReviews               LabOrder[]                @relation("ReviewingProvider")
   labResults               LabResult[]
-  memberships              Membership[]
-  dependentLinks           DependentLink[]
-  membershipRevisions      MembershipRevision[]
-  dependentLinkRevisions   DependentLinkRevision[]
   sentReferrals            Referral[]                @relation("ReferralOrigin")
   acceptedReferrals        Referral[]                @relation("ReferralAcceptance")
   startedReferrals         Referral[]                @relation("ReferralStart")
@@ -70,8 +66,6 @@ model Patient {
   clinicalSummaryItems ClinicalSummaryItem[]
   appointments         Appointment[]
   labOrders            LabOrder[]
-  memberships          Membership[]
-  dependentLinks       DependentLink[]
   referrals            Referral[]
 }
 
@@ -88,6 +82,7 @@ model Vitals {
   pulse            Float?
   respiratoryRate  Float?
   oxygenSaturation Float?
+  height           Float?
   weight           Float?
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
@@ -377,74 +372,6 @@ model LabResult {
   referrals        Referral[]
 
   @@index([orderId, createdAt])
-}
-
-model Membership {
-  id             String               @id @default(uuid()) @db.Uuid
-  patientId      String               @unique @db.Uuid
-  memberNumber   String               @unique
-  state          String               @default("active")
-  effectiveStart String
-  effectiveEnd   String?
-  revision       Int                  @default(1)
-  authorId       String               @db.Uuid
-  createdAt      DateTime             @default(now())
-  updatedAt      DateTime             @updatedAt
-  patient        Patient              @relation(fields: [patientId], references: [id])
-  author         Staff                @relation(fields: [authorId], references: [id])
-  dependents     DependentLink[]
-  history        MembershipRevision[]
-}
-
-model DependentLink {
-  id                 String                  @id @default(uuid()) @db.Uuid
-  membershipId       String                  @db.Uuid
-  dependentPatientId String                  @db.Uuid
-  relationship       String
-  state              String                  @default("active")
-  effectiveStart     String
-  effectiveEnd       String?
-  revision           Int                     @default(1)
-  authorId           String                  @db.Uuid
-  createdAt          DateTime                @default(now())
-  updatedAt          DateTime                @updatedAt
-  membership         Membership              @relation(fields: [membershipId], references: [id])
-  dependent          Patient                 @relation(fields: [dependentPatientId], references: [id])
-  author             Staff                   @relation(fields: [authorId], references: [id])
-  history            DependentLinkRevision[]
-
-  @@index([membershipId, state])
-  @@index([dependentPatientId, state])
-}
-
-model MembershipRevision {
-  id           String     @id @default(uuid()) @db.Uuid
-  membershipId String     @db.Uuid
-  authorId     String     @db.Uuid
-  revision     Int
-  action       String
-  reason       String?
-  snapshot     Json
-  createdAt    DateTime   @default(now())
-  membership   Membership @relation(fields: [membershipId], references: [id])
-  author       Staff      @relation(fields: [authorId], references: [id])
-
-  @@unique([membershipId, revision])
-}
-
-model DependentLinkRevision {
-  id        String        @id @default(uuid()) @db.Uuid
-  linkId    String        @db.Uuid
-  authorId  String        @db.Uuid
-  revision  Int
-  action    String
-  reason    String?
-  snapshot  Json
-  createdAt DateTime      @default(now())
-  link      DependentLink @relation(fields: [linkId], references: [id])
-  author    Staff         @relation(fields: [authorId], references: [id])
-
-  @@unique([linkId, revision])
 }
 
 model Referral {

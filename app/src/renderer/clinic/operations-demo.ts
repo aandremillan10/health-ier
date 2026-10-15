@@ -12,25 +12,17 @@ import type {
 import type { ClinicError, Principal, Result } from './contract';
 import type { ReportsApi } from './reports-contract';
 
-type Eligibility = {
-  state: string;
-  effectiveStart: string;
-  effectiveEnd: string | null;
-};
 export interface OperationsDemoContext {
   getStaff: () => Principal | null;
   isAvailable: () => boolean;
   getStaffList: () => { id: string; displayName: string }[];
-  getPatientRegistrations: () => { id: string; createdAt: string }[];
+  getPatientRegistrations: () => {
+    id: string;
+    createdAt: string;
+    sex: string | null;
+  }[];
   getAppointments: () => Appointment[];
   getLabOrders: () => LabOrder[];
-  getMemberships: () => {
-    memberships: (Eligibility & { id: string; patientId: string })[];
-    dependentLinks: (Eligibility & {
-      membershipId: string;
-      dependentPatientId: string;
-    })[];
-  };
 }
 export interface DemoAuditInput {
   action: AuditAction;
@@ -72,13 +64,6 @@ function range(input: ReportQuery): Result<Range> {
     );
   return { ok: true, data: { from: input.from, to: input.to, start, end } };
 }
-function eligible(record: Eligibility, day: string): boolean {
-  return (
-    record.state === 'active' &&
-    record.effectiveStart <= day &&
-    (!record.effectiveEnd || record.effectiveEnd >= day)
-  );
-}
 function reportCsv(report: ClinicReport): string {
   const rows: (string | number | null)[][] = [
     ['section', 'label', 'value', 'unit'],
@@ -99,12 +84,16 @@ function reportCsv(report: ClinicReport): string {
       report.totals.newPatients,
       'count',
     ],
-    ['summary', 'Eligible employees', report.totals.employees, 'count'],
-    ['summary', 'Eligible dependents', report.totals.dependents, 'count'],
     ...report.daily.map((row) => ['daily', row.date, row.visits, 'visits']),
     ...report.departments.map((row) => [
       'department',
       row.discipline,
+      row.patients,
+      'patients',
+    ]),
+    ...report.sexBreakdown.map((row) => [
+      'sex',
+      row.sex === 'not_recorded' ? 'Not recorded' : row.sex,
       row.patients,
       'patients',
     ]),
@@ -200,6 +189,20 @@ export function createOperationsDemo(context: OperationsDemoContext): {
       ['dental', new Set()],
       ['laboratory', new Set()],
     ]);
+    const sexPatients = new Map<
+      'female' | 'male' | 'other' | 'not_recorded',
+      Set<string>
+    >([
+      ['female', new Set()],
+      ['male', new Set()],
+      ['other', new Set()],
+      ['not_recorded', new Set()],
+    ]);
+    const patientSex = new Map(
+      context
+        .getPatientRegistrations()
+        .map((patient) => [patient.id, patient.sex]),
+    );
     let visits = 0;
     let noShows = 0;
     for (const appointment of appointments) {
@@ -216,6 +219,14 @@ export function createOperationsDemo(context: OperationsDemoContext): {
         .slice(0, 10);
       daily.set(day, (daily.get(day) ?? 0) + 1);
       departments.get(appointment.discipline)?.add(appointment.patientId);
+      const sex = patientSex.get(appointment.patientId);
+      sexPatients
+        .get(
+          sex === 'female' || sex === 'male' || sex === 'other'
+            ? sex
+            : 'not_recorded',
+        )
+        ?.add(appointment.patientId);
     }
     const turnarounds = labs.flatMap((order) => {
       const finalized = order.results
@@ -235,11 +246,6 @@ export function createOperationsDemo(context: OperationsDemoContext): {
         'UNAVAILABLE',
         'Laboratory timestamps are not valid. Check the synthetic lab data, then refresh the report.',
       );
-    const { memberships, dependentLinks } = context.getMemberships();
-    const active = memberships.filter((member) =>
-      eligible(member, selected.to),
-    );
-    const membershipIds = new Set(active.map((member) => member.id));
     const totals: ClinicReport['totals'] = {
       visits,
       noShows,
@@ -256,22 +262,16 @@ export function createOperationsDemo(context: OperationsDemoContext): {
       newPatients: context
         .getPatientRegistrations()
         .filter((patient) => inRange(patient.createdAt)).length,
-      employees: new Set(active.map((member) => member.patientId)).size,
-      dependents: new Set(
-        dependentLinks
-          .filter(
-            (link) =>
-              membershipIds.has(link.membershipId) &&
-              eligible(link, selected.to),
-          )
-          .map((link) => link.dependentPatientId),
-      ).size,
     };
     const content = {
       from: selected.from,
       to: selected.to,
       totals,
       daily: [...daily].map(([date, count]) => ({ date, visits: count })),
+      sexBreakdown: [...sexPatients].map(([sex, patients]) => ({
+        sex,
+        patients: patients.size,
+      })),
       departments: [...departments].map(([discipline, patients]) => ({
         discipline,
         patients: patients.size,

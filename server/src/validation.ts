@@ -102,6 +102,7 @@ export const vitalFields = [
   'pulse',
   'respiratoryRate',
   'oxygenSaturation',
+  'height',
   'weight',
 ] as const;
 export const medicalFields = [

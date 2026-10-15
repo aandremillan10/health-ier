@@ -5,10 +5,26 @@ import {
   useRef,
   useState,
 } from 'react';
-import type { FocusEvent, FormEvent, ReactElement } from 'react';
+import type { CSSProperties, FocusEvent, FormEvent, ReactElement } from 'react';
 import { createPortal } from 'react-dom';
+import { LogOut, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import {
+  Sidebar,
+  SidebarContent,
+  SidebarFooter,
+  SidebarGroup,
+  SidebarGroupContent,
+  SidebarGroupLabel,
+  SidebarHeader,
+  SidebarMenu,
+  SidebarMenuButton,
+  SidebarMenuItem,
+  SidebarProvider,
+  SidebarTrigger,
+  useSidebar,
+} from '@/components/ui/sidebar';
 import type {
   ClinicApi,
   ClinicError,
@@ -41,7 +57,6 @@ import { AuditViewer } from './clinic/AuditViewer';
 import { Appointments } from './clinic/Appointments';
 import { Laboratory } from './clinic/Laboratory';
 import { Reports } from './clinic/Reports';
-import { PatientFamily } from './clinic/PatientFamily';
 import { Referrals } from './clinic/Referrals';
 import './clinic/operations.css';
 import { ContextHelp, PracticeGuide } from './clinic/Guidance';
@@ -59,7 +74,6 @@ type Screen =
         | 'appointments'
         | 'laboratory'
         | 'reports'
-        | 'family'
         | 'referrals'
         | 'historical';
     }
@@ -73,15 +87,54 @@ type Screen =
       documentKind?: 'prescription' | 'certificate';
     };
 
-const toolNames: Partial<Record<Screen['kind'], string>> = {
-  audit: 'Audit trail',
-  appointments: 'Clinic flow',
-  laboratory: 'Laboratory orders',
-  reports: 'Reports',
-  family: 'Family and eligibility',
-  referrals: 'Referrals',
-  historical: 'Historical documents',
-};
+function isClinicTool(screen: Screen): boolean {
+  return (
+    screen.kind === 'audit' ||
+    screen.kind === 'appointments' ||
+    screen.kind === 'laboratory' ||
+    screen.kind === 'reports' ||
+    screen.kind === 'referrals'
+  );
+}
+
+function screenLabel(screen: Screen): string {
+  switch (screen.kind) {
+    case 'audit':
+      return 'Audit trail';
+    case 'appointments':
+      return 'Clinic flow';
+    case 'chart':
+      return screen.tab === 'details'
+        ? 'Patient details'
+        : screen.tab === 'vitals'
+          ? 'Vital signs'
+          : chartNames[screen.tab];
+    case 'document':
+      return screen.documentKind === 'certificate'
+        ? 'Medical certificate'
+        : 'Prescription';
+    case 'editPatient':
+      return 'Edit patient details';
+    case 'entry':
+      return screen.correction ? 'Correct medical entry' : 'Medical entry';
+    case 'historical':
+      return 'Historical documents';
+    case 'laboratory':
+      return 'Laboratory orders';
+    case 'register':
+      return 'Register patient';
+    case 'registry':
+      return 'Patient records';
+    case 'referrals':
+      return 'Referrals';
+    case 'reports':
+      return 'Reports';
+    case 'vitals':
+      return screen.correction ? 'Correct vital signs' : 'Vital signs';
+  }
+  const unreachable: never = screen;
+  return unreachable;
+}
 
 function revealPatientNavigation(event: FocusEvent<HTMLElement>): void {
   const identity =
@@ -551,6 +604,253 @@ function PracticeBoundary(props: WorkspaceProps): ReactElement {
   );
 }
 
+function ClinicSidebar({
+  staff,
+  demo,
+  practice,
+  busy,
+  available,
+  screen,
+  recordsActive,
+  onNavigate,
+  onCheckConnection,
+  onSignOut,
+}: {
+  staff: Principal;
+  demo: boolean;
+  practice: boolean;
+  busy: boolean;
+  available: boolean | null;
+  screen: Screen;
+  recordsActive: boolean;
+  onNavigate: (next: Screen) => boolean;
+  onCheckConnection: () => void;
+  onSignOut: () => void;
+}): ReactElement {
+  const { setOpenMobile } = useSidebar();
+  const canSeeCareQueues = ['doctor', 'dentist', 'medtech'].includes(
+    staff.role,
+  );
+  const canSeeReviewTools =
+    staff.isHead || ['clerk', 'attendant'].includes(staff.role);
+  function visit(next: Screen): void {
+    if (onNavigate(next)) setOpenMobile(false);
+  }
+  const connectionText =
+    available === null
+      ? 'Checking clinic connection…'
+      : available
+        ? demo
+          ? 'Demo connection available'
+          : 'Last connection check passed'
+        : 'Last connection check failed';
+
+  return (
+    <Sidebar collapsible="icon" className="clinic-sidebar">
+      <SidebarHeader className="clinic-sidebar-header">
+        <div className="brand">
+          <img src="./amlig-logo.png" alt="" width="40" height="40" />
+          <div className="clinic-brand-copy group-data-[collapsible=icon]:hidden">
+            <strong>AMLIG</strong>
+            <span>HMO-Clinic · Iloilo</span>
+          </div>
+        </div>
+      </SidebarHeader>
+      <SidebarContent id="clinic-navigation" className="clinic-sidebar-content">
+        <nav aria-label="Clinic navigation">
+          <SidebarGroup className="nav-group">
+            <SidebarGroupLabel className="nav-label">
+              Patients
+            </SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                <SidebarMenuItem>
+                  <SidebarMenuButton
+                    className="nav-item"
+                    isActive={recordsActive}
+                    aria-current={recordsActive ? 'page' : undefined}
+                    tooltip="Patient records"
+                    onClick={() => visit({ kind: 'registry' })}
+                  >
+                    <ClinicIcon name="records" />
+                    <span className="group-data-[collapsible=icon]:hidden">
+                      Patient records
+                    </span>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+          <SidebarGroup className="nav-group">
+            <SidebarGroupLabel className="nav-label">
+              Clinic work
+            </SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                <SidebarMenuItem>
+                  <SidebarMenuButton
+                    className="nav-item"
+                    isActive={screen.kind === 'appointments'}
+                    aria-current={
+                      screen.kind === 'appointments' ? 'page' : undefined
+                    }
+                    tooltip="Clinic flow"
+                    onClick={() => visit({ kind: 'appointments' })}
+                  >
+                    <ClinicIcon name="flow" />
+                    <span className="group-data-[collapsible=icon]:hidden">
+                      Clinic flow
+                    </span>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+                {canSeeCareQueues && (
+                  <>
+                    <SidebarMenuItem>
+                      <SidebarMenuButton
+                        className="nav-item"
+                        isActive={screen.kind === 'referrals'}
+                        aria-current={
+                          screen.kind === 'referrals' ? 'page' : undefined
+                        }
+                        tooltip="Referrals"
+                        onClick={() => visit({ kind: 'referrals' })}
+                      >
+                        <ClinicIcon name="referrals" />
+                        <span className="group-data-[collapsible=icon]:hidden">
+                          Referrals
+                        </span>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                    <SidebarMenuItem>
+                      <SidebarMenuButton
+                        className="nav-item"
+                        isActive={screen.kind === 'laboratory'}
+                        aria-current={
+                          screen.kind === 'laboratory' ? 'page' : undefined
+                        }
+                        tooltip="Laboratory orders"
+                        onClick={() => visit({ kind: 'laboratory' })}
+                      >
+                        <ClinicIcon name="lab" />
+                        <span className="group-data-[collapsible=icon]:hidden">
+                          Laboratory orders
+                        </span>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                  </>
+                )}
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+          {canSeeReviewTools && (
+            <SidebarGroup className="nav-group">
+              <SidebarGroupLabel className="nav-label">
+                Review
+              </SidebarGroupLabel>
+              <SidebarGroupContent>
+                <SidebarMenu>
+                  <SidebarMenuItem>
+                    <SidebarMenuButton
+                      className="nav-item"
+                      isActive={screen.kind === 'reports'}
+                      aria-current={
+                        screen.kind === 'reports' ? 'page' : undefined
+                      }
+                      tooltip="Reports"
+                      onClick={() => visit({ kind: 'reports' })}
+                    >
+                      <ClinicIcon name="reports" />
+                      <span className="group-data-[collapsible=icon]:hidden">
+                        Reports
+                      </span>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                  {staff.isHead && (
+                    <SidebarMenuItem>
+                      <SidebarMenuButton
+                        className="nav-item"
+                        isActive={screen.kind === 'audit'}
+                        aria-current={
+                          screen.kind === 'audit' ? 'page' : undefined
+                        }
+                        tooltip="Audit trail"
+                        onClick={() => visit({ kind: 'audit' })}
+                      >
+                        <ClinicIcon name="audit" />
+                        <span className="group-data-[collapsible=icon]:hidden">
+                          Audit trail
+                        </span>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                  )}
+                </SidebarMenu>
+              </SidebarGroupContent>
+            </SidebarGroup>
+          )}
+        </nav>
+      </SidebarContent>
+      <SidebarFooter className="clinic-sidebar-footer">
+        <div className="connection">
+          <span
+            className={`status-dot ${available === null ? 'checking' : available ? 'online' : ''}`}
+            aria-hidden="true"
+          />
+          <strong
+            role="status"
+            className="group-data-[collapsible=icon]:sr-only"
+          >
+            {connectionText}
+          </strong>
+          <Button
+            className="sidebar-utility"
+            variant="ghost"
+            size="sm"
+            aria-label="Check connection"
+            title="Check connection"
+            disabled={busy || available === null}
+            onClick={onCheckConnection}
+          >
+            <RefreshCw aria-hidden="true" />
+            <span className="group-data-[collapsible=icon]:sr-only">
+              Check connection
+            </span>
+          </Button>
+        </div>
+        <div className="staff-identity">
+          <strong className="group-data-[collapsible=icon]:sr-only">
+            {staff.displayName}
+          </strong>
+          <span className="group-data-[collapsible=icon]:sr-only">
+            {roleNames[staff.role]}
+            {staff.isHead ? ' · Clinic head' : ''}
+          </span>
+          {!practice && (
+            <Button
+              className="sidebar-utility"
+              variant="outline"
+              size="sm"
+              aria-label="Sign out"
+              title="Sign out"
+              onClick={onSignOut}
+            >
+              <LogOut aria-hidden="true" />
+              <span className="group-data-[collapsible=icon]:sr-only">
+                Sign out
+              </span>
+            </Button>
+          )}
+          {practice && (
+            <p className="hint group-data-[collapsible=icon]:sr-only">
+              Your real session stays active. Exit practice to return to clinic
+              work.
+            </p>
+          )}
+        </div>
+      </SidebarFooter>
+    </Sidebar>
+  );
+}
+
 function Workspace({
   api,
   staff,
@@ -579,7 +879,6 @@ function Workspace({
   });
   const { screen, patient, generation } = context;
   const [palette, setPalette] = useState(false);
-  const [navigationOpen, setNavigationOpen] = useState(false);
   const paletteOrigin = useRef<HTMLElement | null>(null);
   const patientDestination = useRef<Screen | null>(null);
   function choosePatient(): void {
@@ -667,31 +966,7 @@ function Workspace({
   }, [suspended]);
   useEffect(() => {
     if (suspended) return;
-    const label =
-      toolNames[screen.kind] ??
-      (screen.kind === 'chart'
-        ? screen.tab === 'details'
-          ? 'Patient details'
-          : screen.tab === 'vitals'
-            ? 'Vital signs'
-            : chartNames[screen.tab]
-        : screen.kind === 'register'
-          ? 'Register patient'
-          : screen.kind === 'editPatient'
-            ? 'Edit patient details'
-            : screen.kind === 'entry'
-              ? screen.correction
-                ? 'Correct medical entry'
-                : 'Medical entry'
-              : screen.kind === 'vitals'
-                ? screen.correction
-                  ? 'Correct vital signs'
-                  : 'Vital signs'
-                : screen.kind === 'document'
-                  ? screen.documentKind === 'certificate'
-                    ? 'Medical certificate'
-                    : 'Prescription'
-                  : 'Patient records');
+    const label = screenLabel(screen);
     document.title = patient
       ? `${label} · ${patient.fullName} — AMLIG`
       : `${label} — AMLIG`;
@@ -734,7 +1009,6 @@ function Workspace({
     setError(null);
     markDirty(false);
     setNotice(feedback);
-    setNavigationOpen(false);
     setContext((current) => ({
       screen: next,
       patient: nextPatient,
@@ -745,14 +1019,16 @@ function Workspace({
     );
     window.scrollTo(0, 0);
   }
-  function navigate(next: Screen, nextPatient = patient): void {
+  function navigate(next: Screen, nextPatient = patient): boolean {
     selection.current++;
     setBusy(false);
-    if (dirtyRef.current && !window.confirm('Discard unsaved changes?')) return;
+    if (dirtyRef.current && !window.confirm('Discard unsaved changes?'))
+      return false;
     commit(
       next,
       next.kind === 'registry' || next.kind === 'register' ? null : nextPatient,
     );
+    return true;
   }
   async function select(
     record: Pick<Patient, 'id'>,
@@ -805,16 +1081,17 @@ function Workspace({
   function backToChart(tab: ChartTab): void {
     navigate({ kind: 'chart', tab });
   }
-  const currentTab = toolNames[screen.kind]
-    ? null
-    : screen.kind === 'chart'
-      ? screen.tab
-      : screen.kind === 'vitals'
-        ? 'vitals'
-        : screen.kind === 'entry' || screen.kind === 'document'
-          ? 'medical'
-          : 'details';
-  const recordsActive = !toolNames[screen.kind] || screen.kind === 'family';
+  const currentTab =
+    isClinicTool(screen) || screen.kind === 'historical'
+      ? null
+      : screen.kind === 'chart'
+        ? screen.tab
+        : screen.kind === 'vitals'
+          ? 'vitals'
+          : screen.kind === 'entry' || screen.kind === 'document'
+            ? 'medical'
+            : 'details';
+  const recordsActive = !isClinicTool(screen);
   const helpTopic: PracticeTopic =
     screen.kind === 'chart'
       ? screen.tab === 'details'
@@ -829,189 +1106,75 @@ function Workspace({
             : screen.kind;
   return (
     <>
-      <div className="workspace">
-        <aside className={`sidebar ${navigationOpen ? 'navigation-open' : ''}`}>
-          <div className="sidebar-heading">
-            <div className="brand">
-              <img src="./amlig-logo.png" alt="" width="44" height="44" />
-              <div>
-                <strong>AMLIG</strong>
-                <span>HMO-Clinic · Iloilo</span>
-              </div>
-            </div>
-            <Button
-              className="clinic-menu"
-              variant="outline"
-              aria-label="Clinic menu"
-              aria-expanded={navigationOpen}
-              aria-controls="clinic-navigation"
-              onClick={() => setNavigationOpen((open) => !open)}
-            >
-              <ClinicIcon name="menu" />
-              Menu
-            </Button>
-          </div>
-          <div id="clinic-navigation" className="sidebar-content">
-            <nav aria-label="Clinic navigation">
-              <span className="nav-label">Clinic workspace</span>
-              <Button
-                className={`nav-item ${recordsActive ? 'selected' : ''}`}
-                aria-current={recordsActive ? 'page' : undefined}
-                variant="ghost"
-                onClick={() => navigate({ kind: 'registry' })}
-              >
-                <ClinicIcon name="records" />
-                Patient records
-              </Button>
-              <Button
-                className={`nav-item ${screen.kind === 'appointments' ? 'selected' : ''}`}
-                variant="ghost"
-                aria-current={
-                  screen.kind === 'appointments' ? 'page' : undefined
-                }
-                onClick={() => navigate({ kind: 'appointments' })}
-              >
-                <ClinicIcon name="flow" />
-                Clinic flow
-              </Button>
-              {['doctor', 'dentist', 'medtech'].includes(staff.role) && (
-                <Button
-                  className={`nav-item ${screen.kind === 'referrals' ? 'selected' : ''}`}
-                  variant="ghost"
-                  aria-current={
-                    screen.kind === 'referrals' ? 'page' : undefined
-                  }
-                  onClick={() => navigate({ kind: 'referrals' })}
-                >
-                  <ClinicIcon name="referrals" />
-                  Referrals
-                </Button>
-              )}
-              {['doctor', 'dentist', 'medtech'].includes(staff.role) && (
-                <Button
-                  className={`nav-item ${screen.kind === 'laboratory' ? 'selected' : ''}`}
-                  variant="ghost"
-                  aria-current={
-                    screen.kind === 'laboratory' ? 'page' : undefined
-                  }
-                  onClick={() => navigate({ kind: 'laboratory' })}
-                >
-                  <ClinicIcon name="lab" />
-                  Laboratory orders
-                </Button>
-              )}
-              {(staff.isHead ||
-                ['clerk', 'attendant'].includes(staff.role)) && (
-                <Button
-                  className={`nav-item ${screen.kind === 'reports' ? 'selected' : ''}`}
-                  variant="ghost"
-                  aria-current={screen.kind === 'reports' ? 'page' : undefined}
-                  onClick={() => navigate({ kind: 'reports' })}
-                >
-                  <ClinicIcon name="reports" />
-                  Reports
-                </Button>
-              )}
-              {staff.isHead && (
-                <Button
-                  className={`nav-item ${screen.kind === 'audit' ? 'selected' : ''}`}
-                  variant="ghost"
-                  aria-current={screen.kind === 'audit' ? 'page' : undefined}
-                  onClick={() => navigate({ kind: 'audit' })}
-                >
-                  <ClinicIcon name="audit" />
-                  Audit trail
-                </Button>
-              )}
-            </nav>
-            <div className="sidebar-bottom">
-              <div className="connection">
-                <span
-                  className={`status-dot ${available === null ? 'checking' : available ? 'online' : ''}`}
-                />
-                <strong role="status">
-                  {available === null
-                    ? 'Checking clinic connection…'
-                    : available
-                      ? demo
-                        ? 'Demo connection available'
-                        : 'Last connection check passed'
-                      : 'Last connection check failed'}
-                </strong>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  disabled={busy || available === null}
-                  onClick={() => void refreshHealth()}
-                >
-                  Check connection
-                </Button>
-              </div>
-              <div className="staff-identity">
-                <strong>{staff.displayName}</strong>
-                <span>
-                  {roleNames[staff.role]}
-                  {staff.isHead ? ' · Clinic head' : ''}
-                </span>
-                {!practice && (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => {
-                      if (
-                        !dirtyRef.current ||
-                        window.confirm('Discard unsaved changes and sign out?')
-                      ) {
-                        selection.current++;
-                        void onLogout();
-                      }
-                    }}
-                  >
-                    Sign out
-                  </Button>
-                )}
-                {practice && (
-                  <p className="hint">
-                    Your real session stays active. Exit practice to return to
-                    clinic work.
-                  </p>
-                )}
-              </div>
-            </div>
-          </div>
-        </aside>
+      <SidebarProvider
+        className="workspace"
+        style={
+          {
+            '--sidebar-width': practice ? '13rem' : '15.5rem',
+          } as CSSProperties
+        }
+      >
+        <ClinicSidebar
+          staff={staff}
+          demo={demo}
+          practice={Boolean(practice)}
+          busy={busy}
+          available={available}
+          screen={screen}
+          recordsActive={recordsActive}
+          onNavigate={navigate}
+          onCheckConnection={() => void refreshHealth()}
+          onSignOut={() => {
+            if (
+              !dirtyRef.current ||
+              window.confirm('Discard unsaved changes and sign out?')
+            ) {
+              selection.current++;
+              void onLogout();
+            }
+          }}
+        />
         <div className="main-area">
           <header className="topbar">
+            <SidebarTrigger
+              className="clinic-sidebar-trigger"
+              aria-label="Clinic menu"
+              aria-controls="clinic-navigation"
+            >
+              <ClinicIcon name="menu" />
+              <span className="clinic-sidebar-trigger-label">Menu</span>
+            </SidebarTrigger>
             <nav className="breadcrumb" aria-label="Breadcrumb">
-              {screen.kind === 'registry' ? (
+              {isClinicTool(screen) ? (
+                <>
+                  <span>Clinic workspace</span>
+                  <span aria-hidden="true">/</span>
+                  <span aria-current="page">{screenLabel(screen)}</span>
+                </>
+              ) : screen.kind === 'registry' ? (
                 <span aria-current="page">Patient records</span>
               ) : (
                 <>
                   <button
                     type="button"
+                    aria-label="All patient records"
                     onClick={() => navigate({ kind: 'registry' })}
                   >
-                    All patient records
+                    Patient records
                   </button>
+                  {patient && (
+                    <>
+                      <span aria-hidden="true">/</span>
+                      <button
+                        type="button"
+                        onClick={() => backToChart('details')}
+                      >
+                        {patient.fullName}
+                      </button>
+                    </>
+                  )}
                   <span aria-hidden="true">/</span>
-                  <span aria-current="page">
-                    {toolNames[screen.kind] ??
-                      (screen.kind === 'chart'
-                        ? screen.tab === 'details'
-                          ? 'Patient details'
-                          : screen.tab === 'vitals'
-                            ? 'Vital signs'
-                            : chartNames[screen.tab]
-                        : screen.kind === 'register'
-                          ? 'Register patient'
-                          : screen.kind === 'editPatient'
-                            ? 'Edit details'
-                            : screen.kind === 'entry'
-                              ? 'Medical entry'
-                              : screen.kind === 'vitals'
-                                ? 'Vital signs'
-                                : 'Document')}
-                  </span>
+                  <span aria-current="page">{screenLabel(screen)}</span>
                 </>
               )}
             </nav>
@@ -1133,6 +1296,7 @@ function Workspace({
                   aria-label="Patient navigation"
                   onFocusCapture={revealPatientNavigation}
                 >
+                  <span className="patient-nav-heading">Record sections</span>
                   <Button
                     variant="ghost"
                     className={`patient-nav-item ${currentTab === 'details' ? 'selected' : ''}`}
@@ -1174,18 +1338,6 @@ function Workspace({
                       onClick={() => navigate({ kind: 'historical' })}
                     >
                       Historical documents
-                    </Button>
-                  )}
-                  {(staff.role !== 'medtech' || staff.isHead) && (
-                    <Button
-                      variant="ghost"
-                      className={`patient-nav-item ${screen.kind === 'family' ? 'selected' : ''}`}
-                      aria-current={
-                        screen.kind === 'family' ? 'page' : undefined
-                      }
-                      onClick={() => navigate({ kind: 'family' })}
-                    >
-                      Family and eligibility
                     </Button>
                   )}
                 </nav>
@@ -1257,43 +1409,6 @@ function Workspace({
                 onExpired={onExpired}
                 onDirty={markDirty}
                 onChoosePatient={choosePatient}
-              />
-            )}
-            {screen.kind === 'family' && patient && (
-              <PatientFamily
-                key={`${staff.id}/${patient.id}`}
-                api={api}
-                staff={staff}
-                patientId={patient.id}
-                patientName={patient.fullName}
-                demo={demo}
-                onExpired={onExpired}
-                onDirty={markDirty}
-                onOpenPatient={(id) => void select({ id })}
-                searchPatients={async (search) => {
-                  const result = await api.findPatients({ search });
-                  return result.ok
-                    ? {
-                        ok: true,
-                        data: result.data.map((record) => ({
-                          id: record.id,
-                          revision: record.revision,
-                          fullName: record.fullName,
-                          sex: record.sex || null,
-                          dateOfBirth: record.dateOfBirth,
-                        })),
-                      }
-                    : {
-                        ok: false,
-                        error: {
-                          code:
-                            result.error.code === 'DENIED'
-                              ? 'FORBIDDEN'
-                              : result.error.code,
-                          message: result.error.message,
-                        },
-                      };
-                }}
               />
             )}
             {(screen.kind === 'register' || screen.kind === 'editPatient') && (
@@ -1455,7 +1570,7 @@ function Workspace({
             </details>
           )}
         </div>
-      </div>
+      </SidebarProvider>
       <CommandPalette
         key={palette ? 'open' : 'closed'}
         api={api}

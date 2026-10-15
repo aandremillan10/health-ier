@@ -11,7 +11,6 @@ import {
   array,
   boolean,
   choice,
-  date,
   type Guard,
   nullable,
   object,
@@ -33,52 +32,24 @@ const contentGuards = {
   allergy: object<Extract<SummaryContent, { kind: 'allergy' }>>({
     kind: choice(['allergy']),
     substance: required(200),
-    reaction: nullable(text(2000)),
-    severity: choice(['unknown', 'mild', 'moderate', 'severe']),
-    onsetDate: nullable(date),
   }),
   medication: object<Extract<SummaryContent, { kind: 'medication' }>>({
     kind: choice(['medication']),
     name: required(200),
     dose: nullable(text(200)),
-    route: nullable(text(200)),
-    frequency: nullable(text(500)),
-    startDate: nullable(date),
-    endDate: nullable(date),
   }),
   condition: object<Extract<SummaryContent, { kind: 'condition' }>>({
     kind: choice(['condition']),
     name: required(200),
-    code: nullable(text(100)),
-    onsetDate: nullable(date),
-    resolvedDate: nullable(date),
-  }),
-  immunization: object<Extract<SummaryContent, { kind: 'immunization' }>>({
-    kind: choice(['immunization']),
-    name: required(200),
-    administeredOn: date,
-    lotNumber: nullable(text(200)),
-    nextDueOn: nullable(date),
   }),
 };
 export const summaryContent: Guard<SummaryContent> = (
   value,
 ): SummaryContent => {
-  const kind = choice(['allergy', 'medication', 'condition', 'immunization'])(
+  const kind = choice(['allergy', 'medication', 'condition'])(
     record(value).kind,
   );
-  const content = contentGuards[kind](value);
-  const dates =
-    content.kind === 'medication'
-      ? [content.startDate, content.endDate]
-      : content.kind === 'condition'
-        ? [content.onsetDate, content.resolvedDate]
-        : content.kind === 'immunization'
-          ? [content.administeredOn, content.nextDueOn]
-          : [];
-  if (dates[0] && dates[1] && dates[1] < dates[0])
-    throw new Error('Date order');
-  return content;
+  return contentGuards[kind](value);
 };
 const fields = {
   content: summaryContent,

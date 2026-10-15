@@ -21,28 +21,16 @@ interface Report {
     pendingLabs: number;
     averageLabMinutes: number | null;
     newPatients: number;
-    employees: number;
-    dependents: number;
   };
   daily: { date: string; visits: number }[];
+  sexBreakdown: {
+    sex: 'female' | 'male' | 'other' | 'not_recorded';
+    patients: number;
+  }[];
   departments: {
     discipline: 'medical' | 'dental' | 'laboratory';
     patients: number;
   }[];
-}
-function eligible(
-  record: {
-    state: string;
-    effectiveStart: string;
-    effectiveEnd: string | null;
-  },
-  day: string,
-): boolean {
-  return (
-    record.state === 'active' &&
-    record.effectiveStart <= day &&
-    (!record.effectiveEnd || record.effectiveEnd >= day)
-  );
 }
 export function reportCsv(report: Report): string {
   const rows: (string | number | null)[][] = [
@@ -64,12 +52,16 @@ export function reportCsv(report: Report): string {
       report.totals.newPatients,
       'count',
     ],
-    ['summary', 'Eligible employees', report.totals.employees, 'count'],
-    ['summary', 'Eligible dependents', report.totals.dependents, 'count'],
     ...report.daily.map((row) => ['daily', row.date, row.visits, 'visits']),
     ...report.departments.map((row) => [
       'department',
       row.discipline,
+      row.patients,
+      'patients',
+    ]),
+    ...report.sexBreakdown.map((row) => [
+      'sex',
+      row.sex === 'not_recorded' ? 'Not recorded' : row.sex,
       row.patients,
       'patients',
     ]),
@@ -105,55 +97,37 @@ export class ReportsService {
     tx: Prisma.TransactionClient,
     range: ReturnType<typeof clinicRange>,
   ): Promise<Report> {
-    const [appointments, labs, newPatients, memberships, links] =
-      await Promise.all([
-        tx.appointment.findMany({
-          where: {
-            clinicId: clinicId(),
-            scheduledAt: { gte: range.gte, lt: range.lt },
+    const [appointments, labs, newPatients] = await Promise.all([
+      tx.appointment.findMany({
+        where: {
+          clinicId: clinicId(),
+          scheduledAt: { gte: range.gte, lt: range.lt },
+        },
+        select: {
+          patientId: true,
+          patient: { select: { sex: true } },
+          discipline: true,
+          status: true,
+          scheduledAt: true,
+        },
+      }),
+      tx.labOrder.findMany({
+        where: { createdAt: { gte: range.gte, lt: range.lt } },
+        select: {
+          status: true,
+          createdAt: true,
+          results: {
+            where: { status: 'finalized' },
+            orderBy: { finalizedAt: 'asc' },
+            take: 1,
+            select: { finalizedAt: true },
           },
-          select: {
-            patientId: true,
-            discipline: true,
-            status: true,
-            scheduledAt: true,
-          },
-        }),
-        tx.labOrder.findMany({
-          where: { createdAt: { gte: range.gte, lt: range.lt } },
-          select: {
-            status: true,
-            createdAt: true,
-            results: {
-              where: { status: 'finalized' },
-              orderBy: { finalizedAt: 'asc' },
-              take: 1,
-              select: { finalizedAt: true },
-            },
-          },
-        }),
-        tx.patient.count({
-          where: { createdAt: { gte: range.gte, lt: range.lt } },
-        }),
-        tx.membership.findMany({
-          select: {
-            id: true,
-            patientId: true,
-            state: true,
-            effectiveStart: true,
-            effectiveEnd: true,
-          },
-        }),
-        tx.dependentLink.findMany({
-          select: {
-            membershipId: true,
-            dependentPatientId: true,
-            state: true,
-            effectiveStart: true,
-            effectiveEnd: true,
-          },
-        }),
-      ]);
+        },
+      }),
+      tx.patient.count({
+        where: { createdAt: { gte: range.gte, lt: range.lt } },
+      }),
+    ]);
     const daily = new Map<string, number>();
     const lastDay = Date.parse(`${range.to}T00:00:00Z`);
     for (
@@ -169,6 +143,15 @@ export class ReportsService {
       ['medical', new Set()],
       ['dental', new Set()],
       ['laboratory', new Set()],
+    ]);
+    const patientsBySex = new Map<
+      'female' | 'male' | 'other' | 'not_recorded',
+      Set<string>
+    >([
+      ['female', new Set()],
+      ['male', new Set()],
+      ['other', new Set()],
+      ['not_recorded', new Set()],
     ]);
     let visits = 0;
     let noShows = 0;
@@ -188,6 +171,14 @@ export class ReportsService {
       departments
         .get(visit.discipline as 'medical' | 'dental' | 'laboratory')
         ?.add(visit.patientId);
+      const sex = visit.patient.sex;
+      patientsBySex
+        .get(
+          sex === 'female' || sex === 'male' || sex === 'other'
+            ? sex
+            : 'not_recorded',
+        )
+        ?.add(visit.patientId);
     }
     const turnarounds = labs.flatMap((order) => {
       const finalizedAt = order.results[0]?.finalizedAt;
@@ -199,8 +190,6 @@ export class ReportsService {
       turnarounds.every((minutes) => Number.isFinite(minutes) && minutes >= 0),
       'Laboratory timestamps must preserve ordering.',
     );
-    const active = memberships.filter((member) => eligible(member, range.to));
-    const membershipIds = new Set(active.map((member) => member.id));
     const totals = {
       visits,
       noShows,
@@ -215,21 +204,21 @@ export class ReportsService {
           ) / 10
         : null,
       newPatients,
-      employees: new Set(active.map((member) => member.patientId)).size,
-      dependents: new Set(
-        links
-          .filter(
-            (link) =>
-              membershipIds.has(link.membershipId) && eligible(link, range.to),
-          )
-          .map((link) => link.dependentPatientId),
-      ).size,
     };
+    const sexBreakdown = [...patientsBySex].map(([sex, patients]) => ({
+      sex,
+      patients: patients.size,
+    }));
+    assert.ok(
+      sexBreakdown.reduce((sum, row) => sum + row.patients, 0) <= visits,
+      'Distinct patients with visits cannot exceed total visits.',
+    );
     const content = {
       from: range.from,
       to: range.to,
       totals,
       daily: [...daily].map(([date, count]) => ({ date, visits: count })),
+      sexBreakdown,
       departments: [...departments].map(([discipline, patients]) => ({
         discipline,
         patients: patients.size,

@@ -1,29 +1,45 @@
 @import './components/arc/foundation.css';
 @import 'tailwindcss';
+/*
+  ---break---
+*/
+@custom-variant dark (&:is(.dark *));
 
 /*
   Approved staff-tool foundation; see DESIGN.md.
-  Warm neutral surfaces, charcoal actions, and semantic status colors.
+  Cool white work surfaces, quiet blue navigation, and semantic status colors.
   Spacing/type scale lives in DESIGN.md: 4px base steps (4-8-12-16-24-32-48),
   type 16px body / 14px labels / 20px section titles / 28px page titles.
 */
 :root {
-  --background: #fbfbf9;
-  --foreground: #292b28;
+  --navy-900: #173b70;
+  --blue-50: #eff6ff;
+  --blue-100: #dbeafe;
+  --slate-50: #f8fafc;
+  --slate-100: #f1f5f9;
+  --slate-200: #e2e8f0;
+  --slate-500: #64748b;
+  --slate-600: #475569;
+  --background: var(--slate-50);
+  --app-frame: var(--blue-50);
+  --foreground: var(--navy-900);
   --card: #ffffff;
-  --card-foreground: #292b28;
-  --primary: #30332f;
-  --primary-foreground: #fcfdf9;
-  --secondary: #eeede8;
-  --secondary-foreground: #393b36;
-  --muted: #f2f1ed;
-  --muted-foreground: #64665f;
-  --accent: #e7e6df;
-  --accent-foreground: #30332f;
-  --destructive: oklch(0.577 0.245 27.325);
-  --border: #ddded7;
-  --input: #85877f;
-  --ring: #384f42;
+  --card-foreground: var(--navy-900);
+  --primary: var(--navy-900);
+  --primary-foreground: #ffffff;
+  --secondary: var(--slate-100);
+  --secondary-foreground: var(--navy-900);
+  --muted: var(--slate-100);
+  --muted-foreground: var(--slate-600);
+  --accent: var(--blue-50);
+  --accent-foreground: var(--navy-900);
+  --destructive: #b91c1c;
+  --border: var(--slate-200);
+  --input: var(--slate-500);
+  --ring: var(--navy-900);
+  --nav-surface: var(--slate-100);
+  --nav-active-surface: var(--blue-100);
+  --nav-active-foreground: var(--navy-900);
   --radius: 0.5rem;
   --success: #166534;
   --success-bg: #f0fdf4;
@@ -31,9 +47,9 @@
   --warning-bg: #fffbeb;
   --error: #b91c1c;
   --error-bg: #fef2f2;
-  --border-strong: #85877f;
-  --skeleton: #e3e3dc;
-  --surface-recessed: #eeede8;
+  --border-strong: var(--slate-500);
+  --skeleton: var(--slate-200);
+  --surface-recessed: var(--slate-100);
   --dur-fast: 120ms;
   --dur-med: 180ms;
   --ease-standard: cubic-bezier(0.22, 1, 0.36, 1);
@@ -52,6 +68,31 @@
   --focus-outline-offset: 2px;
   --duration-fast: var(--dur-fast);
   --duration-standard: var(--dur-med);
+  --accent-strong: var(--navy-900);
+  --accent-subtle: var(--blue-50);
+  --arc-gradient-from: var(--blue-100);
+  --arc-gradient-to: var(--blue-50);
+  --arc-gradient: linear-gradient(
+    100deg,
+    var(--arc-gradient-from),
+    var(--arc-gradient-to)
+  );
+  --arc-gradient-foreground: var(--navy-900);
+  --arc-gradient-soft: linear-gradient(
+    135deg,
+    var(--background),
+    var(--accent)
+  );
+  --arc-gradient-line: linear-gradient(100deg, var(--border), var(--blue-100));
+  --arc-gradient-ink: linear-gradient(100deg, var(--navy-900), var(--navy-900));
+  --sidebar: var(--nav-surface);
+  --sidebar-foreground: var(--muted-foreground);
+  --sidebar-primary: var(--primary);
+  --sidebar-primary-foreground: var(--primary-foreground);
+  --sidebar-accent: var(--nav-active-surface);
+  --sidebar-accent-foreground: var(--nav-active-foreground);
+  --sidebar-border: var(--border);
+  --sidebar-ring: var(--ring);
 }
 
 @theme inline {
@@ -82,6 +123,14 @@
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar: var(--sidebar);
 }
 
 @layer base {
@@ -92,4 +141,17 @@
   body {
     @apply m-0 bg-background font-sans text-foreground antialiased;
   }
+}
+/*
+  ---break---
+*/
+.dark {
+  --sidebar: var(--nav-surface);
+  --sidebar-foreground: var(--muted-foreground);
+  --sidebar-primary: var(--primary);
+  --sidebar-primary-foreground: var(--primary-foreground);
+  --sidebar-accent: var(--nav-active-surface);
+  --sidebar-accent-foreground: var(--nav-active-foreground);
+  --sidebar-border: var(--border);
+  --sidebar-ring: var(--ring);
 }

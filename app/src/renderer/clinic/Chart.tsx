@@ -206,6 +206,14 @@ export function Chart({
     });
     if (result) onDocument(undefined, result);
   }
+  const orderedEntries =
+    entries
+      ?.slice()
+      .sort(
+        (a, b) =>
+          b.consultationDate.localeCompare(a.consultationDate) ||
+          b.createdAt.localeCompare(a.createdAt),
+      ) ?? null;
   if (tab === 'details')
     return (
       <section className="panel">
@@ -337,6 +345,12 @@ export function Chart({
                   </Button>
                 )}
               </div>
+            ) : staff.isHead && v.status === 'finalized' ? (
+              <div className="entry-actions">
+                <Button variant="outline" onClick={() => onVitals(v, true)}>
+                  Correct finalized vital signs
+                </Button>
+              </div>
             ) : (
               <p className="hint">
                 Read-only · Only the author can change these measurements.
@@ -344,7 +358,7 @@ export function Chart({
             )}
           </article>
         ))}
-      {tab !== 'vitals' && entries && entries.length === 0 && (
+      {tab !== 'vitals' && orderedEntries && orderedEntries.length === 0 && (
         <Empty>
           No entries in this chart.
           {tab === 'medical' && canWriteEntry(staff, tab)
@@ -352,11 +366,54 @@ export function Chart({
             : ''}
         </Empty>
       )}
+      {tab === 'medical' && orderedEntries && orderedEntries.length > 0 && (
+        <section
+          className="consultation-history"
+          aria-labelledby="consultation-history-title"
+        >
+          <div className="section-heading">
+            <h3 id="consultation-history-title">Consultation history</h3>
+            <span className="hint">
+              {orderedEntries.length}{' '}
+              {orderedEntries.length === 1 ? 'consultation' : 'consultations'}
+              {' · Newest first'}
+            </span>
+          </div>
+          <p className="hint">
+            Select an entry to open its full note and correction history.
+          </p>
+          <ol>
+            {orderedEntries.map((entry) => (
+              <li key={entry.id}>
+                <a href={`#consultation-${entry.id}`}>
+                  <time dateTime={entry.consultationDate}>
+                    {date(entry.consultationDate)}
+                  </time>
+                  <State status={entry.status} />
+                  <span className="consultation-history-detail">
+                    <strong>{entry.authorName}</strong>
+                    <span>
+                      {' · '}
+                      {entry.reason || 'Reason not recorded'}
+                    </span>
+                  </span>
+                </a>
+              </li>
+            ))}
+          </ol>
+        </section>
+      )}
       {tab !== 'vitals' &&
-        entries?.map((entry) => {
+        orderedEntries?.map((entry) => {
           const selectedVitals = vitals?.find((v) => v.id === entry.vitalsId);
           return (
-            <article key={entry.id} className="panel entry" data-testid="entry">
+            <article
+              key={entry.id}
+              id={tab === 'medical' ? `consultation-${entry.id}` : undefined}
+              tabIndex={tab === 'medical' ? -1 : undefined}
+              className="panel entry"
+              data-testid="entry"
+            >
               <div className="section-heading">
                 <h3>{date(entry.consultationDate)}</h3>
                 <State status={entry.status} />

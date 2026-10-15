@@ -7,7 +7,6 @@ import {
 import { createClinicalSummaryDemo } from './clinical-summary-demo';
 import { createDemoAppointments } from './appointments-demo';
 import { createLaboratoryDemo } from './laboratory-demo';
-import { createMembershipDemo } from './membership-demo';
 import { createOperationsDemo } from './operations-demo';
 import type { DemoAuditInput } from './operations-demo';
 import type { Result as WireResult } from '../../shared/clinic-api';
@@ -148,6 +147,7 @@ export function createDemoClinic(): {
       respiratoryRate: 18,
       oxygenSaturation: 98,
       weight: 62,
+      height: 165,
       status: 'finalized',
       revision: 2,
       corrections: [],
@@ -275,8 +275,8 @@ export function createDemoClinic(): {
     return {
       id: crypto.randomUUID(),
       originalEntryId: record.id,
-      authorId: record.authorId,
-      authorName: record.authorName,
+      authorId: principal!.id,
+      authorName: principal!.displayName,
       reason: input.reason,
       correctedContent: structuredClone(input.correctedContent),
       createdAt: new Date().toISOString(),
@@ -346,10 +346,6 @@ export function createDemoClinic(): {
     getPatient: (id) => patients.find((patient) => patient.id === id),
     check: () => guard<never>(),
   });
-  const membership = createMembershipDemo(
-    () => principal,
-    (id) => patients.find((patient) => patient.id === id) ?? null,
-  );
   const registrations = new Map(
     patients.map((patient) => [patient.id, new Date().toISOString()]),
   );
@@ -358,10 +354,13 @@ export function createDemoClinic(): {
     isAvailable: () => available,
     getStaffList: () => demoStaff,
     getPatientRegistrations: () =>
-      [...registrations].map(([id, createdAt]) => ({ id, createdAt })),
+      [...registrations].map(([id, createdAt]) => ({
+        id,
+        createdAt,
+        sex: patients.find((patient) => patient.id === id)?.sex ?? null,
+      })),
     getAppointments: appointmentSnapshot,
     getLabOrders: laboratory.snapshot,
-    getMemberships: membership.snapshot,
   });
   const referrals = createReferralsDemo({
     getStaff: () => principal,
@@ -372,7 +371,6 @@ export function createDemoClinic(): {
   const api: ClinicApi = {
     ...createHistoricalDemo(() => principal),
     ...referrals.api,
-    ...membership.api,
     ...operations.api,
     ...laboratory.api,
     ...appointmentApi,
@@ -512,6 +510,7 @@ export function createDemoClinic(): {
         'respiratoryRate',
         'oxygenSaturation',
         'weight',
+        'height',
       ] as const;
       for (const field of fields) {
         const value = input[field];
@@ -585,13 +584,14 @@ export function createDemoClinic(): {
       const record = vitals.find((v) => v.id === input.id);
       if (
         !record ||
-        principal?.role !== 'attendant' ||
-        record.authorId !== principal.id ||
-        record.status !== 'finalized'
+        !principal ||
+        record.status !== 'finalized' ||
+        (record.authorId !== principal.id && !principal.isHead) ||
+        (!principal.isHead && principal.role !== 'attendant')
       )
         return failure(
           'DENIED',
-          'Only your own finalized measurements can be corrected.',
+          'Only the author or clinic head can correct finalized measurements.',
         );
       const stale = revisionError<Vitals>(record, input.expectedRevision);
       if (stale) return stale;
@@ -607,6 +607,7 @@ export function createDemoClinic(): {
         'respiratoryRate',
         'oxygenSaturation',
         'weight',
+        'height',
       ] as const) {
         const value = input.correctedContent[field];
         if (
@@ -860,16 +861,6 @@ export function createDemoClinic(): {
     finalizeLabResult: ['finalize', 'lab-result'],
     correctLabResult: ['correction', 'lab-result'],
     reviewLabOrder: ['change', 'lab-order'],
-    readPatientFamily: ['view', 'membership'],
-    readMembershipHistory: ['view', 'membership'],
-    readDependentHistory: ['view', 'dependent-link'],
-    createMembership: ['create', 'membership'],
-    updateMembership: ['change', 'membership'],
-    correctMembership: ['correction', 'membership'],
-    linkDependent: ['create', 'dependent-link'],
-    updateDependent: ['change', 'dependent-link'],
-    correctDependent: ['correction', 'dependent-link'],
-    unlinkDependent: ['change', 'dependent-link'],
   } satisfies Partial<
     Record<keyof ClinicApi, [DemoAuditInput['action'], string]>
   >;

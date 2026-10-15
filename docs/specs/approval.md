@@ -1,4 +1,16 @@
-# clinic-demo-v1.2 approval and amendment history
+# clinic-demo-v1.3 approval and amendment history
+
+## Clinical-summary, vitals, HMO removal, and audit-colors amendment, 2026-10-15
+
+Status: **approved**. The user reviewed the [clinic-demo-v1.3 amendment](clinic-demo-v1.3-amendment.md) and authorized implementation:
+
+> implement them [$implement-spec]
+
+The user clarified HMO scope:
+
+> just fully remove the hmo feature
+
+This approves reduced clinical-summary fields (with stored history retained but retired fields hidden), height and combined blood-pressure presentation, Clinic head corrections of finalized vital signs, action colors in the audit view, and complete removal of the HMO membership/dependent-eligibility feature and its stored data. Keep patient category, optional employee reference, and generic audit events. The amendment is equal-priority clinic-demo-v1.3 work; implementation does not authorize production migration or deployment. [ADR-0004](../adr/0004-remove-hmo-membership-data.md) records the destructive data decision. Seven tickets were published: [#29](https://github.com/aandremillan10/health-ier/issues/29), [#30](https://github.com/aandremillan10/health-ier/issues/30), [#31](https://github.com/aandremillan10/health-ier/issues/31), [#32](https://github.com/aandremillan10/health-ier/issues/32), [#33](https://github.com/aandremillan10/health-ier/issues/33), [#34](https://github.com/aandremillan10/health-ier/issues/34), and [#35](https://github.com/aandremillan10/health-ier/issues/35).
 
 ## Historical scans and audit implementation amendment, 2026-10-15
 
