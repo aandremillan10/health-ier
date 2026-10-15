@@ -115,6 +115,52 @@ export function validatePayload(
   timestamp(payload.createdAt);
   if ('updatedAt' in payload) timestamp(payload.updatedAt);
   switch (type) {
+    case 'historicalDocument':
+      id(payload.patientId);
+      id(payload.uploaderId);
+      id(payload.replacesId, true);
+      dateOnly(payload.documentDate);
+      for (const field of [
+        'documentType',
+        'description',
+        'filename',
+        'uploaderName',
+      ])
+        text(payload[field]);
+      text(payload.replacementReason, true);
+      for (const [field, limit] of [
+        ['documentType', 80],
+        ['description', 2000],
+        ['filename', 150],
+        ['uploaderName', 200],
+      ] as const) {
+        const value = payload[field];
+        if (typeof value !== 'string' || value.length > limit || !value.trim())
+          throw new MirrorFailure('INVALID_SCHEMA');
+      }
+      if (
+        payload.replacementReason !== null &&
+        (typeof payload.replacementReason !== 'string' ||
+          payload.replacementReason.length > 2000 ||
+          !payload.replacementReason.trim())
+      )
+        throw new MirrorFailure('INVALID_SCHEMA');
+      if (
+        payload.revision !== 1 ||
+        !['medical', 'dental', 'laboratory'].includes(
+          String(payload.discipline),
+        ) ||
+        !['application/pdf', 'image/jpeg'].includes(String(payload.mimeType)) ||
+        typeof payload.byteLength !== 'number' ||
+        !Number.isSafeInteger(payload.byteLength) ||
+        payload.byteLength < 1 ||
+        payload.byteLength > 10485760 ||
+        typeof payload.sha256 !== 'string' ||
+        !/^[a-f0-9]{64}$/.test(payload.sha256) ||
+        (payload.replacesId === null) !== (payload.replacementReason === null)
+      )
+        throw new MirrorFailure('INVALID_SCHEMA');
+      break;
     case 'staff':
       text(payload.displayName);
       text(payload.licenseText, true);

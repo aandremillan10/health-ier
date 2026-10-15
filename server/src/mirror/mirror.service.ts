@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { timingSafeEqual } from 'node:crypto';
+import { createHash, timingSafeEqual } from 'node:crypto';
 import { clinicId, serverMode } from '../config';
 import { DatabaseService } from '../database/database.service';
 import type { Prisma } from '../generated/prisma/client';
@@ -16,6 +16,8 @@ import {
   object,
   parseBatch,
 } from './validation';
+import { HistoricalStorage } from '../historical-documents/historical-storage';
+import { decodeHistoricalFile } from '../historical-documents/file-validation';
 
 export interface Acknowledgment {
   eventId: string;
@@ -27,7 +29,63 @@ export interface MirrorResult {
 }
 @Injectable()
 export class MirrorService {
-  constructor(private readonly db: DatabaseService) {}
+  constructor(
+    private readonly db: DatabaseService,
+    private readonly historicalStorage: HistoricalStorage = new HistoricalStorage(),
+  ) {}
+
+  private historicalKey(event: MirrorEvent): string {
+    return `${event.clinicId}/historical/${event.entityId}/${String(event.payload.sha256)}`;
+  }
+  async stageHistorical(input: unknown): Promise<{ stored: true }> {
+    if (serverMode() !== 'CLOUD') throw new MirrorFailure('WRONG_MODE');
+    const body = object(input);
+    if (Object.keys(body).sort().join(',') !== 'clinicId,contentBase64,event')
+      throw new MirrorFailure('INVALID_SCHEMA');
+    const [event] = parseBatch(
+      { clinicId: body.clinicId, events: [body.event] },
+      clinicId(),
+    );
+    if (event.entityType !== 'historicalDocument')
+      throw new MirrorFailure('INVALID_SCHEMA');
+    let file: ReturnType<typeof decodeHistoricalFile>;
+    try {
+      file = decodeHistoricalFile({
+        filename: event.payload.filename,
+        mimeType: event.payload.mimeType,
+        contentBase64: body.contentBase64,
+      });
+    } catch {
+      throw new MirrorFailure('INVALID_SCHEMA');
+    }
+    if (
+      file.sha256 !== event.payload.sha256 ||
+      file.bytes.length !== event.payload.byteLength
+    )
+      throw new MirrorFailure('INVALID_SCHEMA');
+    await this.db.$transaction(async (tx) => {
+      await this.references(tx, event);
+      const version = await tx.mirrorVersion.findUnique({
+        where: {
+          clinicId_entityType_entityId_revision: {
+            clinicId: event.clinicId,
+            entityType: event.entityType,
+            entityId: event.entityId,
+            revision: 1,
+          },
+        },
+      });
+      if (version && version.hash !== digest(event.payload))
+        throw new MirrorFailure('IMMUTABLE_CONFLICT');
+    });
+    await this.historicalStorage.put(
+      this.historicalKey(event),
+      file.bytes,
+      file.mimeType,
+      file.sha256,
+    );
+    return { stored: true };
+  }
 
   authenticate(authorization: string | undefined): void {
     const expected = process.env.MIRROR_MACHINE_TOKEN;
@@ -70,6 +128,15 @@ export class MirrorService {
   }
 
   async apply(event: MirrorEvent): Promise<void> {
+    if (event.entityType === 'historicalDocument') {
+      const bytes = await this.historicalStorage.get(this.historicalKey(event));
+      if (
+        bytes.length !== event.payload.byteLength ||
+        createHash('sha256').update(bytes).digest('hex') !==
+          event.payload.sha256
+      )
+        throw new MirrorFailure('INVALID_REFERENCE');
+    }
     const eventHash = digest(event);
     const payloadHash = digest(event.payload);
     await this.db.$transaction(
@@ -128,7 +195,8 @@ export class MirrorService {
           }
           if (
             (event.entityType === 'document' ||
-              event.entityType === 'correction') &&
+              event.entityType === 'correction' ||
+              event.entityType === 'historicalDocument') &&
             latest.hash !== payloadHash
           )
             throw new MirrorFailure('IMMUTABLE_CONFLICT');
@@ -215,7 +283,30 @@ export class MirrorService {
       return object(record.payload);
     };
     if (event.entityType === 'staff' || event.entityType === 'patient') return;
-    const author = await parent('staff', payload.authorId ?? payload.issuerId);
+    const author = await parent(
+      'staff',
+      payload.authorId ?? payload.issuerId ?? payload.uploaderId,
+    );
+    if (event.entityType === 'historicalDocument') {
+      await parent('patient', payload.patientId);
+      const expectedRole = {
+        medical: 'doctor',
+        dental: 'dentist',
+        laboratory: 'medtech',
+      }[String(payload.discipline)];
+      if (author.role !== expectedRole)
+        throw new MirrorFailure('INVALID_REFERENCE');
+      if (payload.replacesId !== null) {
+        const original = await parent('historicalDocument', payload.replacesId);
+        if (
+          original.patientId !== payload.patientId ||
+          original.discipline !== payload.discipline ||
+          original.uploaderId !== payload.uploaderId
+        )
+          throw new MirrorFailure('INVALID_REFERENCE');
+      }
+      return;
+    }
     if (event.entityType === 'correction') {
       const original = await parent(
         payload.originalType as 'vitals' | 'entry',
@@ -375,6 +466,7 @@ export class MirrorService {
           ['entry', await tx.entry.findMany()],
           ['correction', await tx.correction.findMany()],
           ['document', await tx.document.findMany()],
+          ['historicalDocument', await tx.historicalDocument.findMany()],
         ] as const;
         for (const [entityType, rows] of records) {
           for (const record of rows)
@@ -435,6 +527,7 @@ export class MirrorService {
 
   async deliver(
     transport: (events: MirrorEvent[]) => Promise<unknown>,
+    historicalTransport?: (event: MirrorEvent, bytes: Buffer) => Promise<void>,
   ): Promise<number> {
     if (serverMode() !== 'EDGE') throw new MirrorFailure('WRONG_MODE');
     const rows = await this.db.outbox.findMany({
@@ -481,7 +574,61 @@ export class MirrorService {
       clinicId(),
     );
     try {
-      const response = object(await transport(sent));
+      const ready: MirrorEvent[] = [];
+      const stagingFailures = new Map<string, string>();
+      for (const event of sent) {
+        if (event.entityType !== 'historicalDocument') {
+          ready.push(event);
+          continue;
+        }
+        try {
+          if (!historicalTransport)
+            throw new MirrorFailure('DELIVERY_UNAVAILABLE');
+          const row = await this.db.historicalDocument.findUnique({
+            where: { id: event.entityId },
+          });
+          if (
+            !row ||
+            row.sha256 !== event.payload.sha256 ||
+            digest(snapshot('historicalDocument', row)) !==
+              digest(event.payload)
+          )
+            throw new MirrorFailure('INVALID_REFERENCE');
+          let bytes: Buffer;
+          try {
+            bytes = await this.historicalStorage.get(row.objectKey);
+          } catch {
+            throw new MirrorFailure('LOCAL_FILE_UNAVAILABLE');
+          }
+          if (
+            bytes.length !== row.byteLength ||
+            createHash('sha256').update(bytes).digest('hex') !== row.sha256
+          )
+            throw new MirrorFailure('INVALID_REFERENCE');
+          try {
+            await historicalTransport(event, bytes);
+          } catch {
+            throw new MirrorFailure('DELIVERY_UNAVAILABLE');
+          }
+          ready.push(event);
+        } catch (error: unknown) {
+          stagingFailures.set(
+            event.eventId,
+            error instanceof MirrorFailure &&
+              [
+                'LOCAL_FILE_UNAVAILABLE',
+                'INVALID_REFERENCE',
+                'DELIVERY_UNAVAILABLE',
+              ].includes(error.code)
+              ? error.code
+              : 'DELIVERY_UNAVAILABLE',
+          );
+          /* Keep this file pending while allowing its parent events to arrive. */
+        }
+      }
+      const response = ready.length
+        ? object(await transport(ready))
+        : { acknowledged: [], rejected: [] };
       if (!Array.isArray(response.acknowledged))
         throw new MirrorFailure('INVALID_ACK');
       const acknowledged: Acknowledgment[] = [];
@@ -492,7 +639,7 @@ export class MirrorService {
           Object.keys(ack).length !== 2 ||
           typeof ack.eventId !== 'string' ||
           seen.has(ack.eventId) ||
-          !sent.some(
+          !ready.some(
             (event) =>
               event.eventId === ack.eventId && event.revision === ack.revision,
           )
@@ -504,7 +651,7 @@ export class MirrorService {
           revision: Number(ack.revision),
         });
       }
-      const failures = new Map<string, string>();
+      const failures = new Map(stagingFailures);
       const safeCodes = [
         'MISSING_DEPENDENCY',
         'INVALID_REFERENCE',

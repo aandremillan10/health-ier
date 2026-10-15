@@ -1,0 +1,32 @@
+{
+  "sourceCommit": "5631a43fa8dcfcd233762ae7bf063d3440da4f83",
+  "sourceTree": "9612c223ffd8e2cb7059b4cc7ccba2da2f9efcba",
+  "sourceStatus": "",
+  "sourceContentManifestSha256": "8e37422ddf2a85da7fa8601f1589ad542239a3d093f79224fdb1ce5f0c535516",
+  "sourceFileCount": 457,
+  "packagePath": "C:/Users/ajapa/.codex/worktrees/guided-onboarding/health-ier/app/dist/windows/2026-10-15T07-15-30-545Z/AMLIG-win32-x64.zip",
+  "portableFolder": "C:/Users/ajapa/.codex/worktrees/guided-onboarding/health-ier/app/dist/windows/2026-10-15T07-15-30-545Z/AMLIG-win32-x64",
+  "packageBytes": 163039770,
+  "packageSha256": "06179737af6725c7aae15c7aa2fc68b74a2d1d187277f0b747b81669a2bb9f75",
+  "packageBuildInfoSha256": "e6b47754f68c8be6da4a84785d854de3ba56bdb8a67760e893317f52c710eaa0",
+  "lockfileSha256": "9659ec52baaeaf03723ede172c2733a859f28c657a707aaa769a7fb949bf88eb",
+  "electron": "44.7.2",
+  "verifiedCompiledFiles": 9,
+  "packagedPdfWorkerFiles": ["pdf.worker.min-BQhI5qe_.js"],
+  "productionBrowserQaGate": "2/2 headless tests against actual packaged renderer HTTP: injected clinicApi ignored; no fallback on live bridge failure",
+  "productionGateLog": "packaged-renderer-gate.log (local evidence only)",
+  "buildTiming": {
+    "startedAt": "2026-10-15T15:15:01.3583937+08:00",
+    "endedAt": "2026-10-15T15:15:09.4352789+08:00",
+    "seconds": 8.0769115,
+    "exitCode": 0
+  },
+  "packageTiming": {
+    "startedAt": "2026-10-15T15:15:20.4425264+08:00",
+    "endedAt": "2026-10-15T15:16:00.9098885+08:00",
+    "seconds": 40.4692666,
+    "exitCode": 0
+  },
+  "appLaunched": false,
+  "evidenceExcluded": "docs/verification/**; source content manifest includes tracked and formerly untracked feature contents"
+}

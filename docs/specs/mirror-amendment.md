@@ -1,5 +1,7 @@
 # clinic-demo-v1.1: one-way edge-to-cloud mirror
 
+Later scoped amendment, 2026-10-15: the user authorized implementing #17/#19 and explicitly selected "Mirror scans one-way to Railway; cloud remains read-only". Approved historical PDF/JPEG records now join the whitelist; other unapproved attachments remain excluded. [ADR-0003](../adr/0003-historical-record-s3-mirror.md) and the [historical document contract](../features/historical-documents.md) describe the implemented source extension. Original v1.1 approval/history below remains its dated provenance; actual new cloud transfer/deployment proof is still required.
+
 Status: **user-confirmed scope and accepted architecture amendment**, 2026-10-14, Asia/Manila. Supersedes clinic-demo-v1's cloud deferral; original approval history is preserved. Routes/behavior below are plans, not implemented or deployed features. A separate explicit build instruction remains required.
 
 Exact user answers:
@@ -17,6 +19,8 @@ Use the same NestJS codebase with explicit EDGE/CLOUD deployment modes and separ
 ## Included records and excluded secrets
 
 Whitelist clinic-scoped structured demo records: shared registry; timestamped vitals; medical/dental/laboratory entries including drafts/status/finalized originals; original-linked corrections; immutable issued prescription/certificate snapshots and source references; minimum staff display/role/head/author/issuer identity needed for attribution. Preserve entity IDs, patient/author/discipline references and server revisions.
+
+The 2026-10-15 amendment additionally includes immutable historical PDF/JPEG metadata, uploader attribution, prior-record replacement linkage and checksum-verified bytes through the existing durable outbound outbox. EDGE local S3 remains authoritative; CLOUD has separate managed S3 credentials and acknowledges only after its stored bytes and references validate. File bytes stay out of JSON outbox payloads and secrets remain excluded. CLOUD outage never blocks the local import transaction.
 
 Exclude passwords/hashes, sessions, staff/machine tokens, infrastructure secrets, arbitrary tables, unapproved attachments/scans, signature images and private reference/mock images. Staff metadata is attribution, not replicated login authority. Headers/templates are deployed application assets, not clinical events. Use synthetic data only. No delete UI is added; if an existing approved deletion applies, mirror its versioned tombstone without resurrection.
 

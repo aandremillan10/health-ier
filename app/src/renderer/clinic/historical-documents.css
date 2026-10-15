@@ -1,0 +1,36 @@
+.history-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  align-items: end;
+  margin-block: 1.5rem;
+}
+.history-list {
+  list-style: none;
+  padding: 0;
+}
+.history-list li {
+  overflow-wrap: anywhere;
+}
+.historical-preview {
+  margin-block: 1.5rem;
+}
+.scan-canvas,
+.scan-image {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  margin-block: 1rem;
+  background: white;
+}
+.practice-scan {
+  padding: 2rem;
+  background: white;
+  border: 1px solid var(--border);
+  color: var(--foreground);
+}
+.practice-paper-header {
+  text-align: center;
+  padding: 1rem;
+  border-bottom: 1px solid var(--border);
+}

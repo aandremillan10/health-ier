@@ -37,6 +37,7 @@ export function AuditViewer({
     error: ClinicError | null;
   } | null>(null);
   const [page, setPage] = useState<AuditPage | null>(null);
+  const [reload, setReload] = useState(0);
   const request = useRef<symbol | null>(null);
   const current =
     page?.api === api && page.query === applied && page.onExpired === onExpired
@@ -81,7 +82,7 @@ export function AuditViewer({
     return (): void => {
       active = false;
     };
-  }, [api, onExpired]);
+  }, [api, onExpired, reload]);
   useEffect(() => {
     const sequence = Symbol();
     request.current = sequence;
@@ -119,7 +120,7 @@ export function AuditViewer({
     return (): void => {
       request.current = null;
     };
-  }, [api, applied, onExpired]);
+  }, [api, applied, onExpired, reload]);
   async function more(): Promise<void> {
     if (!current || !cursor || busy) return;
     const sequence = Symbol();
@@ -262,7 +263,15 @@ export function AuditViewer({
           </p>
         )}
       </form>
-      <ErrorNotice error={error} />
+      <ErrorNotice error={error}>
+        <Button
+          variant="outline"
+          disabled={busy}
+          onClick={() => setReload((value) => value + 1)}
+        >
+          Retry audit trail
+        </Button>
+      </ErrorNotice>
       {busy && <p role="status">Loading audit events…</p>}
       {!busy && !error && events.length === 0 && (
         <p className="panel">

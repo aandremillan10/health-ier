@@ -25,6 +25,12 @@ function setup(): {
     ok([document]),
   );
   const wire: Wire.ClinicApi = {
+    selectHistoricalFile: unused,
+    discardHistoricalFile: unused,
+    importHistoricalDocument: unused,
+    listHistoricalDocuments: unused,
+    readHistoricalDocument: unused,
+    readHistoricalDocumentContent: unused,
     listReferrals: unused,
     listReferralInbox: unused,
     listSentReferrals: unused,

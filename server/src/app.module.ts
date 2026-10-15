@@ -22,6 +22,9 @@ import { MembershipController } from './membership/membership.controller';
 import { MembershipService } from './membership/membership.service';
 import { ReferralsController } from './referrals/referrals.controller';
 import { ReferralsService } from './referrals/referrals.service';
+import { HistoricalDocumentsController } from './historical-documents/historical-documents.controller';
+import { HistoricalDocumentsService } from './historical-documents/historical-documents.service';
+import { HistoricalStorage } from './historical-documents/historical-storage';
 
 @Module({
   imports: [DatabaseModule, MirrorModule],
@@ -36,6 +39,7 @@ import { ReferralsService } from './referrals/referrals.service';
     LaboratoryController,
     MembershipController,
     ReferralsController,
+    HistoricalDocumentsController,
   ],
   providers: [
     AuthService,
@@ -48,6 +52,8 @@ import { ReferralsService } from './referrals/referrals.service';
     LaboratoryService,
     MembershipService,
     ReferralsService,
+    HistoricalDocumentsService,
+    HistoricalStorage,
     { provide: APP_INTERCEPTOR, useClass: AuditInterceptor },
   ],
 })

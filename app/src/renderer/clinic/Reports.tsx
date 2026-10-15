@@ -15,10 +15,12 @@ export function Reports({
   api,
   onExpired,
   demo = false,
+  practice = false,
 }: {
   api: ReportsApi;
   onExpired: () => void;
   demo?: boolean;
+  practice?: boolean;
 }): ReactElement {
   const [from, setFrom] = useState(() => `${today().slice(0, 8)}01`);
   const [to, setTo] = useState(today);
@@ -111,6 +113,12 @@ export function Reports({
     refresh();
   }
   async function exportCsv(): Promise<void> {
+    if (practice) {
+      setNotice(
+        'Practice only. Export CSV saves an authorized report in clinic work. No file was created or downloaded.',
+      );
+      return;
+    }
     if (!report || changed || exportOperation.busy || exportOperation.conflict)
       return;
     setDownloadError(null);
