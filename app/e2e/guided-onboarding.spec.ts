@@ -231,6 +231,244 @@ async function noLiveEffects(page: Page): Promise<void> {
   expect(activity).toEqual({ calls: [], effects: [] });
 }
 
+async function expectPracticeCoexistence(page: Page): Promise<void> {
+  // Read all bounds at one scroll position; locator actions must not scroll
+  // each element into view independently and hide the original defect.
+  const bounds = await page.evaluate(() => {
+    const selectors = [
+      '#patient-search',
+      '#practice-step-description',
+      '.practice-guide-top',
+      '.practice-guide-header > [role="status"]',
+      '.practice-step-actions',
+    ];
+    return selectors.map((selector) => {
+      const element = document.querySelector(selector)!;
+      const rect = element.getBoundingClientRect();
+      const region = element.closest(
+        '.practice-screen, .practice-guide-content',
+      );
+      const clip = region?.getBoundingClientRect();
+      return {
+        selector,
+        top: rect.top,
+        bottom: rect.bottom,
+        left: rect.left,
+        right: rect.right,
+        clipTop: clip?.top ?? 0,
+        clipBottom: clip?.bottom ?? innerHeight,
+        width: innerWidth,
+      };
+    });
+  });
+  for (const rect of bounds) {
+    expect(rect.top, `${rect.selector} top`).toBeGreaterThanOrEqual(
+      rect.clipTop,
+    );
+    expect(rect.bottom, `${rect.selector} bottom`).toBeLessThanOrEqual(
+      rect.clipBottom,
+    );
+    expect(rect.left, `${rect.selector} left`).toBeGreaterThanOrEqual(0);
+    expect(rect.right, `${rect.selector} right`).toBeLessThanOrEqual(
+      rect.width,
+    );
+  }
+}
+
+async function expectSpotlightAligned(page: Page): Promise<void> {
+  await expect
+    .poll(async () =>
+      page.evaluate(() => {
+        const target = document.querySelector('.practice-target');
+        const hole = document.querySelector('.practice-spotlight-hole');
+        if (!target || !hole) return false;
+        const rect = (
+          target.closest('.search-field') ?? target
+        ).getBoundingClientRect();
+        const cutout = hole.getBoundingClientRect();
+        return (
+          Math.abs(cutout.left - (rect.left - 8)) < 1 &&
+          Math.abs(cutout.top - (rect.top - 8)) < 1 &&
+          Math.abs(cutout.right - (rect.right + 8)) < 1 &&
+          Math.abs(cutout.bottom - (rect.bottom + 8)) < 1
+        );
+      }),
+    )
+    .toBe(true);
+}
+
+for (const [width, height, doubled] of [
+  [1186, 793, false],
+  [1280, 720, false],
+  [1920, 1080, false],
+  [1024, 768, false],
+  [1024, 768, true],
+] as const) {
+  test(`practice instructions and navigation coexist with the highlighted target at ${width}x${height}${doubled ? ' text200' : ''}`, async ({
+    page,
+  }, testInfo): Promise<void> => {
+    await page.setViewportSize({ width, height });
+    await page.emulateMedia({
+      reducedMotion: doubled ? 'reduce' : 'no-preference',
+    });
+    await signIn(page, 'demo-clerk');
+    await expect(page.locator('.practice-spotlight')).toHaveCount(0);
+    if (doubled)
+      await page.evaluate(() => {
+        document.documentElement.style.fontSize = '32px';
+      });
+    await start(page, 'registry');
+    await page
+      .getByRole('button', { name: 'Show this control', exact: true })
+      .click();
+    await expectPracticeCoexistence(page);
+    await expectSpotlightAligned(page);
+    await expect(page.locator('.practice-marker')).toBeVisible();
+    const labelOverlap = await page.evaluate(() => {
+      const label = document.querySelector('label[for="patient-search"]')!;
+      const text = document.createRange();
+      text.selectNodeContents(label);
+      const marker = document
+        .querySelector('.practice-marker')!
+        .getBoundingClientRect();
+      return [...text.getClientRects()].some(
+        (ink) =>
+          marker.left < ink.right &&
+          marker.right > ink.left &&
+          marker.top < ink.bottom &&
+          marker.bottom > ink.top,
+      );
+    });
+    expect(
+      labelOverlap,
+      'Step badge must leave the field label text readable',
+    ).toBe(false);
+    const hitTargets = await page.evaluate(() => {
+      const target = document.querySelector('#patient-search')!;
+      const controls = [
+        ...document.querySelectorAll('.practice-guide button'),
+      ].filter((element) =>
+        ['Exit practice', 'Show this control'].includes(
+          element.textContent!.trim(),
+        ),
+      );
+      return [target, ...controls].map((element) => {
+        const rect = element.getBoundingClientRect();
+        const hit = document.elementFromPoint(
+          rect.x + rect.width / 2,
+          rect.y + rect.height / 2,
+        );
+        return hit === element || element.contains(hit);
+      });
+    });
+    expect(hitTargets).toEqual([true, true, true]);
+    await page.screenshot({ path: testInfo.outputPath('spotlight-step1.png') });
+    await page.keyboard.type('Lina');
+    await page.keyboard.press('Enter');
+    await expect(page.locator('.practice-guide-header')).toContainText(
+      'Action completed',
+    );
+    await expectPracticeCoexistence(page);
+    expect(
+      await page
+        .getByRole('button', { name: 'Next', exact: true })
+        .evaluate((element) => {
+          const rect = element.getBoundingClientRect();
+          const hit = document.elementFromPoint(
+            rect.x + rect.width / 2,
+            rect.y + rect.height / 2,
+          );
+          return hit === element || element.contains(hit);
+        }),
+    ).toBe(true);
+    await page.screenshot({ path: testInfo.outputPath('spotlight.png') });
+    await noLiveEffects(page);
+    await page.keyboard.press('Escape');
+    await expect(
+      page.locator('.practice-spotlight, .practice-target, .practice-marker'),
+    ).toHaveCount(0);
+    await expect(
+      page.getByLabel('Practice guides', { exact: true }),
+    ).toBeFocused();
+  });
+}
+
+test('spotlight follows scroll resize reflow and step changes, and clears hidden or offscreen targets', async ({
+  page,
+}): Promise<void> => {
+  await page.setViewportSize({ width: 1186, height: 793 });
+  await signIn(page, 'demo-clerk');
+  await start(page, 'registry');
+  const show = page.getByRole('button', {
+    name: 'Show this control',
+    exact: true,
+  });
+  await show.click();
+  await expectSpotlightAligned(page);
+  await page.locator('.practice-screen').evaluate((element) => {
+    element.scrollTop += 80;
+  });
+  await expectSpotlightAligned(page);
+  await page.setViewportSize({ width: 1024, height: 768 });
+  await show.click();
+  await expectSpotlightAligned(page);
+  await page.locator('#patient-search').evaluate((element) => {
+    element.style.height = '64px';
+  });
+  await expectSpotlightAligned(page);
+  await page.locator('#patient-search').evaluate((element) => {
+    element.style.display = 'none';
+  });
+  await expect(page.locator('.practice-spotlight')).toHaveCount(0);
+  await expect(
+    page.getByText(/This control is not on the current screen/),
+  ).toBeVisible();
+  await expect(
+    page.getByRole('button', { name: 'Next', exact: true }),
+  ).toBeDisabled();
+  await page.locator('#patient-search').evaluate((element) => {
+    element.style.display = '';
+  });
+  await show.click();
+  await expectSpotlightAligned(page);
+  await page.locator('.practice-screen').evaluate((element) => {
+    element.scrollTop = element.scrollHeight;
+  });
+  await expect(page.locator('.practice-spotlight')).toHaveCount(0);
+  await show.click();
+  await expectSpotlightAligned(page);
+  await page.keyboard.type('Lina');
+  await page.keyboard.press('Enter');
+  await page.getByRole('button', { name: 'Next', exact: true }).click();
+  await show.click();
+  await expect(page.locator('.practice-target')).toHaveAttribute(
+    'aria-label',
+    'Open Lina Marquez DEMO-0001',
+  );
+  await expectSpotlightAligned(page);
+  await page.getByRole('button', { name: 'Back', exact: true }).click();
+  await show.click();
+  await expect(page.locator('#patient-search')).toHaveClass(/practice-target/);
+  await expectSpotlightAligned(page);
+  await page
+    .getByRole('button', { name: 'Restart practice', exact: true })
+    .click();
+  await show.click();
+  await expect(page.locator('#patient-search')).toHaveValue('');
+  await expect(
+    page.getByRole('button', { name: 'Next', exact: true }),
+  ).toBeDisabled();
+  await expectSpotlightAligned(page);
+  await noLiveEffects(page);
+  await page.evaluate(() => window.guidedTest.reset());
+  await expect(
+    page.getByRole('heading', { name: 'Staff sign-in', exact: true }),
+  ).toBeVisible();
+  await expect(
+    page.locator('.practice-spotlight, .practice-target, .practice-marker'),
+  ).toHaveCount(0);
+});
+
 test('registry practice requires real actions, isolates writes, and restarts cleanly', async ({
   page,
 }): Promise<void> => {

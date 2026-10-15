@@ -102,6 +102,13 @@ export function PracticeGuide({
   const [marker, setMarker] = useState<{ left: number; top: number } | null>(
     null,
   );
+  const [spotlight, setSpotlight] = useState<{
+    left: number;
+    top: number;
+    width: number;
+    height: number;
+    hole: { left: number; top: number; width: number; height: number };
+  } | null>(null);
   const [conflictArmed, setConflictArmed] = useState(false);
   const heading = useRef<HTMLHeadingElement>(null);
   const current = useRef(index);
@@ -109,6 +116,7 @@ export function PracticeGuide({
   const target = useRef<HTMLElement | null>(null);
   const originalDetails = useRef<string | null>(null);
   const markerElement = useRef<HTMLSpanElement>(null);
+  const guide = useRef<HTMLElement>(null);
   const step = session.steps[index];
   const done = completed.has(index);
   const finish = (): void =>
@@ -116,6 +124,8 @@ export function PracticeGuide({
   useLayoutEffect(() => {
     current.current = index;
     armed.current = false;
+    if (heading.current?.parentElement)
+      heading.current.parentElement.scrollTop = 0;
     heading.current?.focus({ preventScroll: true });
   }, [index]);
   useEffect(
@@ -180,10 +190,13 @@ export function PracticeGuide({
   useEffect(() => {
     const container = root.current;
     if (!container || !step) return;
+    const screen = container.querySelector<HTMLElement>('.practice-screen');
+    if (!screen) return;
     let frame = 0;
     function measure(): void {
       const next = findPracticeTarget(container!, step);
       if (target.current !== next) {
+        if (target.current) resize.unobserve(target.current);
         target.current?.classList.remove('practice-target');
         if (originalDetails.current === null)
           target.current?.removeAttribute('aria-details');
@@ -193,27 +206,80 @@ export function PracticeGuide({
         originalDetails.current = next?.getAttribute('aria-details') ?? null;
         next?.classList.add('practice-target');
         next?.setAttribute('aria-details', 'practice-step-description');
+        if (next) resize.observe(next);
       }
       setMissing(!next);
       if (next) {
-        const rect = next.getBoundingClientRect();
+        const rect = (
+          next.closest('.search-field') ?? next
+        ).getBoundingClientRect();
+        const viewport = screen!.getBoundingClientRect();
+        const visible =
+          rect.bottom > viewport.top &&
+          rect.top < viewport.bottom &&
+          rect.right > viewport.left &&
+          rect.left < viewport.right;
+        // Clip the hole and scrim to the scrolling task region. Top-layer
+        // dialogs retain their own native stacking and pointer behavior.
+        setSpotlight(
+          visible
+            ? {
+                left: viewport.left,
+                top: viewport.top,
+                width: viewport.width,
+                height: viewport.height,
+                hole: {
+                  left: rect.left - viewport.left - 8,
+                  top: rect.top - viewport.top - 8,
+                  width: rect.width + 16,
+                  height: rect.height + 16,
+                },
+              }
+            : null,
+        );
         const size = markerElement.current?.getBoundingClientRect();
         const width = size?.width ?? 0;
         const height = size?.height ?? 0;
         const top =
-          rect.top >= height + 16 ? rect.top - height - 8 : rect.bottom + 8;
+          rect.top >= viewport.top + height + 16
+            ? rect.top - height - 8
+            : rect.bottom + 8;
+        const label =
+          next instanceof HTMLInputElement ||
+          next instanceof HTMLTextAreaElement ||
+          next instanceof HTMLSelectElement
+            ? next.labels?.[0]
+            : null;
+        const labelText = document.createRange();
+        if (label) labelText.selectNodeContents(label);
+        const labelBounds = label ? labelText.getBoundingClientRect() : null;
+        const rightAligned = Math.max(
+          viewport.left + 8,
+          Math.min(viewport.right - width - 8, rect.right - width),
+        );
+        const left =
+          labelBounds &&
+          top < labelBounds.bottom &&
+          top + height > labelBounds.top &&
+          rightAligned < labelBounds.right &&
+          rightAligned + width > labelBounds.left
+            ? labelBounds.right + 8
+            : rightAligned;
         // If neither side fits, retain the outline instead of covering the control.
         setMarker(
-          rect.bottom > 0 &&
-            rect.top < innerHeight &&
-            top + height <= innerHeight - 8
+          visible &&
+            top + height <= viewport.bottom - 8 &&
+            left + width <= viewport.right - 8
             ? {
-                left: Math.max(8, Math.min(innerWidth - width - 8, rect.left)),
+                left,
                 top,
               }
             : null,
         );
-      } else setMarker(null);
+      } else {
+        setMarker(null);
+        setSpotlight(null);
+      }
     }
     const schedule = (): void => {
       cancelAnimationFrame(frame);
@@ -222,12 +288,14 @@ export function PracticeGuide({
     const resize = new ResizeObserver(schedule);
     const mutation = new MutationObserver(schedule);
     resize.observe(container);
+    resize.observe(screen);
+    if (guide.current) resize.observe(guide.current);
     if (markerElement.current) resize.observe(markerElement.current);
-    mutation.observe(container, {
+    mutation.observe(screen, {
       childList: true,
       subtree: true,
       attributes: true,
-      attributeFilter: ['open', 'hidden', 'disabled'],
+      attributeFilter: ['open', 'hidden', 'disabled', 'style', 'class'],
     });
     window.addEventListener('resize', schedule);
     window.addEventListener('scroll', schedule, true);
@@ -249,58 +317,69 @@ export function PracticeGuide({
   if (!step) return <></>;
   return (
     <>
-      <aside className="practice-guide" aria-label="Practice guide">
-        <div className="practice-guide-top">
-          <strong>{topicNames[session.topic]}</strong>
-          <Button variant="outline" onClick={onExit}>
-            Exit practice
+      <aside ref={guide} className="practice-guide" aria-label="Practice guide">
+        <div className="practice-guide-header">
+          <div className="practice-guide-top">
+            <strong>{topicNames[session.topic]}</strong>
+            <Button variant="outline" onClick={onExit}>
+              Exit practice
+            </Button>
+          </div>
+          <p role="status" aria-live="polite">
+            Step {index + 1} of {session.steps.length}
+            {done ? ' · Action completed' : ''}
+          </p>
+        </div>
+        <div className="practice-guide-content">
+          <h2 ref={heading} tabIndex={-1}>
+            {step.title}
+          </h2>
+          <p id="practice-step-description">{step.text}</p>
+          {missing && !done && (
+            <p className="notice warning" role="status">
+              This control is not on the current screen. Return to the relevant
+              screen or restart this practice. The guide has not advanced.
+            </p>
+          )}
+          {session.topic === 'medical' && index === 3 && !conflictArmed && (
+            <Button
+              variant="outline"
+              onClick={() => {
+                session.conflictNext();
+                setConflictArmed(true);
+              }}
+            >
+              Simulate revision conflict
+            </Button>
+          )}
+          {step.action && !done && (
+            <p className="hint">
+              Complete the action in the practice screen to continue.
+            </p>
+          )}
+          <p className="hint">
+            Back reviews instructions; completed actions remain in this
+            practice. Escape exits. Nothing here is saved to the clinic server.
+          </p>
+          <Button variant="ghost" onClick={onRestart}>
+            Restart practice
           </Button>
         </div>
-        <p role="status" aria-live="polite">
-          Step {index + 1} of {session.steps.length}
-          {done ? ' · Action completed' : ''}
-        </p>
-        <h2 ref={heading} tabIndex={-1}>
-          {step.title}
-        </h2>
-        <p id="practice-step-description">{step.text}</p>
-        {missing && !done && (
-          <p className="notice warning" role="status">
-            This control is not on the current screen. Return to the relevant
-            screen or restart this practice. The guide has not advanced.
-          </p>
-        )}
-        {!missing && (
-          <Button
-            variant="outline"
-            onClick={() => {
-              target.current?.scrollIntoView({
-                block: 'center',
-                behavior: 'instant',
-              });
-              target.current?.focus({ preventScroll: true });
-            }}
-          >
-            Show this control
-          </Button>
-        )}
-        {session.topic === 'medical' && index === 3 && !conflictArmed && (
-          <Button
-            variant="outline"
-            onClick={() => {
-              session.conflictNext();
-              setConflictArmed(true);
-            }}
-          >
-            Simulate revision conflict
-          </Button>
-        )}
-        {step.action && !done && (
-          <p className="hint">
-            Complete the action in the practice screen to continue.
-          </p>
-        )}
         <div className="practice-step-actions">
+          {!missing && (
+            <Button
+              variant="outline"
+              onClick={() => {
+                target.current?.scrollIntoView({
+                  block: 'center',
+                  behavior: 'instant',
+                });
+                target.current?.focus({ preventScroll: true });
+              }}
+            >
+              Show this control
+            </Button>
+          )}
           <Button
             variant="outline"
             disabled={index === 0}
@@ -321,14 +400,21 @@ export function PracticeGuide({
             </Button>
           )}
         </div>
-        <p className="hint">
-          Back reviews instructions; completed actions remain in this practice.
-          Escape exits. Nothing here is saved to the clinic server.
-        </p>
-        <Button variant="ghost" onClick={onRestart}>
-          Restart practice
-        </Button>
       </aside>
+      {spotlight && (
+        <div
+          className="practice-spotlight"
+          aria-hidden="true"
+          style={{
+            left: spotlight.left,
+            top: spotlight.top,
+            width: spotlight.width,
+            height: spotlight.height,
+          }}
+        >
+          <div className="practice-spotlight-hole" style={spotlight.hole} />
+        </div>
+      )}
       <span
         ref={markerElement}
         className="practice-marker"
