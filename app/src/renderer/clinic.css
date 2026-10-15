@@ -299,6 +299,10 @@ dt {
   background: var(--success);
 }
 
+.status-dot.checking {
+  background: var(--muted-foreground);
+}
+
 .staff-identity {
   display: grid;
   gap: 8px;
@@ -521,7 +525,7 @@ dt {
 .clinic-select {
   appearance: none;
   padding-right: 40px;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23616161' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%234f6668' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
   background-repeat: no-repeat;
   background-position: right 12px center;
 }
@@ -1290,36 +1294,6 @@ dd {
   width: 24px;
   color: var(--muted-foreground);
   pointer-events: none;
-}
-
-.swap-icon {
-  position: relative;
-  display: inline-grid;
-  width: 18px;
-  height: 18px;
-}
-
-.swap-icon > svg {
-  grid-area: 1 / 1;
-  transition:
-    opacity var(--dur-fast) var(--ease-standard),
-    transform var(--dur-fast) var(--ease-standard);
-}
-
-.swap-icon .icon-alt {
-  opacity: 0;
-  transform: scale(0.6);
-}
-
-.swap-icon.copied .icon-main {
-  opacity: 0;
-  transform: scale(0.6);
-}
-
-.swap-icon.copied .icon-alt {
-  opacity: 1;
-  transform: scale(1);
-  color: var(--success);
 }
 
 .segmented {

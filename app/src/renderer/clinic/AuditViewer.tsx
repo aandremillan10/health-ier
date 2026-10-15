@@ -194,6 +194,7 @@ export function AuditViewer({
           <Field label="Staff member" name="audit-actor">
             <select
               id="audit-actor"
+              className="clinic-select"
               value={filters.actorId ?? ''}
               onChange={(e) =>
                 setFilters({ ...filters, actorId: e.target.value || undefined })
@@ -210,6 +211,7 @@ export function AuditViewer({
           <Field label="Action" name="audit-action">
             <select
               id="audit-action"
+              className="clinic-select"
               value={filters.action ?? ''}
               onChange={(e) =>
                 setFilters({

@@ -461,6 +461,7 @@ function ClinicalSummaryPanel({
                     <Field label="Severity" name="summary-severity">
                       <select
                         id="summary-severity"
+                        className="clinic-select"
                         name="severity"
                         defaultValue={currentFields?.severity ?? 'unknown'}
                       >

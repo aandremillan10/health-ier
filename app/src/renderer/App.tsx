@@ -707,15 +707,17 @@ function Workspace({
           </nav>
           <div className="sidebar-bottom">
             <div className="connection">
-              <span className={`status-dot ${available ? 'online' : ''}`} />
-              <strong>
+              <span
+                className={`status-dot ${available === null ? 'checking' : available ? 'online' : ''}`}
+              />
+              <strong role="status">
                 {available === null
-                  ? 'Checking clinic server…'
+                  ? 'Checking clinic connection…'
                   : available
                     ? demo
-                      ? 'Demo server available'
-                      : 'Clinic server available'
-                    : 'Clinic server unavailable'}
+                      ? 'Demo connection available'
+                      : 'Last connection check passed'
+                    : 'Last connection check failed'}
               </strong>
               <Button
                 variant="ghost"

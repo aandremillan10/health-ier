@@ -638,7 +638,9 @@ try {
     );
   }, serverUrl.origin);
   await page.getByRole('button', { name: 'Save draft', exact: true }).click();
-  await expect(page.getByRole('alert')).toContainText('No save was confirmed');
+  await expect(page.getByRole('alert')).toContainText(
+    'If you were saving, check the record before you try again',
+  );
   await expect(
     page.getByLabel('Reason / symptoms', { exact: true }),
   ).toHaveValue(unsaved);

@@ -14,6 +14,7 @@
 .referral-toolbar {
   gap: 24px;
   margin-block-end: 24px;
+  align-items: end;
 }
 .referral-toolbar .field {
   min-width: min(100%, 16rem);

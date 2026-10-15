@@ -1,6 +1,6 @@
 # Clinic interface direction
 
-Status: **approved clinic-demo-v1.1 staff-tool design system, 2026-10-14, Asia/Manila**. See [approval record](docs/specs/approval.md). It uses the technical scaffold's neutral shadcn foundation. Product screens and print-template reproduction are not implemented or visually approved; feature work still waits for a separate build instruction.
+Status: **clinic-demo-v1.1 staff-tool baseline with a user-requested clinic-demo-v1.2 color and toast refinement, 2026-10-15, Asia/Manila**. See [approval record](docs/specs/approval.md). The v1.2 change keeps the existing component system and workflow boundaries.
 
 ## Approved system baseline
 
@@ -9,9 +9,9 @@ Status: **approved clinic-demo-v1.1 staff-tool design system, 2026-10-14, Asia/M
 | Type           | Windows system/Segoe UI via `system-ui, "Segoe UI", sans-serif`; body and input text 16px (1rem), 1.5 line-height. Labels/help 14px (0.875rem), section titles 20px, page titles 24px. Weight 400 body, 500 labels/actions, 600 headings. No marketing display type.                                                  |
 | Spacing        | 4px base; standard steps 4, 8, 12, 16, 24, 32, 48px. 8px label/control gap; 16px field/group gap; 24px panel padding, reduced to 16px in narrow windows.                                                                                                                                                              |
 | Foundation     | Existing shadcn New York, neutral CSS variables in `app/src/renderer/styles.css`; one component vocabulary, no second design system.                                                                                                                                                                                  |
-| Surfaces       | `--background`/`--card` white (`oklch(1 0 0)`), foreground `oklch(0.145 0 0)`, primary `oklch(0.205 0 0)`, primary text `oklch(0.985 0 0)`. Secondary/muted surface `oklch(0.97 0 0)` and subtle border `oklch(0.922 0 0)` match scaffold.                                                                            |
+| Surfaces       | Pale sage canvas `#eef4f2` / `#e8f0ed`, warm ivory card `#fbfcf9`, ink `#1c3038`, and deep blue-teal primary `#154d64` with `#f8fcfb` text. Muted text is `#4f6668`; input boundary is `#7a8e8a`; focus ring is `#15556a`. Keep semantic success, warning, and error colors in their existing pairs.                  |
 | Shape          | Base radius 10px (0.625rem), small 6px, medium 8px, large 10px. Buttons and inputs follow medium; panels large. Elevation only for real overlays, not every chart section.                                                                                                                                            |
-| Controls       | Standard button/input height at least 40px; 44px target preferred for prominent routine actions. Visible verb/noun labels. Primary action filled neutral; secondary outlined/quiet; destructive action named explicitly.                                                                                              |
+| Controls       | Standard button/input height at least 40px; 44px target preferred for prominent routine actions. Visible verb/noun labels. Primary action filled blue-teal; secondary outlined/quiet; destructive action named explicitly.                                                                                            |
 | Focus          | Visible 3px high-contrast primary-colored ring with 2px offset, never hidden. Approved product focus upgrades the scaffold's lighter ring for reliable contrast. Verify rendered contrast rather than treating token values as proof.                                                                                 |
 | Semantics      | Success dark green `#166534` on `#f0fdf4`, warning `#92400e` on `#fffbeb`, error `#b91c1c` on `#fef2f2`, info/neutral foreground on muted surface. Pair state text/icon with color. Keep destructive primary token separate from informational alerts. Verify WCAG AA text and control contrast in actual components. |
 | Motion         | Immediate routine/keyboard actions; optional 150-200ms state/overlay feedback with explicit opacity/transform properties. Reduced motion uses static or brief fades. No page-load choreography.                                                                                                                       |
@@ -20,6 +20,8 @@ Status: **approved clinic-demo-v1.1 staff-tool design system, 2026-10-14, Asia/M
 Use shadcn Button, Input, Label, Textarea, Select, Table, Tabs, Alert, Tooltip, Dialog/Popover where their standard behavior fits. Install only components required by the approved feature. Each interactive component covers default/hover/focus/active/disabled/loading and applicable error/success. Read-only information remains legible. Dark mode and mobile are deferred; no unsupported theme promise is made.
 
 Clinic tasks use a stable task-oriented shell, selected patient identity, clear Medical/Dental/Laboratory chart labels, and named staff role/head status. Routine navigation is consistent. A section becomes visible only under server-authorized data; hiding tabs cannot secure broad responses. No unrequested statistics dashboard.
+
+Sonner is mounted once at the renderer root for brief, noncritical feedback such as a copied document ID. Save confirmations, server failures, and recovery steps remain visible in the page.
 
 ## Users and setting
 

@@ -755,6 +755,7 @@ function FamilyEditor({
             >
               <select
                 id="family-relationship"
+                className="clinic-select"
                 name="relationship"
                 defaultValue={
                   'link' in editor ? editor.link.relationship : 'child'
@@ -799,6 +800,7 @@ function FamilyEditor({
             >
               <select
                 id="family-state"
+                className="clinic-select"
                 name="state"
                 defaultValue={current?.state ?? 'active'}
               >

@@ -1,6 +1,18 @@
-# clinic-demo-v1.1 approval and amendment history
+# clinic-demo-v1.2 approval and amendment history
 
-Current version: **clinic-demo-v1.1**, direct scope clarification and accepted architecture on **2026-10-14, Asia/Manila**. Original v1 approval/history remains below and in initial commit e9038df; it did not silently include the new mirror.
+Current version: **clinic-demo-v1.2**, user-requested UI refinement on **2026-10-15, Asia/Manila**. The clinic-demo-v1.1 mirror scope and original v1 approval/history remain unchanged below.
+
+Exact user instructions:
+
+> improve color themes, not just plain white but also make it accessible and pleasant to the eyes /emil-design-eng
+>
+> use [$emil-design-eng] and [$break] the UI to find issues
+>
+> [$ask-sonner] setup toasts also
+
+This amendment records the requested palette and toast implementation. The change uses a pale sage canvas, warm ivory cards, and deep blue-teal actions; existing semantic status pairs and persistent save/error messages remain. Sonner provides brief noncritical feedback. This amendment does not change clinic workflows, database schema, or migrations.
+
+It records implementation scope from the user's request; it is not a separate visual sign-off.
 
 Exact current user answers:
 

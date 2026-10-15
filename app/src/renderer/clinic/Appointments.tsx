@@ -231,6 +231,7 @@ export function Appointments({
         <Field name="appointment-discipline" label="Discipline">
           <select
             id="appointment-discipline"
+            className="clinic-select"
             value={area}
             disabled={operation.busy || hasCorrections}
             onChange={(event) => setArea(event.target.value as Discipline | '')}
@@ -244,6 +245,7 @@ export function Appointments({
         <Field name="appointment-clinic" label="Clinic">
           <select
             id="appointment-clinic"
+            className="clinic-select"
             value={site}
             disabled={operation.busy || hasCorrections}
             onChange={(event) => setSite(event.target.value)}
@@ -338,6 +340,7 @@ export function Appointments({
                 >
                   <select
                     id="appointment-new-discipline"
+                    className="clinic-select"
                     value={scheduleArea}
                     disabled={operation.busy}
                     onChange={(event) => {
@@ -602,6 +605,7 @@ function AppointmentActions({
             >
               <select
                 id={`appointment-correction-${record.id}`}
+                className="clinic-select"
                 value={selected}
                 disabled={disabled}
                 onChange={(event) =>

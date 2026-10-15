@@ -98,7 +98,8 @@ const messages: Record<ErrorCode, string> = {
   FORBIDDEN: 'This operation is not permitted.',
   NOT_FOUND: 'The requested record is unavailable.',
   CONFLICT: 'The record changed; reload before saving.',
-  UNAVAILABLE: 'The clinic server is unavailable. No save was confirmed.',
+  UNAVAILABLE:
+    'The clinic server did not confirm this request. If you were saving, check the record before you try again.',
   INVALID_RESPONSE: 'The clinic server returned an unexpected response.',
   SESSION_CHANGED: 'The staff session changed. Reload after signing in.',
   PRINT_FAILED:

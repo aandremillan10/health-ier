@@ -1,6 +1,6 @@
 # Decision and approval record
 
-Status: **all ten questions resolved; clinic-demo-v1.1 amendment confirmed on 2026-10-14, Asia/Manila**. No product feature build instruction has been given. This filename is retained for stable links; it now records resolved decisions and the approval gate.
+Status: **all ten questions resolved; clinic-demo-v1.1 mirror amendment confirmed on 2026-10-14; clinic-demo-v1.2 UI refinement requested on 2026-10-15, Asia/Manila**. This filename is retained for stable links; it records resolved decisions and later amendments.
 
 ## Confirmed on 2026-10-14
 
@@ -35,4 +35,4 @@ Bidirectional cloud clinical edits/provincial multi-clinic merging; live queue; 
 
 ## Approval gate
 
-Final shared-understanding signoff is recorded in [approval.md](approval.md), original version **clinic-demo-v1**, with directly selected **clinic-demo-v1.1** mirror amendment, approved **2026-10-14 Asia/Manila** with the exact user quote. The ten agreed GitHub tickets are authorized for publication. A separate explicit build instruction remains necessary for product feature implementation. Tooling scaffolding alone is currently authorized. Later material scope changes reopen affected criteria.
+Final shared-understanding signoff for the original specification and mirror amendment is recorded in [approval.md](approval.md). The **clinic-demo-v1.2** record covers only the user-requested UI palette and toast feedback. Other feature work still needs a separate explicit build instruction. Later material scope changes reopen affected criteria.
