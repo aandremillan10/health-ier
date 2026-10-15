@@ -1,5 +1,7 @@
 # Local skill inventory
 
+Arc was installed on 2026-10-15 with `npx shadcn@latest add https://uiarc.dev/r/arc-skill.json` from `app/`. The registry wrote 13 unchanged files under `app/.claude/skills/arc/`; SHA-256-verified copies are in `.agents/skills/arc/` and the local Codex skill directory. Read [Arc](../../.agents/skills/arc/SKILL.md) when using or reviewing UIArc components. Project `DESIGN.md` controls the clinic font, focus, colors, and motion where upstream defaults differ. See [installation and component verification](../reviews/arc-components-2026-10-15.md).
+
 Added on 2026-10-15 for clinic UI work: `find-animation-opportunities/SKILL.md` and `animate/SKILL.md` with `animate/RECIPES.md`, copied unchanged from `C:/Users/ajapa/.agents/skills/`. Root AGENTS.md defines their invocation points. These additions are separate from the original 2026-10-14 manifest below; copy the complete directories when moving this guidance to another host.
 
 Complete source directories copied unchanged on 2026-10-14: **14 skill directories, 92 files; zero SHA-256 mismatches and zero missing relative Markdown resource links outside code examples**. The [manifest](skill-manifest.json) records original source, local path, bytes, and SHA-256 for every file.
