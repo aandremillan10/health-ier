@@ -6,6 +6,7 @@
     <meta name="color-scheme" content="light" />
     <title>Clinic queue</title>
     <link rel="stylesheet" href="/queue-display/display.css" />
+    <script src="/queue-display/announcements.js" defer></script>
     <script src="/queue-display/display.js" defer></script>
   </head>
   <body>
@@ -98,10 +99,26 @@
       </main>
 
       <footer class="display-footer">
-        <p id="connection-status" role="status" aria-live="polite">
-          Connecting…
-        </p>
-        <p id="last-updated">Clinic time · Manila</p>
+        <div class="queue-status">
+          <p id="connection-status" role="status" aria-live="polite">
+            Connecting…
+          </p>
+          <p id="last-updated">Clinic time · Manila</p>
+        </div>
+        <div class="audio-controls">
+          <button
+            id="announcements-toggle"
+            type="button"
+            aria-describedby="audio-status"
+            aria-pressed="false"
+            disabled
+          >
+            Enable announcements
+          </button>
+          <p id="audio-status" role="status" aria-live="polite">
+            Audio unavailable. Reload this display to retry.
+          </p>
+        </div>
       </footer>
     </div>
   </body>

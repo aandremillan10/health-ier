@@ -106,7 +106,7 @@ h3 {
   gap: 8px 24px;
 }
 .serving-numbers li {
-  font-size: 5.25rem;
+  font-size: 5rem;
   font-weight: 600;
   line-height: 1.1;
   letter-spacing: -0.03em;
@@ -150,11 +150,27 @@ h3 {
   justify-content: space-between;
   flex-wrap: wrap;
   gap: 8px 24px;
-  padding-top: 24px;
+  align-items: center;
+  padding-top: 12px;
   border-top: 1px solid var(--boundary);
   font-size: 1rem;
-  line-height: 1.5;
+  line-height: 1.25;
   color: var(--muted);
+}
+.audio-controls {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+.audio-controls button {
+  margin-top: 0;
+  flex-shrink: 0;
+  font-size: 1rem;
+}
+#audio-status {
+  width: 36ch;
+  font-size: 0.875rem;
+  line-height: 1.4;
 }
 .connection-message {
   margin: auto 0;
@@ -277,6 +293,15 @@ button:disabled {
   }
   .display-footer {
     margin-top: 32px;
+  }
+  .audio-controls {
+    flex-wrap: wrap;
+    gap: 12px;
+    padding-top: 12px;
+  }
+  #audio-status {
+    width: auto;
+    max-width: 36ch;
   }
   .connection-message {
     padding: 24px 8px;

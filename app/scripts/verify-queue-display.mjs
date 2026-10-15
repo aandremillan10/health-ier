@@ -14,6 +14,7 @@ const files = new Map([
   ['/', ['index.html', 'text/html']],
   ['/queue-display/display.css', ['display.css', 'text/css']],
   ['/queue-display/display.js', ['display.js', 'text/javascript']],
+  ['/queue-display/announcements.js', ['announcements.js', 'text/javascript']],
 ]);
 const server = createServer(async (request, response) => {
   const file = files.get(request.url);

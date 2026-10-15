@@ -1,0 +1,118 @@
+{
+  "generator": "server/scripts/generate-queue-voice.ps1",
+  "engine": "System.Speech, Version=4.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35",
+  "voice": "Microsoft Zira Desktop",
+  "culture": "en-US",
+  "rate": 0,
+  "volume": 100,
+  "format": {
+    "encoding": "PCM",
+    "sampleRate": 16000,
+    "bitsPerSample": 16,
+    "channels": 1
+  },
+  "clips": [
+    {
+      "filename": "now-serving.wav",
+      "text": "Now serving.",
+      "bytes": 51406,
+      "sha256": "e8482be19155ec29cbdcd9a50745449c0d31f0e50cb5f72e7fb4dcd4d6599a26"
+    },
+    {
+      "filename": "letter-m.wav",
+      "text": "M",
+      "bytes": 38926,
+      "sha256": "2703127820991d45ec572993f4b43a8468aa3f37f1c6b78b9b4a44b00eeea5d8"
+    },
+    {
+      "filename": "letter-d.wav",
+      "text": "D",
+      "bytes": 36366,
+      "sha256": "27d7183346e1d84357a2e38f9276f38af3b4247bddb4ded3f63f87f6693d659d"
+    },
+    {
+      "filename": "letter-l.wav",
+      "text": "L",
+      "bytes": 37486,
+      "sha256": "50f1430129f2e445cb1b9860b3064c6dcb4a86a1ae68e25f5be45df2c07e3cfd"
+    },
+    {
+      "filename": "digit-0.wav",
+      "text": "zero",
+      "bytes": 42126,
+      "sha256": "f564fc429f8d97328f4667723dfb76945ab282b9c03c96fab2afa41a47983a44"
+    },
+    {
+      "filename": "digit-1.wav",
+      "text": "one",
+      "bytes": 41806,
+      "sha256": "5d6d3f2c35bb1bfa0e658cb64f4ee801b4bb8a615dbc6f7e0a245c4a2523cf4e"
+    },
+    {
+      "filename": "digit-2.wav",
+      "text": "two",
+      "bytes": 36526,
+      "sha256": "2e7fbf0cf2baa489f6b33ba37aea03ae5d420aae30bc79bc88f587342574e2d8"
+    },
+    {
+      "filename": "digit-3.wav",
+      "text": "three",
+      "bytes": 40846,
+      "sha256": "34a53bd4f059ac6c88600c29554d2c16e2016d039f001379e481a2bc0fb94dad"
+    },
+    {
+      "filename": "digit-4.wav",
+      "text": "four",
+      "bytes": 43886,
+      "sha256": "4d377863a46da0adf80d7259a2dad6d7d906f26bf6b5a8972b2157f92e958a81"
+    },
+    {
+      "filename": "digit-5.wav",
+      "text": "five",
+      "bytes": 44686,
+      "sha256": "0abe8f92ac25a32e055b4c379778777fed3ee36a47cb1a5ba4bce82f7022e19d"
+    },
+    {
+      "filename": "digit-6.wav",
+      "text": "six",
+      "bytes": 47246,
+      "sha256": "a69f072975504e77ba53095e99ff10e2937e6e2ec71448a67a80bf84b1f1c180"
+    },
+    {
+      "filename": "digit-7.wav",
+      "text": "seven",
+      "bytes": 47246,
+      "sha256": "0a49ebe5b459a1c8469f859894871e033f93b2e226726eef5167ac0735b8d842"
+    },
+    {
+      "filename": "digit-8.wav",
+      "text": "eight",
+      "bytes": 37486,
+      "sha256": "81e9a41ba0f68402324c0c7ec921280d9dd527ccb8833bc2645e44d39f66b5f5"
+    },
+    {
+      "filename": "digit-9.wav",
+      "text": "nine",
+      "bytes": 41646,
+      "sha256": "011b61c2a33036967bbe4c6c4f2d544822fda4d9a4f5ef6a46e6b8a315bc2df2"
+    },
+    {
+      "filename": "medical.wav",
+      "text": "Please proceed to Medical.",
+      "bytes": 73486,
+      "sha256": "199b2adde563638ed616d4c8e97ca379c5ccca9f67e30a93fa21ee2a02a6a791"
+    },
+    {
+      "filename": "dental.wav",
+      "text": "Please proceed to Dental.",
+      "bytes": 72206,
+      "sha256": "79c58ec3c62363be0d23996f6ac6a6451cb1ba9e33004a3bd14c4103f58964e9"
+    },
+    {
+      "filename": "laboratory.wav",
+      "text": "Please proceed to Laboratory.",
+      "bytes": 81646,
+      "sha256": "b00f56ad8d86f3d2cb86889a1e4fb36820736bf69aa6520b3733028a89868e7b"
+    }
+  ]
+}

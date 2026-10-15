@@ -10,6 +10,17 @@ import { configureHttp } from '../src/http';
 import { QueueDisplayController } from '../src/queue-display/queue-display.controller';
 import { QueueDisplayService } from '../src/queue-display/queue-display.service';
 
+const audioNames = [
+  'now-serving.wav',
+  'letter-m.wav',
+  'letter-d.wav',
+  'letter-l.wav',
+  ...Array.from({ length: 10 }, (_, digit) => `digit-${digit}.wav`),
+  'medical.wav',
+  'dental.wav',
+  'laboratory.wav',
+];
+
 interface DisplayRow {
   clinicId: string;
   queueDay: string;
@@ -184,6 +195,8 @@ describe('public clinic queue HTTP boundary', () => {
       '/queue-display/data',
       '/queue-display/display.css',
       '/queue-display/display.js',
+      '/queue-display/announcements.js',
+      ...audioNames.map((clip) => `/queue-display/audio/en/${clip}`),
     ])
       await request(app.getHttpServer())
         .get(path)
@@ -197,6 +210,7 @@ describe('public clinic queue HTTP boundary', () => {
       ['/', 'text/html'],
       ['/queue-display/display.css', 'text/css'],
       ['/queue-display/display.js', 'application/javascript'],
+      ['/queue-display/announcements.js', 'application/javascript'],
     ]) {
       const result = await request(app.getHttpServer()).get(path).expect(200);
       expect(result.headers['content-type']).toContain(type);
@@ -208,6 +222,9 @@ describe('public clinic queue HTTP boundary', () => {
       expect(result.headers['content-security-policy']).not.toContain(
         'unsafe-inline',
       );
+      expect(result.headers['content-security-policy']).toContain(
+        "media-src 'self'",
+      );
     }
     for (const path of [
       '/queue-display/other.js',
@@ -215,6 +232,52 @@ describe('public clinic queue HTTP boundary', () => {
       '/queue-display/%2e%2e%2fconfig.ts',
     ])
       await request(app.getHttpServer()).get(path).expect(404);
+    expect(findMany).not.toHaveBeenCalled();
+  });
+
+  it('serves all fixed offline clips as real WAV bytes with length and safe headers without a staff session', async () => {
+    expect(audioNames).toHaveLength(17);
+    for (const name of audioNames) {
+      const result = await request(app.getHttpServer())
+        .get(`/queue-display/audio/en/${name}`)
+        .buffer(true)
+        .expect(200)
+        .expect('Content-Type', /audio\/wav/);
+      const bytes: unknown = result.body;
+      expect(Buffer.isBuffer(bytes)).toBe(true);
+      if (!Buffer.isBuffer(bytes))
+        throw new Error('Expected binary audio response');
+      expect(bytes.toString('ascii', 0, 4)).toBe('RIFF');
+      expect(bytes.toString('ascii', 8, 12)).toBe('WAVE');
+      expect(bytes.readUInt32LE(4) + 8).toBe(bytes.length);
+      expect(Number(result.headers['content-length'])).toBe(bytes.length);
+      expect(result.headers['cache-control']).toBe('no-store');
+      expect(result.headers['x-content-type-options']).toBe('nosniff');
+    }
+    expect(findMany).not.toHaveBeenCalled();
+  });
+
+  it('refuses unknown filenames and encoded path escape attempts with safe JSON errors', async () => {
+    for (const name of [
+      'private.wav',
+      'digit-10.wav',
+      'voice-manifest.json',
+      'DIGIT-0.wav',
+      '..%2f..%2fconfig.ts',
+      '..%5c..%5cconfig.ts',
+      '%00.wav',
+    ]) {
+      const result = await request(app.getHttpServer())
+        .get(`/queue-display/audio/en/${name}`)
+        .expect(404)
+        .expect('Content-Type', /application\/json/);
+      expect(result.body).toEqual({
+        code: 'NOT_FOUND',
+        message: 'Audio clip not found.',
+      });
+      expect(result.headers['cache-control']).toBe('no-store');
+      expect(result.text).not.toMatch(/ENOENT|queue-display\/public|password/);
+    }
     expect(findMany).not.toHaveBeenCalled();
   });
 

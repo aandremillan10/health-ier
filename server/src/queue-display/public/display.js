@@ -15,6 +15,10 @@
   const status = document.getElementById('connection-status');
   const clinicDate = document.getElementById('clinic-date');
   const updated = document.getElementById('last-updated');
+  const announcements = window.createQueueAnnouncements?.(
+    document.getElementById('announcements-toggle'),
+    document.getElementById('audio-status'),
+  );
   const dateFormatter = new Intl.DateTimeFormat('en-PH', {
     dateStyle: 'full',
     timeZone: 'Asia/Manila',
@@ -116,6 +120,7 @@
   }
 
   function disconnect() {
+    announcements?.reset();
     board.hidden = true;
     previousContent = '';
     for (const list of board.querySelectorAll('ul, ol')) list.replaceChildren();
@@ -131,6 +136,7 @@
   }
 
   function render(data) {
+    announcements?.update(data);
     const content = JSON.stringify([data.date, data.departments]);
     if (content !== previousContent) {
       for (const department of data.departments) {
@@ -208,6 +214,7 @@
   });
   window.addEventListener('online', poll);
   document.addEventListener('visibilitychange', () => {
+    announcements?.reset();
     if (!document.hidden) {
       disconnect();
       void poll();
