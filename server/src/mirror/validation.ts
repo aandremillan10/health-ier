@@ -94,6 +94,7 @@ const numericVitals = [
   'pulse',
   'respiratoryRate',
   'oxygenSaturation',
+  'height',
   'weight',
 ] as const;
 const nullableEntryText = [

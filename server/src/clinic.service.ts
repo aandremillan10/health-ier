@@ -323,6 +323,7 @@ export class ClinicService {
     staff: Principal,
     type: 'entry' | 'vitals',
     id: string,
+    allowHeadVitalsCorrection = false,
   ): Promise<Entry | Vitals> {
     if (type === 'entry') {
       await tx.$queryRaw`SELECT id FROM "Entry" WHERE id = ${uuid(id)}::uuid FOR UPDATE`;
@@ -333,11 +334,11 @@ export class ClinicService {
       if (record.authorId !== staff.id) deny();
       return record;
     }
-    if (staff.role !== 'attendant') deny();
+    if (staff.role !== 'attendant' && !allowHeadVitalsCorrection) deny();
     await tx.$queryRaw`SELECT id FROM "Vitals" WHERE id = ${uuid(id)}::uuid FOR UPDATE`;
     const record = await tx.vitals.findUnique({ where: { id } });
     if (!record) fail(404, 'NOT_FOUND', 'Record not found.');
-    if (record.authorId !== staff.id) deny();
+    if (!allowHeadVitalsCorrection && record.authorId !== staff.id) deny();
     return record;
   }
   async change(
@@ -421,7 +422,13 @@ export class ClinicService {
     const wanted = revision(body.expectedRevision);
     const reason = text(body.reason, 'reason', true)!;
     return this.db.$transaction(async (tx) => {
-      const previous = await this.owned(tx, staff, type, id);
+      const previous = await this.owned(
+        tx,
+        staff,
+        type,
+        id,
+        type === 'vitals' && staff.role === 'doctor' && staff.isHead,
+      );
       expected(previous, wanted);
       lifecycle(previous, 'finalized');
       const keys =
