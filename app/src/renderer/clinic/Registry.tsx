@@ -3,9 +3,10 @@ import type { FormEvent, ReactElement } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { SearchField } from '@/components/ui/search-field';
+import { Stepper } from '@/components/arc/stepper/stepper';
 import type { ClinicApi, ClinicError, Patient, Principal } from './contract';
 import { canEditRegistry } from './contract';
-import { Empty, ErrorNotice, Field, Loading } from './ui';
+import { ClinicIcon, Empty, ErrorNotice, Field, Loading } from './ui';
 import { useOperation } from './use-operation';
 import { date, today } from './format';
 
@@ -69,11 +70,19 @@ export function Registry({
     }
   }
   return (
-    <section>
+    <section className="registry">
       <div className="page-heading">
-        <h1>Patient records</h1>
+        <div>
+          <h1>Patient records</h1>
+          <p className="page-description">
+            Find a patient and confirm their identity before opening a record.
+          </p>
+        </div>
         {canEditRegistry(staff) && (
-          <Button onClick={onRegister}>Register patient</Button>
+          <Button onClick={onRegister}>
+            <ClinicIcon name="plus" />
+            Register patient
+          </Button>
         )}
       </div>
       <form className="panel search-panel" onSubmit={(e) => void search(e)}>
@@ -87,14 +96,18 @@ export function Registry({
               placeholder="Patient name or number"
               autoFocus
             />
-            <Button disabled={busy} type="submit">
+            <Button
+              variant={canEditRegistry(staff) ? 'outline' : 'default'}
+              disabled={busy}
+              type="submit"
+            >
               {busy ? 'Finding…' : 'Find patient'}
             </Button>
           </div>
         </Field>
         <p className="hint search-hint">
-          Press <kbd className="kbd">Ctrl</kbd>
-          <kbd className="kbd">K</kbd> to search from any screen.
+          Use the patient number for an exact match. Names can belong to more
+          than one patient.
         </p>
       </form>
       <ErrorNotice error={displayError}>
@@ -102,6 +115,9 @@ export function Registry({
           Try again
         </Button>
       </ErrorNotice>
+      <p className="sr-only" role="status">
+        {patients ? `Records found: ${patients.length}.` : ''}
+      </p>
       {loading && <Loading>Finding patient records…</Loading>}
       {!loading && !displayError && patients === null && (
         <Empty>Enter a patient name or number to find their record.</Empty>
@@ -122,7 +138,7 @@ export function Registry({
         <section className="panel table-panel">
           <div className="section-heading">
             <h2>{demo && !lastQuery ? 'Demo patients' : 'Search results'}</h2>
-            <span className="muted" aria-live="polite">
+            <span className="badge record-count">
               Records ({patients.length})
             </span>
           </div>
@@ -144,14 +160,14 @@ export function Registry({
             role="region"
             aria-label="Patient search results"
           >
-            <table>
+            <table className="registry-table" role="table">
               <thead>
                 <tr>
-                  <th>Patient</th>
-                  <th>Patient number</th>
-                  <th>Birth date</th>
-                  {staff.role !== 'medtech' && <th>Category</th>}
-                  <th>
+                  <th scope="col">Patient</th>
+                  <th scope="col">Patient number</th>
+                  <th scope="col">Birth date</th>
+                  {staff.role !== 'medtech' && <th scope="col">Category</th>}
+                  <th scope="col">
                     <span className="sr-only">Open record</span>
                   </th>
                 </tr>
@@ -162,10 +178,14 @@ export function Registry({
                     <td>
                       <strong>{p.fullName}</strong>
                     </td>
-                    <td>{p.id}</td>
-                    <td>{date(p.dateOfBirth)}</td>
+                    <td data-label="Patient number" className="patient-number">
+                      {p.id}
+                    </td>
+                    <td data-label="Birth date">{date(p.dateOfBirth)}</td>
                     {staff.role !== 'medtech' && (
-                      <td className="capitalize">{p.patientCategory}</td>
+                      <td data-label="Category" className="capitalize">
+                        {p.patientCategory}
+                      </td>
                     )}
                     <td>
                       <Button
@@ -175,6 +195,7 @@ export function Registry({
                         onClick={() => onSelect(p)}
                       >
                         Open record
+                        <ClinicIcon name="arrow" />
                       </Button>
                     </td>
                   </tr>
@@ -259,7 +280,14 @@ export function PatientForm({
   return (
     <section>
       <div className="page-heading">
-        <h1>{patient ? 'Edit patient details' : 'Register patient'}</h1>
+        <div>
+          <h1>{patient ? 'Edit patient details' : 'Register patient'}</h1>
+          <p className="page-description">
+            {patient
+              ? 'Update the patient identity below.'
+              : 'Enter patient details, check for an existing record, then save.'}
+          </p>
+        </div>
         <span className="badge">
           {patient ? `Revision ${revision}` : 'New record'}
         </span>
@@ -269,6 +297,24 @@ export function PatientForm({
         aria-busy={busy}
         onSubmit={(e) => void save(e)}
       >
+        {!patient && (
+          <Stepper
+            className="clinic-progress"
+            label="Patient registration progress"
+            current={
+              !form.fullName.trim()
+                ? 0
+                : matches === null || (matches.length > 0 && !confirmed)
+                  ? 1
+                  : 2
+            }
+            steps={[
+              { id: 'details', label: 'Enter details' },
+              { id: 'check', label: 'Check records' },
+              { id: 'save', label: 'Save patient' },
+            ]}
+          />
+        )}
         <ErrorNotice error={error}>
           {conflict && (
             <Button
@@ -398,9 +444,15 @@ export function PatientForm({
         </div>
         {!patient && (
           <section className="duplicate-check">
+            <div>
+              <h2>Check before you create a record</h2>
+              <p className="hint">
+                Compare the patient number and birth date if a name matches.
+              </p>
+            </div>
             <Button
               type="button"
-              variant="outline"
+              variant={matches === null ? 'default' : 'outline'}
               disabled={busy || !form.fullName.trim()}
               onClick={() => void check()}
             >
@@ -441,6 +493,15 @@ export function PatientForm({
           </section>
         )}
         <div className="form-actions sticky-form-actions">
+          {!patient && (
+            <p className="hint" role="status">
+              {matches === null
+                ? 'Check existing records before you save.'
+                : matches.length > 0 && !confirmed
+                  ? 'Open an existing record or confirm this is a different patient.'
+                  : 'Record check complete. You can save this patient.'}
+            </p>
+          )}
           <Button type="button" variant="outline" onClick={onCancel}>
             Cancel
           </Button>

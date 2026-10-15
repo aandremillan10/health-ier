@@ -39,9 +39,8 @@
 }
 .family-editor {
   margin-block: 16px 24px;
-  padding: 16px;
-  background: var(--muted);
-  border-radius: var(--radius-md);
+  padding: 24px 0;
+  border-block: 1px solid var(--border);
 }
 .family-fieldset {
   display: grid;

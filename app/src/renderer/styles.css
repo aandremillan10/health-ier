@@ -1,42 +1,57 @@
+@import './components/arc/foundation.css';
 @import 'tailwindcss';
 
 /*
   Approved staff-tool foundation; see DESIGN.md.
-  Sage canvas, warm card surfaces, blue-teal actions, and semantic status colors.
+  Warm neutral surfaces, charcoal actions, and semantic status colors.
   Spacing/type scale lives in DESIGN.md: 4px base steps (4-8-12-16-24-32-48),
-  type 16px body / 14px labels / 20px section titles / 24px page titles.
+  type 16px body / 14px labels / 20px section titles / 28px page titles.
 */
 :root {
-  --background: #eef4f2;
-  --foreground: #1c3038;
-  --card: #fbfcf9;
-  --card-foreground: #1c3038;
-  --primary: #154d64;
-  --primary-foreground: #f8fcfb;
-  --secondary: #e0ebe8;
-  --secondary-foreground: #243e43;
-  --muted: #e8f0ed;
-  --muted-foreground: #4f6668;
-  --accent: #d8e8e4;
-  --accent-foreground: #234450;
+  --background: #fbfbf9;
+  --foreground: #292b28;
+  --card: #ffffff;
+  --card-foreground: #292b28;
+  --primary: #30332f;
+  --primary-foreground: #fcfdf9;
+  --secondary: #eeede8;
+  --secondary-foreground: #393b36;
+  --muted: #f2f1ed;
+  --muted-foreground: #64665f;
+  --accent: #e7e6df;
+  --accent-foreground: #30332f;
   --destructive: oklch(0.577 0.245 27.325);
-  --border: #c2d0cc;
-  --input: #7a8e8a;
-  --ring: #15556a;
-  --radius: 0.625rem;
+  --border: #ddded7;
+  --input: #85877f;
+  --ring: #384f42;
+  --radius: 0.5rem;
   --success: #166534;
   --success-bg: #f0fdf4;
   --warning: #92400e;
   --warning-bg: #fffbeb;
   --error: #b91c1c;
   --error-bg: #fef2f2;
-  --border-strong: #788b88;
-  --skeleton: #d6e2de;
-  --skeleton-highlight: #e5eeeb;
-  --surface-recessed: #e3ece9;
+  --border-strong: #85877f;
+  --skeleton: #e3e3dc;
+  --surface-recessed: #eeede8;
   --dur-fast: 120ms;
   --dur-med: 180ms;
   --ease-standard: cubic-bezier(0.22, 1, 0.36, 1);
+  --surface: var(--card);
+  --surface-raised: var(--card);
+  --surface-muted: var(--muted);
+  --text-secondary: var(--muted-foreground);
+  --text-muted: var(--muted-foreground);
+  --danger: var(--error);
+  --font-display: system-ui, 'Segoe UI', sans-serif;
+  --font-body: system-ui, 'Segoe UI', sans-serif;
+  --radius-control: calc(var(--radius) - 2px);
+  --radius-panel: var(--radius);
+  --focus-outline: var(--primary);
+  --focus-outline-width: 3px;
+  --focus-outline-offset: 2px;
+  --duration-fast: var(--dur-fast);
+  --duration-standard: var(--dur-med);
 }
 
 @theme inline {

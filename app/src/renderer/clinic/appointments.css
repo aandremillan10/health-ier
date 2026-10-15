@@ -39,26 +39,33 @@
   color: var(--muted-foreground);
   font-size: 0.875rem;
 }
-.appointment-steps {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(128px, 1fr));
-  gap: 8px;
-  list-style: none;
-  padding: 0;
-  margin: 0;
+.appointment-state-chart {
+  margin-bottom: 0;
 }
-.appointment-steps li {
-  padding: 12px 16px;
-  background: var(--muted);
-  border-radius: var(--radius);
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  gap: 8px;
+.appointment-state-chart .count-chart ul {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 18rem), 1fr));
+  gap: 16px 32px;
 }
-.appointment-steps strong {
-  font-size: 1.25rem;
-  font-variant-numeric: tabular-nums;
+.appointment-sort {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 8px;
+  margin: -8px;
+  border-radius: var(--radius-sm);
+  text-align: start;
+}
+.appointment-sort svg {
+  flex: 0 0 16px;
+}
+.appointment-table th[aria-sort] {
+  color: var(--foreground);
+}
+@media (hover: hover) {
+  .appointment-sort:hover {
+    background: var(--accent);
+  }
 }
 .appointment-table td {
   vertical-align: top;

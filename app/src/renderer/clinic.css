@@ -28,13 +28,27 @@ button {
   white-space: normal;
 }
 
-button:not(:disabled):active {
-  transform: scale(0.98);
-}
-
 :focus-visible {
   outline: 3px solid var(--primary);
   outline-offset: 2px;
+}
+
+/* Arc's field reset yields to the clinic's visible keyboard focus requirement. */
+.clinic-input:focus-visible:not(:disabled),
+.clinic-select:focus-visible:not(:disabled) {
+  outline: 3px solid var(--primary) !important;
+  outline-offset: 2px !important;
+}
+
+.clinic-progress {
+  --accent: var(--primary);
+  --accent-foreground: var(--primary-foreground);
+  --accent-subtle: var(--muted);
+}
+
+/* Routine loading stays static; text explains the operation. */
+.clinic-skeleton [aria-hidden='true'] {
+  animation: none;
 }
 
 ::selection {
@@ -62,7 +76,7 @@ p {
 }
 
 h1 {
-  font-size: 1.5rem;
+  font-size: 1.75rem;
   font-weight: 600;
   line-height: 1.3;
 }
@@ -109,34 +123,67 @@ dt {
   background: var(--background);
   padding: 12px 16px;
   z-index: 20;
+  clip-path: inset(50%);
 }
 
 .skip-link:focus {
   top: 12px;
+  clip-path: none;
 }
 
 .sign-in {
   min-height: 100dvh;
   display: grid;
   place-items: center;
-  background: var(--muted);
+  background: var(--background);
   padding: 32px 16px;
 }
 
-.login-panel {
-  width: min(100%, 480px);
-  background: var(--card);
+.login-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  width: min(100%, 960px);
   border: 1px solid var(--border);
   border-radius: var(--radius);
-  padding: 32px;
-  box-shadow: 0 8px 32px rgb(0 0 0 / 4%);
+  background: var(--card);
+  overflow: clip;
+}
+
+.login-intro {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 48px;
+  padding: 40px 32px;
+  color: var(--foreground);
+  background: var(--muted);
+  border-inline-end: 1px solid var(--border);
+}
+
+.login-intro h2 {
+  font-size: 1.5rem;
+  line-height: 1.3;
+  margin-bottom: 16px;
+}
+
+.login-intro p {
+  max-width: 36ch;
+}
+
+.login-access {
+  font-size: 0.875rem;
+  color: var(--muted-foreground);
+}
+
+.login-panel {
+  min-width: 0;
+  padding: 40px 32px;
 }
 
 .login-identity {
   display: flex;
   align-items: center;
   gap: 16px;
-  margin-bottom: 32px;
 }
 
 .login-identity strong {
@@ -162,6 +209,11 @@ dt {
 }
 
 .login-panel h1 {
+  margin-bottom: 8px;
+}
+
+.login-description {
+  color: var(--muted-foreground);
   margin-bottom: 24px;
 }
 
@@ -188,7 +240,7 @@ dt {
 
 .workspace {
   display: grid;
-  grid-template-columns: 232px minmax(0, 1fr);
+  grid-template-columns: 248px minmax(0, 1fr);
   min-height: 100dvh;
 }
 
@@ -199,20 +251,31 @@ dt {
   overflow-y: auto;
   display: flex;
   flex-direction: column;
-  border-right: 1px solid var(--border);
-  padding: 32px 16px 16px;
-  background: var(--card);
+  border-inline-end: 1px solid var(--border);
+  padding: 24px 16px 16px;
+  background: var(--muted);
+  overscroll-behavior: contain;
+}
+
+.sidebar-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 32px;
 }
 
 .brand {
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 0 8px 32px;
+  padding-inline: 8px;
+  min-width: 0;
 }
 
 .brand strong {
   font-size: 1.25rem;
+  letter-spacing: -0.01em;
 }
 
 .brand span {
@@ -220,51 +283,83 @@ dt {
   color: var(--muted-foreground);
 }
 
+.clinic-menu {
+  display: none;
+}
+
+.sidebar-content {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+}
+
 .sidebar nav {
   display: grid;
   gap: 4px;
 }
 
-.nav-item {
-  position: relative;
-  width: 100%;
-  justify-content: flex-start;
-  white-space: normal;
-  text-align: left;
-  min-height: 44px;
-  padding: 8px 12px;
+.clinic-icon {
+  flex: 0 0 20px;
 }
 
-/* Functional selection state; the inset primary bar distinguishes selection
-   from hover because both use the same muted surface. The bar scales in so
-   the eye follows the current location. */
+.nav-item {
+  width: 100%;
+  justify-content: flex-start;
+  gap: 12px;
+  white-space: normal;
+  text-align: start;
+  min-height: 48px;
+  padding: 12px;
+  border: 1px solid transparent;
+  color: var(--muted-foreground);
+  transition: none;
+}
+
 .nav-item.selected {
-  background: var(--muted);
-  color: var(--foreground);
-  font-weight: 500;
+  background: var(--accent);
+  color: var(--primary);
+  font-weight: 600;
 }
 
 .nav-item.selected::after {
   content: '';
-  position: absolute;
-  left: 0;
-  top: 0;
-  bottom: 0;
-  width: 3px;
-  background: var(--primary);
-  transform-origin: top;
-}
-
-.patient-navigation {
-  display: grid;
-  gap: 4px;
-  margin-top: 24px;
+  width: 6px;
+  height: 6px;
+  flex: 0 0 6px;
+  margin-inline-start: auto;
+  border-radius: 2px;
+  background: currentColor;
 }
 
 .nav-label {
   font-size: 0.875rem;
+  font-weight: 500;
   color: var(--muted-foreground);
-  padding: 0 12px 4px;
+  padding: 0 12px 12px;
+}
+
+.patient-navigation {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  margin-block: -8px 24px;
+  border-block-end: 1px solid var(--border);
+}
+
+.patient-nav-item {
+  min-height: 44px;
+  padding: 12px 8px;
+  border-radius: 0;
+  border-block-end: 2px solid transparent;
+  color: var(--muted-foreground);
+  font-size: 0.875rem;
+  transition: none;
+}
+
+.patient-nav-item.selected {
+  color: var(--primary);
+  border-block-end-color: var(--primary);
+  font-weight: 600;
 }
 
 .sidebar-bottom {
@@ -321,7 +416,7 @@ dt {
 
 .main-area {
   min-width: 0;
-  background: var(--muted);
+  background: var(--background);
 }
 
 .topbar {
@@ -330,10 +425,28 @@ dt {
   justify-content: space-between;
   gap: 16px;
   border-bottom: 1px solid var(--border);
-  background: var(--card);
-  min-height: 72px;
+  background: var(--background);
+  min-height: 80px;
+  flex-wrap: wrap;
   padding: 16px 32px;
   font-size: 0.875rem;
+}
+
+.topbar-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.quick-search {
+  color: var(--muted-foreground);
+  font-size: 0.875rem;
+  background: var(--card);
+}
+
+.quick-search .kbd {
+  margin-inline-start: 16px;
 }
 
 .breadcrumb {
@@ -354,9 +467,11 @@ dt {
   text-align: left;
 }
 
-.breadcrumb button:hover {
-  background: var(--muted);
-  color: var(--foreground);
+@media (hover: hover) {
+  .breadcrumb button:hover {
+    background: var(--muted);
+    color: var(--foreground);
+  }
 }
 
 .breadcrumb [aria-current] {
@@ -366,7 +481,7 @@ dt {
 .main-area main {
   max-width: 1240px;
   margin: 0 auto;
-  padding: 48px 32px;
+  padding: 40px 32px;
 }
 
 /* Programmatic focus target after screen changes: suppress the landmark ring
@@ -392,17 +507,62 @@ dt {
   margin-bottom: 16px;
 }
 
+.page-description,
+.page-heading > div > .hint {
+  margin-top: 8px;
+  color: var(--muted-foreground);
+  max-width: 65ch;
+}
+
+h1 {
+  letter-spacing: -0.02em;
+}
+
+h1,
+h2 {
+  text-wrap: balance;
+}
+
 .panel {
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  background: var(--card);
-  padding: 24px;
+  border: 0;
+  border-block-start: 1px solid var(--border);
+  border-radius: 0;
+  background: transparent;
+  padding: 24px 0;
   margin-bottom: 24px;
 }
 
 .search-panel {
   padding: 24px;
-  border-top: 3px solid var(--primary);
+}
+
+.registry .search-panel {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  margin-bottom: 32px;
+}
+
+.registry .table-panel {
+  border: 0;
+  background: transparent;
+}
+
+.registry .table-panel > .section-heading,
+.registry .table-panel > .notice {
+  margin-inline: 0;
+}
+
+.registry .table-scroll {
+  border-block: 1px solid var(--border);
+  border-radius: 0;
+}
+
+.registry .record-count {
+  padding: 0;
+  background: transparent;
+  color: var(--muted-foreground);
+  font-weight: 400;
 }
 
 .search-controls {
@@ -488,9 +648,11 @@ dt {
   border-radius: var(--radius-sm);
 }
 
-.search-clear-slot button:hover {
-  background: var(--muted);
-  color: var(--foreground);
+@media (hover: hover) {
+  .search-clear-slot button:hover {
+    background: var(--muted);
+    color: var(--foreground);
+  }
 }
 
 .search-field:has(input:disabled) {
@@ -520,14 +682,6 @@ dt {
   background: var(--card);
   color: var(--foreground);
   padding: 8px 12px;
-}
-
-.clinic-select {
-  appearance: none;
-  padding-right: 40px;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%234f6668' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
-  background-repeat: no-repeat;
-  background-position: right 12px center;
 }
 
 .clinic-input:disabled,
@@ -574,23 +728,20 @@ dt {
 
 .notice {
   background: var(--muted);
-  border-radius: var(--radius-md);
+  border-radius: 0;
+  border-inline-start: 3px solid var(--border-strong);
   padding: 16px;
   margin-bottom: 16px;
   overflow-wrap: anywhere;
-  animation: notice-in var(--dur-med) var(--ease-standard);
-}
-
-@keyframes notice-in {
-  from {
-    opacity: 0;
-    transform: translateY(4px);
-  }
 }
 
 .notice p + p,
 .notice button {
   margin-top: 12px;
+}
+
+.notice:is(.warning, .error, .success) {
+  border-inline-start-color: currentColor;
 }
 
 .notice h2,
@@ -635,17 +786,21 @@ dt {
 }
 
 .empty {
-  padding: 48px 24px;
-  text-align: center;
+  padding: 32px 0;
+  text-align: start;
   color: var(--muted-foreground);
-  background: var(--card);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
+  border-block: 1px solid var(--border);
+}
+
+.empty h2 {
+  color: var(--foreground);
+  font-size: 1.125rem;
+  margin-bottom: 8px;
 }
 
 .empty p {
   max-width: 60ch;
-  margin: 0 auto;
+  margin: 0;
 }
 
 .empty button {
@@ -653,58 +808,13 @@ dt {
 }
 
 .loading-lines {
-  background: var(--muted);
-  border-radius: var(--radius-md);
-  padding: 24px;
+  border-block-start: 1px solid var(--border);
+  padding: 24px 0;
   margin-bottom: 24px;
 }
 
 .loading-lines p {
   margin-bottom: 12px;
-}
-
-.skeleton-row {
-  display: block;
-  height: 14px;
-  border-radius: var(--radius-sm);
-  background: linear-gradient(
-    90deg,
-    var(--skeleton) 25%,
-    var(--skeleton-highlight) 50%,
-    var(--skeleton) 75%
-  );
-  background-size: 200% 100%;
-  animation: skeleton-sweep 1.4s ease-in-out infinite;
-}
-
-@keyframes skeleton-sweep {
-  from {
-    background-position: 200% 0;
-  }
-
-  to {
-    background-position: -200% 0;
-  }
-}
-
-.skeleton-row + .skeleton-row {
-  margin-top: 12px;
-}
-
-.skeleton-row:nth-child(1) {
-  width: 55%;
-}
-
-.skeleton-row:nth-child(2) {
-  width: 85%;
-}
-
-.skeleton-row:nth-child(3) {
-  width: 70%;
-}
-
-.skeleton-row:nth-child(4) {
-  width: 40%;
 }
 
 .table-panel {
@@ -713,12 +823,18 @@ dt {
 
 .table-panel > .section-heading,
 .table-panel > .notice {
-  margin: 24px;
+  margin: 24px 0;
+}
+
+.table-panel > .table-help {
+  margin: 0 0 16px;
 }
 
 .table-scroll {
   position: relative;
   overflow-x: auto;
+  overscroll-behavior-inline: contain;
+  border-radius: 0;
 }
 
 .table-scroll table {
@@ -735,6 +851,12 @@ dt {
   white-space: nowrap;
 }
 
+@media (hover: hover) and (pointer: fine) {
+  .table-scroll tbody tr:hover {
+    background: var(--muted);
+  }
+}
+
 .table-scroll td,
 .table-scroll th {
   padding: 16px 24px;
@@ -746,8 +868,26 @@ dt {
   overflow-wrap: anywhere;
 }
 
-.table-scroll tbody tr:hover {
+.table-scroll tbody tr:focus-within {
   background: var(--muted);
+}
+
+.table-scroll td:nth-child(2),
+.table-scroll time,
+.record-count {
+  font-variant-numeric: tabular-nums;
+}
+
+.registry-table td:last-child {
+  text-align: end;
+}
+
+.registry-table td:first-child {
+  min-width: 12rem;
+}
+
+.registry .table-scroll {
+  margin-bottom: 0;
 }
 
 .patient-banner {
@@ -758,17 +898,26 @@ dt {
   align-items: center;
   justify-content: flex-start;
   gap: 16px;
-  padding: 24px;
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  background: var(--card);
-  box-shadow: 0 8px 24px rgb(0 0 0 / 6%);
+  padding: 16px 0;
+  border-block-end: 1px solid var(--border);
+  background: var(--background);
   margin-bottom: 24px;
+}
+
+.patient-banner h1 {
+  font-size: 1.5rem;
 }
 
 .patient-banner > div {
   flex: 1;
   min-width: 0;
+}
+
+.patient-banner > .patient-context-actions {
+  display: flex;
+  flex: 0 1 auto;
+  flex-wrap: wrap;
+  gap: 8px;
 }
 
 .patient-banner h1,
@@ -782,7 +931,7 @@ dt {
   flex: 0 0 48px;
   width: 48px;
   height: 48px;
-  border-radius: 50%;
+  border-radius: var(--radius-md);
   background: var(--muted);
   color: var(--foreground);
   font-size: 1rem;
@@ -792,7 +941,7 @@ dt {
 .patient-banner p {
   color: var(--muted-foreground);
   font-size: 0.875rem;
-  margin-top: 8px;
+  margin-top: 4px;
 }
 
 .demographics,
@@ -833,9 +982,33 @@ dd {
   margin-bottom: 8px;
 }
 
+.panel.entry {
+  border: 0;
+  border-block-start: 1px solid var(--border);
+  border-radius: 0;
+  padding: 24px 0;
+  background: transparent;
+}
+
 .entry > .clinical-content > div {
-  border-left: 2px solid var(--border);
-  padding-left: 16px;
+  padding-inline-start: 0;
+  border: 0;
+}
+
+.entry > .clinical-content > .entry-vitals {
+  grid-column: 1 / -1;
+  padding: 16px 0;
+  border-block: 1px solid var(--border);
+}
+
+.entry-vitals .measurements {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 8rem), 1fr));
+  gap: 16px;
+  margin: 16px 0 0;
+}
+
+.entry-vitals .measurements dt {
+  min-block-size: 3em;
 }
 
 .entry .measurements dd {
@@ -847,19 +1020,20 @@ dd {
   max-width: 75ch;
 }
 
+.entry-vitals > dd {
+  max-width: none;
+}
+
 .entry-actions {
   display: flex;
   flex-wrap: wrap;
   gap: 12px;
   margin-top: 24px;
-  border-top: 1px solid var(--border);
-  padding-top: 24px;
 }
 
 .corrections {
-  background: var(--muted);
-  padding: 24px;
-  border-radius: var(--radius-md);
+  padding: 8px 0 8px 24px;
+  border-inline-start: 2px solid var(--border-strong);
   margin: 24px 0;
 }
 
@@ -921,6 +1095,10 @@ dd {
 
 .duplicate-check li {
   padding: 8px 0;
+}
+
+.duplicate-check > button {
+  justify-self: start;
 }
 
 .demo-controls {
@@ -1214,8 +1392,7 @@ dd {
   flex-shrink: 0;
 }
 
-.command-option[aria-selected='true'],
-.command-option:hover {
+.command-option[aria-selected='true'] {
   background: var(--muted);
 }
 
@@ -1232,29 +1409,6 @@ dd {
   border-top: 1px solid var(--border);
   font-size: 0.875rem;
   color: var(--muted-foreground);
-}
-
-.login-panel.shake {
-  animation: shake 200ms var(--ease-standard);
-}
-
-@keyframes shake {
-  0%,
-  100% {
-    translate: 0 0;
-  }
-
-  25% {
-    translate: -3px 0;
-  }
-
-  50% {
-    translate: 3px 0;
-  }
-
-  75% {
-    translate: -2px 0;
-  }
 }
 
 .pw-field {
@@ -1279,9 +1433,11 @@ dd {
   color: var(--muted-foreground);
 }
 
-.pw-toggle:hover {
-  background: var(--muted);
-  color: var(--foreground);
+@media (hover: hover) {
+  .pw-toggle:hover {
+    background: var(--muted);
+    color: var(--foreground);
+  }
 }
 
 .pw-caps {
@@ -1323,7 +1479,7 @@ dd {
   }
 }
 
-@media (max-width: 800px) {
+@media (max-width: 56rem) {
   .workspace {
     grid-template-columns: minmax(0, 1fr);
   }
@@ -1331,58 +1487,44 @@ dd {
   .sidebar {
     position: static;
     height: auto;
-    border-right: 0;
-    border-bottom: 1px solid var(--border);
-    padding: 16px;
+    border-inline-end: 0;
+    border-block-end: 1px solid var(--border);
+    padding: 16px 24px;
+  }
+
+  .sidebar-heading {
+    margin-bottom: 0;
   }
 
   .brand {
-    display: flex;
-    align-items: center;
-    justify-content: flex-start;
-    padding: 0 0 16px;
+    padding: 0;
   }
 
-  .brand br {
+  .clinic-menu {
+    display: inline-flex;
+    flex-shrink: 0;
+  }
+
+  .sidebar-content {
     display: none;
   }
 
-  .sidebar nav,
-  .patient-navigation {
+  .navigation-open .sidebar-content {
     display: flex;
-    flex-wrap: wrap;
-    gap: 4px;
-  }
-
-  .patient-navigation {
-    margin-top: 0;
-  }
-
-  .nav-label {
-    display: none;
-  }
-
-  .nav-item {
-    width: auto;
-    font-size: 0.875rem;
+    padding-top: 24px;
   }
 
   .sidebar-bottom {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-    padding-top: 16px;
-    gap: 16px;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 24px;
+    padding-top: 24px;
   }
 
   .connection,
   .staff-identity {
-    border: 0;
-    padding: 0;
-  }
-
-  .staff-identity button {
-    width: fit-content;
+    padding: 16px 0 0;
+    align-content: start;
   }
 
   .main-area main,
@@ -1391,60 +1533,180 @@ dd {
     padding: 24px;
   }
 
-  .demographics,
-  .measurements {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+  .login-layout {
+    max-width: 480px;
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .login-intro {
+    padding: 24px;
+    gap: 24px;
+    border-inline-end: 0;
+    border-block-end: 1px solid var(--border);
+  }
+
+  .login-intro > div:not(.login-identity),
+  .login-access {
+    display: none;
+  }
+}
+
+@media (max-width: 40rem) {
+  .registry-table,
+  .registry-table tbody {
+    display: block;
+  }
+
+  .registry-table thead {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+  }
+
+  .registry-table tbody tr {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 12px 16px;
+    padding: 16px;
+    border-block-start: 1px solid var(--border);
+  }
+
+  .registry-table td {
+    min-width: 0;
+    padding: 0;
+    border: 0;
+    text-align: start;
+    font-size: 0.875rem;
+  }
+
+  .registry-table td:first-child,
+  .registry-table td:last-child {
+    grid-column: 1 / -1;
+    min-width: 0;
+  }
+
+  .registry-table td:first-child {
+    font-size: 1rem;
+  }
+
+  .registry-table td[data-label]::before {
+    display: block;
+    content: attr(data-label);
+    margin-bottom: 4px;
+    color: var(--muted-foreground);
+  }
+
+  .registry-table td:last-child button {
+    width: 100%;
+    justify-content: space-between;
   }
 }
 
 @media (max-width: 500px) {
-  .login-panel {
+  .login-panel,
+  .login-intro {
     padding: 24px;
   }
 
-  .brand {
-    display: flex;
-    gap: 12px;
+  .brand img {
+    width: 36px;
+    height: 36px;
   }
 
+  .brand span {
+    font-size: 0.75rem;
+  }
+
+  .sidebar,
   .main-area main,
   .topbar,
   .demo-controls {
     padding: 16px;
   }
 
-  .form-grid {
+  .topbar-actions,
+  .quick-search {
+    width: 100%;
+  }
+
+  .quick-search .kbd {
+    margin-inline-start: auto;
+  }
+
+  .form-grid,
+  .sidebar-bottom {
     grid-template-columns: minmax(0, 1fr);
   }
 
   .panel {
-    padding: 16px;
+    padding: 16px 0;
   }
 
   .table-panel {
     padding: 0;
   }
 
+  .table-panel > .section-heading,
+  .table-panel > .notice {
+    margin: 16px 0;
+  }
+
+  .table-panel > .table-help {
+    margin: 0 0 16px;
+  }
+
   .search-controls {
     flex-direction: column;
   }
 
-  .patient-banner,
-  .document-list li {
+  .patient-banner {
+    padding: 16px 0;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+
+  .patient-avatar {
+    display: none;
+  }
+
+  .patient-banner h1 {
+    font-size: 1.25rem;
+  }
+
+  .patient-banner > div {
+    flex-basis: 100%;
+  }
+
+  .patient-navigation {
+    gap: 4px;
+  }
+
+  .patient-nav-item {
+    flex: 1 1 8rem;
+    text-align: center;
+  }
+
+  .document-list li,
+  .command-option {
     flex-direction: column;
     align-items: flex-start;
   }
 
-  .sidebar-bottom {
-    flex-direction: column;
+  .command-hint {
+    flex-wrap: wrap;
+    justify-content: flex-start;
+    gap: 8px;
   }
 
-  .topbar {
-    flex-wrap: wrap;
+  .command-option .command-number {
+    text-align: start;
   }
 
   .demographics,
   .measurements {
+    grid-template-columns: minmax(0, 1fr);
     gap: 16px;
   }
 }
@@ -1477,6 +1739,7 @@ dd {
   .topbar,
   .demo-controls,
   .patient-banner,
+  .patient-navigation,
   .page-heading,
   .notice,
   .document-editor,
@@ -1574,4 +1837,16 @@ dd {
   .preview-guidance {
     display: none;
   }
+}
+
+@media (hover: hover) {
+  .command-option:hover,
+  .table-scroll tbody tr:hover {
+    background: var(--muted);
+  }
+}
+
+.confirm-dialog,
+.command-results {
+  overscroll-behavior: contain;
 }

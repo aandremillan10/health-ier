@@ -2,6 +2,8 @@ import { useEffect, useRef, useState } from 'react';
 import type { ReactElement } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { SearchField } from '@/components/ui/search-field';
+import { Badge } from '@/components/arc/badge/badge';
 import { Textarea } from '@/components/ui/textarea';
 import type { PatientIdentity, Result, Staff } from '../../shared/clinic-api';
 import type {
@@ -79,9 +81,9 @@ function FailureNotice({
 }
 function EligibilityState({ value }: { value: Eligibility }): ReactElement {
   return (
-    <span className={`badge ${value === 'eligible' ? 'success' : 'warning'}`}>
-      {eligibilityLabels[value]}
-    </span>
+    <Badge tone={value === 'eligible' ? 'success' : 'warning'}>
+      <span>{eligibilityLabels[value]}</span>
+    </Badge>
   );
 }
 function EffectiveDates({ value }: { value: EligibilityFields }): ReactElement {
@@ -929,12 +931,11 @@ function PatientPicker({
         hint="Search by name or patient number. If names match, use the birth date and patient number to choose the correct record."
       >
         <div className="search-controls">
-          <Input
+          <SearchField
             id="family-patient-search"
-            type="search"
             maxLength={200}
             value={search}
-            onChange={(event) => setSearch(event.target.value)}
+            onValueChange={setSearch}
             onKeyDown={(event) => {
               if (event.key === 'Enter') {
                 event.preventDefault();

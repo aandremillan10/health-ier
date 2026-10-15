@@ -383,7 +383,7 @@ export function Chart({
                       <dt>Plan / instructions</dt>
                       <dd>{entry.plan || 'Not recorded'}</dd>
                     </div>
-                    <div>
+                    <div className="entry-vitals">
                       <dt>Selected vital signs</dt>
                       <dd>
                         {!entry.vitalsId

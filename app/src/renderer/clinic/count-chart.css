@@ -1,0 +1,48 @@
+.count-chart {
+  margin: 16px 0 0;
+}
+
+.count-chart ul {
+  display: grid;
+  gap: 16px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.count-chart li {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 2fr) max-content;
+  gap: 12px;
+  align-items: center;
+}
+
+.count-chart-label {
+  font-size: 0.875rem;
+  overflow-wrap: anywhere;
+}
+
+.count-chart-track {
+  height: 12px;
+  border-radius: 2px;
+  background: var(--muted);
+  overflow: hidden;
+}
+
+.count-chart-track > span {
+  display: block;
+  height: 100%;
+  background: var(--primary);
+}
+
+.count-chart strong {
+  min-width: 2ch;
+  text-align: end;
+  font-variant-numeric: tabular-nums;
+}
+
+@media (forced-colors: active) {
+  .count-chart-track > span {
+    background: CanvasText;
+  }
+}
