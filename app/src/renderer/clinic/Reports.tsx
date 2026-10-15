@@ -285,6 +285,7 @@ export function Reports({
           <div className="report-trends">
             <DailyTrend rows={report.daily} />
             <DepartmentTrend rows={report.departments} />
+            <SexTrend rows={report.sexBreakdown} />
           </div>
         </>
       )}
@@ -520,6 +521,65 @@ function DepartmentTrend({
           </details>
         </>
       )}
+    </section>
+  );
+}
+
+function SexTrend({
+  rows,
+}: {
+  rows: ClinicReport['sexBreakdown'];
+}): ReactElement {
+  const labels: Record<ClinicReport['sexBreakdown'][number]['sex'], string> = {
+    female: 'Female',
+    male: 'Male',
+    other: 'Other',
+    not_recorded: 'Not recorded',
+  };
+  return (
+    <section className="panel report-trend" aria-labelledby="report-sex-title">
+      <h2 id="report-sex-title">Patients by recorded sex</h2>
+      <p className="hint">
+        Distinct patients with a visit in this range. Repeat visits count once.
+      </p>
+      {rows.every((row) => row.patients === 0) && (
+        <p className="hint">No patients with visits in this range.</p>
+      )}
+      <CountChart
+        label="Patients by recorded sex"
+        rows={rows.map((row) => ({
+          label: labels[row.sex],
+          value: row.patients,
+        }))}
+      />
+      <details className="report-data">
+        <summary>View recorded sex data</summary>
+        <div
+          className="table-scroll"
+          tabIndex={0}
+          role="region"
+          aria-label="Patients by recorded sex; scroll horizontally for all columns"
+        >
+          <table>
+            <thead>
+              <tr>
+                <th scope="col">Recorded sex</th>
+                <th scope="col">Patients</th>
+              </tr>
+            </thead>
+            <tbody>
+              {rows.map((row) => (
+                <tr key={row.sex}>
+                  <th scope="row">{labels[row.sex]}</th>
+                  <td className="report-number">
+                    {row.patients.toLocaleString('en-PH')}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </details>
     </section>
   );
 }

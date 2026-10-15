@@ -23,6 +23,10 @@ interface Report {
     newPatients: number;
   };
   daily: { date: string; visits: number }[];
+  sexBreakdown: {
+    sex: 'female' | 'male' | 'other' | 'not_recorded';
+    patients: number;
+  }[];
   departments: {
     discipline: 'medical' | 'dental' | 'laboratory';
     patients: number;
@@ -52,6 +56,12 @@ export function reportCsv(report: Report): string {
     ...report.departments.map((row) => [
       'department',
       row.discipline,
+      row.patients,
+      'patients',
+    ]),
+    ...report.sexBreakdown.map((row) => [
+      'sex',
+      row.sex === 'not_recorded' ? 'Not recorded' : row.sex,
       row.patients,
       'patients',
     ]),
@@ -95,6 +105,7 @@ export class ReportsService {
         },
         select: {
           patientId: true,
+          patient: { select: { sex: true } },
           discipline: true,
           status: true,
           scheduledAt: true,
@@ -133,6 +144,15 @@ export class ReportsService {
       ['dental', new Set()],
       ['laboratory', new Set()],
     ]);
+    const patientsBySex = new Map<
+      'female' | 'male' | 'other' | 'not_recorded',
+      Set<string>
+    >([
+      ['female', new Set()],
+      ['male', new Set()],
+      ['other', new Set()],
+      ['not_recorded', new Set()],
+    ]);
     let visits = 0;
     let noShows = 0;
     for (const visit of appointments) {
@@ -150,6 +170,14 @@ export class ReportsService {
       daily.set(day, (daily.get(day) ?? 0) + 1);
       departments
         .get(visit.discipline as 'medical' | 'dental' | 'laboratory')
+        ?.add(visit.patientId);
+      const sex = visit.patient.sex;
+      patientsBySex
+        .get(
+          sex === 'female' || sex === 'male' || sex === 'other'
+            ? sex
+            : 'not_recorded',
+        )
         ?.add(visit.patientId);
     }
     const turnarounds = labs.flatMap((order) => {
@@ -177,11 +205,20 @@ export class ReportsService {
         : null,
       newPatients,
     };
+    const sexBreakdown = [...patientsBySex].map(([sex, patients]) => ({
+      sex,
+      patients: patients.size,
+    }));
+    assert.ok(
+      sexBreakdown.reduce((sum, row) => sum + row.patients, 0) <= visits,
+      'Distinct patients with visits cannot exceed total visits.',
+    );
     const content = {
       from: range.from,
       to: range.to,
       totals,
       daily: [...daily].map(([date, count]) => ({ date, visits: count })),
+      sexBreakdown,
       departments: [...departments].map(([discipline, patients]) => ({
         discipline,
         patients: patients.size,

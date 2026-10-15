@@ -354,7 +354,11 @@ export function createDemoClinic(): {
     isAvailable: () => available,
     getStaffList: () => demoStaff,
     getPatientRegistrations: () =>
-      [...registrations].map(([id, createdAt]) => ({ id, createdAt })),
+      [...registrations].map(([id, createdAt]) => ({
+        id,
+        createdAt,
+        sex: patients.find((patient) => patient.id === id)?.sex ?? null,
+      })),
     getAppointments: appointmentSnapshot,
     getLabOrders: laboratory.snapshot,
   });

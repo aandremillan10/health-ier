@@ -16,6 +16,18 @@
   border: 1px solid var(--border);
   border-radius: var(--radius);
 }
+.context-help .navigation-help {
+  display: grid;
+  gap: 0.5rem;
+  max-width: 72ch;
+  margin: 0.5rem 0 1rem;
+  padding-inline-start: 1.25rem;
+  list-style: disc;
+}
+.context-help .navigation-help li {
+  padding-inline-start: 0.25rem;
+  line-height: 1.5;
+}
 .context-help summary {
   cursor: pointer;
   width: fit-content;
@@ -137,14 +149,12 @@
 .practice-layout .sticky-form-actions {
   position: static;
 }
-.practice-layout .workspace {
-  grid-template-columns: 13rem minmax(0, 1fr);
-}
-.practice-layout .sidebar {
-  width: 13rem;
-}
 .practice-layout .main-area {
   min-width: 0;
+}
+.practice-layout .clinic-sidebar {
+  top: 7rem;
+  height: calc(100dvh - 7rem);
 }
 .practice-layout .topbar {
   flex-wrap: wrap;
@@ -177,18 +187,6 @@
   }
 }
 @media (max-width: 60rem) {
-  .practice-layout .workspace {
-    grid-template-columns: 1fr;
-  }
-  .practice-layout .sidebar {
-    position: static;
-    width: auto;
-    max-height: none;
-  }
-  .practice-layout .sidebar nav {
-    display: flex;
-    flex-wrap: wrap;
-  }
   .practice-layout .patient-navigation {
     width: 100%;
   }

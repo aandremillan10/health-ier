@@ -3,17 +3,35 @@
   gap: 16px;
   min-width: 0;
 }
-.appointment-filters,
-.appointment-schedule-fields {
+.appointment-filters {
   display: flex;
   flex-wrap: wrap;
   align-items: end;
   gap: 16px;
 }
-.appointment-filters .field,
-.appointment-schedule-fields .field {
+.appointment-schedule-fields {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr)) auto;
+  align-items: start;
+  gap: 16px;
+}
+.appointment-filters .field {
   flex: 1 1 160px;
   min-width: 0;
+}
+.appointment-schedule-fields .field {
+  min-width: 0;
+}
+.appointment-schedule-fields > button {
+  margin-block-start: 29px;
+}
+@media (max-width: 48rem) {
+  .appointment-schedule-fields {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .appointment-schedule-fields > button {
+    margin-block-start: 0;
+  }
 }
 .appointment-auto {
   display: flex;

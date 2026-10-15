@@ -49,6 +49,10 @@ export interface ClinicReport {
     newPatients: number;
   };
   daily: { date: string; visits: number }[];
+  sexBreakdown: {
+    sex: 'female' | 'male' | 'other' | 'not_recorded';
+    patients: number;
+  }[];
   departments: {
     discipline: 'medical' | 'dental' | 'laboratory';
     patients: number;

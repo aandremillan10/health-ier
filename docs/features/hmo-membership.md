@@ -1,4 +1,6 @@
-# Explicit HMO membership and family relationships (#18)
+# Historical feature: HMO membership and family relationships (#18)
+
+> **Removed in clinic-demo-v1.3.** The application no longer has HMO membership or dependent-eligibility screens, APIs, demo state, report totals, or database tables. This page records the former feature only. See [ADR-0004](../adr/0004-remove-hmo-membership-data.md) and the [v1.3 amendment](../specs/clinic-demo-v1.3-amendment.md).
 
 The clerk creates and maintains membership and dependent links. Doctors, dentists, and nursing attendants can read the minimum family identity and eligibility data. The medtech role is denied unless it has clinic head oversight. The clerk and clinic head can read member references and history; head oversight alone does not permit writes.
 

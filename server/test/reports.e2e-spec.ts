@@ -17,30 +17,35 @@ it('returns operational totals and exports the same snapshot without clinical ro
       findMany: async (): Promise<unknown[]> => [
         {
           patientId: 'a',
+          patient: { sex: 'female' },
           discipline: 'medical',
           status: 'completed',
           scheduledAt: new Date('2026-10-13T16:30Z'),
         },
         {
           patientId: 'a',
+          patient: { sex: 'female' },
           discipline: 'medical',
           status: 'completed',
           scheduledAt: new Date('2026-10-14T01:00Z'),
         },
         {
           patientId: 'b',
+          patient: { sex: 'male' },
           discipline: 'dental',
           status: 'arrived',
           scheduledAt: new Date('2026-10-15T01:00Z'),
         },
         {
           patientId: 'c',
+          patient: { sex: 'other' },
           discipline: 'medical',
           status: 'no_show',
           scheduledAt: new Date('2026-10-15T02:00Z'),
         },
         {
           patientId: 'd',
+          patient: { sex: null },
           discipline: 'medical',
           status: 'scheduled',
           scheduledAt: new Date('2026-10-15T03:00Z'),
@@ -140,6 +145,12 @@ it('returns operational totals and exports the same snapshot without clinical ro
       { discipline: 'dental', patients: 1 },
       { discipline: 'laboratory', patients: 0 },
     ]);
+    expect(read.body.sexBreakdown).toEqual([
+      { sex: 'female', patients: 1 },
+      { sex: 'male', patients: 1 },
+      { sex: 'other', patients: 0 },
+      { sex: 'not_recorded', patients: 0 },
+    ]);
     expect(read.body).not.toHaveProperty('patients');
     const exported = await request(app.getHttpServer())
       .post('/reports/export')
@@ -154,6 +165,7 @@ it('returns operational totals and exports the same snapshot without clinical ro
     expect(exported.body.csv).toContain(
       'summary,Average laboratory turnaround,90,minutes',
     );
+    expect(exported.body.csv).toContain('sex,female,1,patients');
     expect(exported.body.csv).not.toContain('Eligible employees');
     expect(exported.body.csv).not.toContain('Eligible dependents');
     expect(events).toHaveLength(1);

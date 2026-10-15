@@ -2,7 +2,11 @@
 
 Later authorized build extension, 2026-10-15: historical scans/audit (#17/#19) and one-way scan mirroring are recorded in the [approval amendment](approval.md#historical-scans-and-audit-implementation-amendment-2026-10-15), [ADR-0003](../adr/0003-historical-record-s3-mirror.md) and [implemented API/setup contract](../features/historical-documents.md). This supersedes the historical scan exclusion for those approved records only; it does not claim deployment or packaged desktop proof.
 
-Status: **approved clinic-demo-v1.1 requirements with a user-requested UI refinement recorded as clinic-demo-v1.2 on 2026-10-15, Asia/Manila**. See the [approval and amendment record](approval.md). The v1.2 scope covers the accessible color palette and root-level toast feedback. Other product feature work remains outside this amendment.
+Status: **approved clinic-demo-v1.3 amendment on 2026-10-15, Asia/Manila**, over the approved v1.1 requirements and v1.2 UI refinement. See the [approval and amendment record](approval.md). The v1.3 scope is in the [approved amendment](clinic-demo-v1.3-amendment.md).
+
+## Approved v1.3 amendment
+
+The amendment reduces clinical-summary fields, adds height and Clinic head correction of finalized vital signs, removes HMO membership/dependent eligibility and its data, and adds audit action colors. The user authorized implementation. The HMO migration removes local EDGE data; production migration and deployment remain outside this request.
 
 ## Read in this order
 

@@ -147,6 +147,20 @@ function install(fixture: ReturnType<typeof createDemoClinic>): void {
                   },
                   { discipline: 'laboratory', patients: 0 },
                 ],
+          sexBreakdown:
+            control.mode === 'empty'
+              ? [
+                  { sex: 'female', patients: 0 },
+                  { sex: 'male', patients: 0 },
+                  { sex: 'other', patients: 0 },
+                  { sex: 'not_recorded', patients: 0 },
+                ]
+              : [
+                  { sex: 'female', patients: control.mode === 'zero' ? 0 : 2 },
+                  { sex: 'male', patients: control.mode === 'zero' ? 0 : 1 },
+                  { sex: 'other', patients: 0 },
+                  { sex: 'not_recorded', patients: 0 },
+                ],
         },
       };
     },

@@ -1,0 +1,37 @@
+{
+  "verifiedAtUtc": "2026-10-15T13:40:38.8905205Z",
+  "command": "server/scripts/verify-live.ps1",
+  "apiMode": "EDGE",
+  "apiBaseUrl": "http://127.0.0.1:3310",
+  "database": "healthier_demo_v13_1792071524722_o990x0",
+  "databaseImage": "postgres:17-alpine",
+  "databaseStorage": "disposable container without a volume; stopped and removed after verification",
+  "mirrorEnabled": false,
+  "assertionsPassed": 117,
+  "assertionsFailed": 0,
+  "removedHmoRouteChecks": 10,
+  "heightCmPersisted": 165,
+  "unknownHeightRemainedNull": true,
+  "headCorrectionSourceRevision": 4,
+  "syntheticDataOnly": true,
+  "credentialsOrTokensIncluded": false,
+  "productionDatabaseOrMigrationUsed": false,
+  "cloudMirrorVerified": false,
+  "desktopToLiveEdgeVerified": false,
+  "clinicalSummaryDatabaseE2e": {
+    "verifiedDate": "2026-10-15",
+    "command": "pnpm --filter server exec vitest run --config vitest.e2e.config.mts test/clinical-summary.e2e-spec.ts",
+    "database": "healthier_demo_v13_summary_1792071912098_kd8kkm",
+    "databaseImage": "postgres:17-alpine",
+    "databaseStorage": "disposable container without a volume; stopped and removed after verification",
+    "testFilesPassed": 1,
+    "testsPassed": 2,
+    "testsFailed": 0,
+    "checks": [
+      "legacy summary projection",
+      "retained revisions and history output",
+      "supported clinical-summary CRUD flows"
+    ],
+    "syntheticDataOnly": true
+  }
+}

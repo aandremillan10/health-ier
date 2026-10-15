@@ -20,3 +20,16 @@ All ten old global exclusions now include one-way whitelisted edge-to-cloud mirr
 Original v1 publication/commit e9038df is preserved as history. Existing master docs are live; new/amended v1.1 docs become live after coordinated follow-up commit/push. The specs/routes/templates are plans, not implemented/verified product behavior.
 
 Repository: [aandremillan10/health-ier](https://github.com/aandremillan10/health-ier). Four workflow labels remain `todo`, `in progress`, `in review`, `done`; unrelated labels are retained. Backend owns Nest/PostgreSQL and privileged Electron main/preload/session/network/printing plus mirror. Frontend owns React/tasks/fixed presentation; no guessed assignees or estimates.
+
+## clinic-demo-v1.3 amendment
+
+Approved and published 2026-10-15, Asia/Manila. Seven new tickets were published with only the `todo` workflow label; they currently use `in progress`. The closed HMO issue #18 remains historical; v1.3 adds removal work without changing its record.
+
+| Outcome                                | Backend                                                       | Frontend                                                      |
+| -------------------------------------- | ------------------------------------------------------------- | ------------------------------------------------------------- |
+| Clinical-summary fields                | [#29](https://github.com/aandremillan10/health-ier/issues/29) | [#32](https://github.com/aandremillan10/health-ier/issues/32) |
+| Vital signs and Clinic head correction | [#30](https://github.com/aandremillan10/health-ier/issues/30) | [#33](https://github.com/aandremillan10/health-ier/issues/33) |
+| HMO removal                            | [#31](https://github.com/aandremillan10/health-ier/issues/31) | [#34](https://github.com/aandremillan10/health-ier/issues/34) |
+| Audit action colors                    | No Backend change                                             | [#35](https://github.com/aandremillan10/health-ier/issues/35) |
+
+All seven tickets share the v1.3 API/integration acceptance criteria. The Frontend tickets can proceed against the approved contract; final integration follows the matching Backend ticket. Audit colors need no Backend change.

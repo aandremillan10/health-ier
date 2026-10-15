@@ -30,6 +30,17 @@ test('schedule a patient without leaving daily clinic flow', async ({
   await expect(
     page.getByRole('button', { name: 'Save appointment', exact: true }),
   ).toBeVisible();
+  const timeTop = await page
+    .locator('#appointment-time')
+    .evaluate((element) => element.getBoundingClientRect().top);
+  const disciplineTop = await page
+    .locator('#appointment-new-discipline')
+    .evaluate((element) => element.getBoundingClientRect().top);
+  const saveTop = await page
+    .getByRole('button', { name: 'Save appointment', exact: true })
+    .evaluate((element) => element.getBoundingClientRect().top);
+  expect(disciplineTop).toBe(timeTop);
+  expect(saveTop).toBe(timeTop);
   await page
     .getByRole('button', { name: 'Save appointment', exact: true })
     .click();
