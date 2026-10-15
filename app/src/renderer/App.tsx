@@ -477,7 +477,7 @@ function PracticeBoundary(props: WorkspaceProps): ReactElement {
           data-testid="practice-workspace"
           ref={practiceRoot}
         >
-          <div>
+          <div className="practice-screen">
             <header className="practice-banner">
               <h1>Practice · fictional records</h1>
               <p>

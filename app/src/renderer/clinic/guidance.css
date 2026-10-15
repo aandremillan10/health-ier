@@ -29,8 +29,17 @@
   margin-block: 1rem 0.5rem;
 }
 .practice-layout {
-  padding-inline-end: 22rem;
-  min-height: 100dvh;
+  position: fixed;
+  inset: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 22rem;
+  background: var(--background);
+}
+.practice-screen {
+  min-width: 0;
+  min-height: 0;
+  overflow: auto;
+  overscroll-behavior: contain;
 }
 .practice-banner {
   padding: 1rem 1.5rem;
@@ -46,15 +55,28 @@
   margin: 0.5rem 0 0;
 }
 .practice-guide {
-  position: fixed;
-  inset: 0 0 auto auto;
-  width: 22rem;
-  padding: 1.5rem;
-  max-height: 100dvh;
-  overflow: auto;
+  position: relative;
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
   background: var(--card);
   border-left: 1px solid var(--border);
   z-index: 40;
+}
+.practice-guide-header,
+.practice-guide-content,
+.practice-step-actions {
+  padding: 1rem;
+}
+.practice-guide-header,
+.practice-step-actions {
+  flex: none;
+}
+.practice-guide-content {
+  min-height: 0;
+  overflow: auto;
+  overscroll-behavior: contain;
 }
 .practice-guide-top {
   display: flex;
@@ -65,18 +87,27 @@
 }
 .practice-guide h2 {
   font-size: 1.25rem;
-  margin-block: 1.5rem 0.75rem;
+  margin-block: 0 0.75rem;
 }
 .practice-guide p {
   margin-block: 1rem;
+}
+.practice-guide-header > p,
+.practice-guide-content > :last-child {
+  margin-block-end: 0;
+}
+.practice-guide-content > #practice-step-description {
+  margin-block-start: 0;
 }
 .practice-step-actions {
   display: flex;
   flex-wrap: wrap;
   gap: 0.5rem;
-  margin-block: 1.5rem 0.5rem;
+  margin: auto 0 0;
+  border-top: 1px solid var(--border);
 }
-.practice-target {
+.practice-target,
+.search-field:has(.practice-target) {
   outline: 3px solid var(--ring);
   outline-offset: 4px;
   scroll-margin-block: 3rem;
@@ -90,6 +121,17 @@
   font-size: 0.75rem;
   pointer-events: none;
   z-index: 35;
+}
+.practice-spotlight {
+  position: fixed;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 30;
+}
+.practice-spotlight-hole {
+  position: absolute;
+  border-radius: var(--radius);
+  box-shadow: 0 0 0 100vmax rgb(8 25 30 / 48%);
 }
 .practice-layout .patient-banner,
 .practice-layout .sticky-form-actions {
@@ -113,25 +155,25 @@
 .practice-session button {
   margin-inline-end: 0.5rem;
 }
-@media (max-width: 80rem) {
+@media (max-width: 70rem) {
   .practice-layout {
-    padding-inline-end: 0;
-    display: flex;
-    flex-direction: column;
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: minmax(0, 1fr) minmax(0, min(20rem, 66dvh));
   }
   .practice-guide {
-    position: static;
-    width: auto;
-    max-height: none;
     border-left: 0;
-    border-bottom: 1px solid var(--border);
-    order: -1;
+    border-top: 1px solid var(--border);
   }
   .practice-guide p {
     max-width: 70ch;
   }
-  .practice-guide h2 {
-    margin-block-start: 1rem;
+  .practice-guide-header,
+  .practice-guide-content,
+  .practice-step-actions {
+    padding: 0.5rem 1rem;
+  }
+  .practice-guide-header > p {
+    margin-block-start: 0.5rem;
   }
 }
 @media (max-width: 60rem) {
