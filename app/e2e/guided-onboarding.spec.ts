@@ -3,6 +3,7 @@ import type { Page } from '@playwright/test';
 import { createHash } from 'node:crypto';
 import type { createDemoClinic } from '../src/renderer/clinic/demo';
 import type { HistoricalDocument } from '../src/shared/historical-documents-api';
+import type { AuditEvent } from '../src/shared/operations-api';
 
 declare global {
   interface Window {
@@ -1228,6 +1229,70 @@ test('clinical summary creates sourced history while report export and audit sta
     .filter({ hasText: 'Change' })
     .first();
   await expect(changeAction.locator('.badge.warning')).toContainText('Change');
+});
+
+test('audit action labels use semantic colors and remain keyboard accessible', async ({
+  page,
+}): Promise<void> => {
+  await signIn(page);
+  const actionTones = [
+    { action: 'view', label: 'View', tone: 'neutral' },
+    { action: 'create', label: 'Create', tone: 'success' },
+    { action: 'finalize', label: 'Finalize', tone: 'success' },
+    { action: 'change', label: 'Change', tone: 'warning' },
+    { action: 'correction', label: 'Correction', tone: 'warning' },
+    { action: 'import', label: 'Import', tone: 'info' },
+    { action: 'export', label: 'Export', tone: 'info' },
+    { action: 'print', label: 'Print', tone: 'info' },
+  ] as const;
+  const events: AuditEvent[] = actionTones.map(({ action }, index) => ({
+    id: `synthetic-audit-${index}`,
+    actorId: 'demo-doctor-1',
+    actorName: 'Dr. Mira Dalisay',
+    actorRole: 'doctor',
+    action,
+    patientId: null,
+    resourceType: 'synthetic-record',
+    resourceId: null,
+    outcome: 'success',
+    source: 'synthetic-verification',
+    workstation: null,
+    createdAt: '2026-10-15T08:00:00.000Z',
+  }));
+  await page.evaluate((auditEvents) => {
+    const api = window.clinicApi;
+    if (!api) throw new Error('The synthetic clinic API is unavailable.');
+    api.listAuditEvents = async (): ReturnType<typeof api.listAuditEvents> => ({
+      ok: true,
+      data: { events: auditEvents, nextCursor: null },
+    });
+    api.listAuditActors = async (): ReturnType<typeof api.listAuditActors> => ({
+      ok: true,
+      data: [{ id: 'demo-doctor-1', displayName: 'Dr. Mira Dalisay' }],
+    });
+  }, events);
+  await page.getByRole('button', { name: 'Audit trail', exact: true }).click();
+  const auditTable = page.getByRole('region', {
+    name: 'Audit events',
+    exact: true,
+  });
+
+  for (const { label, tone } of actionTones) {
+    const action = auditTable
+      .locator('tbody td:nth-child(3)')
+      .filter({ hasText: label })
+      .first();
+    await expect(action).toBeVisible();
+    await expect(action).toContainText(label);
+    await expect(action.locator(`.badge.${tone}`)).toContainText(label);
+  }
+
+  await expect(auditTable).toHaveAttribute('tabindex', '0');
+  const actionFilter = page.getByLabel('Action', { exact: true });
+  await actionFilter.focus();
+  await expect(actionFilter).toBeFocused();
+  await actionFilter.press('p');
+  await expect(actionFilter).toHaveValue('print');
 });
 
 test('historical scan practice imports views replaces and cancels without picker files or PDF effects', async ({
