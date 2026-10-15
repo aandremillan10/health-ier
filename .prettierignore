@@ -10,6 +10,7 @@ docs/verification/
 **/.claude
 **/.windsurf
 **/src/generated
+app/src/renderer/components/arc
 pnpm-lock.yaml
 server/pnpm-lock.yaml
 docs/references

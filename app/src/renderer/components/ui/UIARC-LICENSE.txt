@@ -1,4 +1,8 @@
 Search field adaptation: https://uiarc.dev/r/search-field.json
+Empty state adaptation: https://uiarc.dev/r/empty-state.json
+Registry components: https://uiarc.dev/r/badge.json, https://uiarc.dev/r/skeleton.json,
+https://uiarc.dev/r/stepper.json, https://uiarc.dev/r/arc-foundation.json,
+https://uiarc.dev/r/arc-motion-tokens.json
 License source: https://uiarc.dev/license
 
 MIT License
