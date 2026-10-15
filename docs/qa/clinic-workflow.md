@@ -2,6 +2,8 @@
 
 Historical audit baseline: merged `7352c0767fe4fb8f602cc9366b45b17ce371377b`, 2026-10-15. Counts explicitly labeled Baseline below belong to that historical source. Later verification is identified separately. For every later checkout, record its exact commit and new results; the historical counts are neither a future quota nor proof of the current branch.
 
+Later source `b974375123c5afa5be2721d69cffc8c68d945811` includes laboratory, referral and other clinic operations beyond the original audit baseline. The [laboratory workflow](laboratory-workflow.md), [referral workflow](referral-workflow.md) and [clinical summary](../features/clinical-summary.md) describe those current contracts. The [laptop EDGE HTTPS run](laptop-edge-tls.md) records the retained two-machine deployment and current packaged QA results; the older paragraphs below describe their named historical runs rather than a permanent deferral of implemented modules.
+
 The primary workflow in this guide uses **the real Electron client, NestJS EDGE API and PostgreSQL**. Browser memory fixtures support regression testing; they do not prove shared records, authorization, persistence, IPC or printer submission. Complete each test with synthetic records and named accounts, recording actual outcomes rather than checking boxes from this guide alone.
 
 Baseline known defects: **F01** rejects a contract-valid negative Celsius value in the UI and remains open. **F02** previously returned a successfully authenticated user to Staff sign-in after a delayed reset. F02 was fixed and replayed on clean **`a2c1ba1`**; its baseline failure remains recorded. Treat recurrence as a regression; repeated credential entry is not an accepted workaround.
@@ -59,7 +61,7 @@ pnpm --filter app package:windows
 
 It creates an unsigned portable folder, ZIP and SHA-256 file under a fresh timestamped `app/dist/windows/` directory. Follow [Windows desktop export and launch](windows-desktop.md) to verify the hash, extract the complete folder and start the executable from the actual extracted location. Keep the whole folder together; copying only `AMLIG.exe` is insufficient.
 
-Packaged clients require a trusted **HTTPS EDGE** origin supplied through the launcher/process `HEALTH_IER_SERVER_URL`; packaged `.env` is not automatically loaded. A public HTTPS CLOUD mirror does not satisfy that requirement. No trusted HTTPS EDGE endpoint has yet been verified for this run, so the unpackaged local Electron workflow above remains the primary writable QA path. The synthetic HTTP exception is only for unpackaged loopback development. Keep TLS validation, context isolation and disabled renderer Node integration. The [LAN/TLS guide](../lan-tls-setup.md) describes separate certificate/firewall prerequisites; authorized clinic certificate setup must verify the endpoint/certificate and follow the clinic's approved trust process. No automatic trust change or certificate-verification bypass is part of this workflow.
+Packaged clients require a trusted **HTTPS EDGE** origin supplied through the launcher/process `HEALTH_IER_SERVER_URL`; packaged `.env` is not automatically loaded. A public HTTPS CLOUD mirror does not satisfy that requirement. The historical audit above had no verified trusted HTTPS EDGE endpoint and used the unpackaged local Electron workflow. The later [laptop EDGE run](laptop-edge-tls.md) separately records the real HTTPS deployment, approved certificate trust and packaged results. The synthetic HTTP exception is only for unpackaged loopback development. Keep TLS validation, context isolation and disabled renderer Node integration. The [LAN/TLS guide](../lan-tls-setup.md) describes separate certificate/firewall prerequisites; authorized clinic certificate setup must verify the endpoint/certificate and follow the clinic's approved trust process. No automatic trust change or certificate-verification bypass is part of this workflow.
 
 ## Accounts and evidence ledger
 
@@ -156,7 +158,7 @@ Expect the isolated synthetic dental text with actual author/status/revision and
 
 Sign in as `demo.medtech.one`, find the seeded authorization patient and open Laboratory chart. Repeat as `demo.medtech.two`. Expect minimum identity (ID/revision/name/sex/DOB), no address/category/provider-note disclosure, shared isolated lab text and attributed history. The server-filtered DTO checks in live automation complement what is visible.
 
-Medical/dental notes and general vital-sign navigation must not appear. No order/referral/result-sharing or complete laboratory authoring UI is expected. The live API script verifies denied cross-author mutation. Record `QA-12-laboratory.png`.
+Medical/dental notes and general vital-sign navigation must not appear. In the original audit baseline, no order/referral/result-sharing or complete laboratory authoring UI was expected; that statement does not describe the later implemented modules. Retain this isolated seeded-chart permission check, and use the current [laboratory workflow](laboratory-workflow.md) and [referral workflow](referral-workflow.md) for their separate order/result/referral paths. The live API script verifies denied cross-author mutation. Record `QA-12-laboratory.png` and identify which baseline and current module paths were actually exercised.
 
 ### QA-13 — Head checks across disciplines and own-author limits
 

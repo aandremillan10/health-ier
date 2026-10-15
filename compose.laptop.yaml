@@ -1,0 +1,47 @@
+# Use after compose.prod.yaml with a fresh, explicitly named synthetic project.
+# Requires Compose >= 2.24.4 for !reset; see docs/qa/laptop-edge-tls.md.
+services:
+  server:
+    image: health-ier-laptop-edge:${DEPLOY_RUN:?Set a fresh deployment run identifier}
+    ports: !reset []
+    environment:
+      SERVER_MODE: EDGE
+      MIRROR_ENABLED: 'false'
+
+  caddy:
+    image: caddy:2.10.2-alpine
+    environment:
+      LAPTOP_IP: ${LAPTOP_IP:?Set the verified laptop IPv4 address}
+    ports:
+      - '${LAPTOP_IP}:443:443'
+    volumes:
+      - ./deploy/laptop/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      server:
+        condition: service_healthy
+    restart: unless-stopped
+
+  seed:
+    image: health-ier-laptop-edge:${DEPLOY_RUN:?Set a fresh deployment run identifier}
+    profiles: [seed]
+    # Preserve the seed's loopback-only guard without publishing PostgreSQL.
+    network_mode: service:postgres
+    environment:
+      SERVER_MODE: EDGE
+      CLINIC_ID: ${CLINIC_ID:?Set CLINIC_ID for this clinic}
+      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@127.0.0.1:5432/${POSTGRES_DB}
+      DEMO_CREDENTIALS_FILE: /proof/credentials.json
+      MIRROR_ENABLED: 'false'
+    volumes:
+      - ./.private/laptop-proof:/proof
+    depends_on:
+      postgres:
+        condition: service_healthy
+    command: [node, dist/demo-seed.js]
+    restart: 'no'
+
+volumes:
+  caddy_data:
+  caddy_config:
